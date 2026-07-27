@@ -198,4 +198,20 @@ async function map(req, res) {
   return res.json({ project, plots });
 }
 
-module.exports = { index, store, show, update, destroy, builder, saveLayout, map };
+// POST /api/admin/projects/:id/map-image
+async function uploadMapImage(req, res) {
+  const project = await Project.findById(req.params.id);
+  if (!project) return res.status(404).json({ message: 'Project not found.' });
+  if (!req.file) return res.status(422).json({ message: 'No image uploaded.' });
+
+  project.mapData = {
+    ...(project.mapData || {}),
+    imageUrl: `map-images/${req.file.filename}`,
+    uploadedAt: new Date(),
+  };
+  await project.save();
+
+  return res.json({ message: 'Map image uploaded.', project });
+}
+
+module.exports = { index, store, show, update, destroy, builder, saveLayout, map, uploadMapImage };

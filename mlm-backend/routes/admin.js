@@ -20,7 +20,7 @@ const dashboardController = require('../controllers/admin/dashboardController');
 const profileController = require('../controllers/profileController');
 const { settingsUpload, profileUpload } = require('../middleware/upload');
 const { protect, restrictTo, requirePermission } = require('../middleware/auth');
-const { layoutUpload } = require('../middleware/upload');
+const { layoutUpload, mapImageUpload } = require('../middleware/upload');
 
 // all admin routes require login + super_admin/sub_admin role
 router.use(protect, restrictTo('super_admin', 'sub_admin'));
@@ -42,7 +42,7 @@ router.put('/projects/:id', layoutUpload.single('layout_svg'), projectController
 router.delete('/projects/:id', projectController.destroy);
 router.get('/projects/:id/builder', projectController.builder);
 router.post('/projects/:id/layout', projectController.saveLayout);
-router.get('/projects/:id/map', projectController.map);
+router.post('/projects/:id/map-image', mapImageUpload.single('map_image'), projectController.uploadMapImage);router.post('/projects/:id/map-image', layoutUpload.single('layout_svg') && require('../middleware/upload').mapImageUpload.single('map_image'), projectController.uploadMapImage);router.get('/projects/:id/map', projectController.map);
 
 // Plots (nested under project)
 router.get('/projects/:projectId/plots', plotController.index);

@@ -16,7 +16,7 @@ import TicketDetail from "./pages/agent/TicketDetail.jsx";
 import Team from "./pages/agent/Team.jsx";
 import Projects from "./pages/agent/Projects.jsx";
 import ProjectDetail from "./pages/agent/ProjectDetail.jsx";
-import Profile from "./pages/agent/Profile.jsx";
+import ProjectMapView from "./pages/agent/ProjectMapView.jsx";import Profile from "./pages/agent/Profile.jsx";
 import Login from "./pages/auth/Login.jsx";
 import ProtectedRoute from "./components/auth/ProtectedRoute.jsx";
 import Register from "./pages/auth/Register.jsx";
@@ -91,7 +91,7 @@ function App() {
         <Route path="/agent/team" element={<Team />} />
         <Route path="/agent/projects" element={<Projects />} />
         <Route path="/agent/projects/:id" element={<ProjectDetail />} />
-        <Route path="/agent/profile" element={<Profile />} />
+        <Route path="/agent/projects/:id/map" element={<ProjectMapView />} />        <Route path="/agent/profile" element={<Profile />} />
       </Route>
 
       <Route

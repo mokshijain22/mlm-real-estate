@@ -61,12 +61,17 @@ function ProjectMap() {
       maxZoom: 4,
       attributionControl: false,
     });
-    mapInstanceRef.current = map;
-
     map.fitBounds([
       [0, 0],
       [1000, 1000],
     ]);
+
+    if (project?.mapData?.imageUrl) {
+      L.imageOverlay(`${STORAGE_BASE}/storage/${project.mapData.imageUrl}`, [
+        [0, 0],
+        [1000, 1000],
+      ]).addTo(map);
+    }
 
     const group = L.featureGroup();
 
@@ -111,7 +116,7 @@ function ProjectMap() {
       mapInstanceRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [plots, hasProfessionalLayout, view]);
+  }, [plots, hasProfessionalLayout, view, project]);
 
   // Invalidate size on fullscreen toggle
   useEffect(() => {

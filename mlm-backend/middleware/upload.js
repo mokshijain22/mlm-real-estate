@@ -44,4 +44,10 @@ const kycUpload = multer({
   },
 });
 
-module.exports = { layoutUpload: makeUploader('layouts'), kycUpload, settingsUpload: makeUploader('settings'), profileUpload: makeUploader('profiles') };
+module.exports = {
+  layoutUpload: makeUploader('layouts'),
+  kycUpload,
+  settingsUpload: makeUploader('settings'),
+  profileUpload: makeUploader('profiles'),
+  mapImageUpload: makeUploader('map-images'),
+};

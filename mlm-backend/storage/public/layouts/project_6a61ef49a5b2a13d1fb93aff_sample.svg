@@ -13,9 +13,9 @@
   </defs>
   <rect width="100%" height="100%" fill="#f8fafc" rx="12" />
   <text x="100" y="35" text-anchor="middle" style="font-family: sans-serif; font-weight: bold; font-size: 18px; fill: #334155;">test project Site Layout</text>
-  <g class="plot-group" id="plot-group-6a61f2d5a5b2a13d1fb93c49" data-plot-id="6a61f2d5a5b2a13d1fb93c49" data-plot-number="1">
-    <rect id="plot-1" class="plot sold" x="40" y="100" width="120" height="100" rx="8" />
-    <text x="100" y="145" class="plot-text">1</text>
-    <text x="100" y="165" class="plot-area">0.02 sqft</text>
+  <g class="plot-group" id="plot-group-6a672ff6a10e99c17ed27cd1" data-plot-id="6a672ff6a10e99c17ed27cd1" data-plot-number="138">
+    <rect id="plot-138" class="plot available" x="40" y="100" width="120" height="100" rx="8" />
+    <text x="100" y="145" class="plot-text">138</text>
+    <text x="100" y="165" class="plot-area">0.19 sqft</text>
   </g>
 </svg>

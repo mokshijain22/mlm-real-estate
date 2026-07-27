@@ -14,7 +14,7 @@
 <body>
 <div id="root"></div>
 <script type="text/babel" data-presets="react">
-const { useState, useRef, useCallback } = React;
+const { useState, useRef, useCallback, useEffect } = React;
 
 const Icon = ({ children }) => <span style={{display:"inline-flex"}}>{children}</span>;
 const Trash2 = () => <Icon>🗑</Icon>;
@@ -98,7 +98,30 @@ function PlotMapper() {
   const [draft, setDraft] = useState(null); // points being placed
   const [pendingShape, setPendingShape] = useState(null); // shape awaiting form
   const [rowDraft, setRowDraft] = useState(null);
-  const [rowCount, setRowCount] = useState(6);
+  const [publishStatus, setPublishStatus] = useState(null); // "sent" | null
+
+  const publishToProject = useCallback(() => {
+    if (!window.parent || window.parent === window) return;
+    const payload = plots.reduce((acc, p) => {
+      const lng1 = (p.x / IMG_W) * 1000;
+      const lng2 = ((p.x + p.w) / IMG_W) * 1000;
+      const lat1 = 1000 - (p.y / IMG_H) * 1000;
+      const lat2 = 1000 - ((p.y + p.h) / IMG_H) * 1000;
+      acc[p.number] = {
+        status: p.status,
+        latlngs: [
+          [lat1, lng1],
+          [lat1, lng2],
+          [lat2, lng2],
+          [lat2, lng1],
+        ],
+      };
+      return acc;
+    }, {});
+    window.parent.postMessage({ type: "PLOT_MAPPER_PUBLISH", plots: payload }, "*");
+    setPublishStatus("sent");
+    setTimeout(() => setPublishStatus(null), 2500);
+  }, [plots]);  const [rowCount, setRowCount] = useState(6);
   const [rowStartNum, setRowStartNum] = useState(1);
   const [rowReverse, setRowReverse] = useState(false);
   const [selectedPlot, setSelectedPlot] = useState(null);
@@ -476,6 +499,13 @@ function PlotMapper() {
           />
           <button style={styles.csvBtn} onClick={() => csvInputRef.current.click()}>
             ⬆ Upload CSV — bulk update
+          </button>
+          <button
+            style={{ ...styles.csvBtn, background: "#2f6f4f" }}
+            onClick={publishToProject}
+            disabled={plots.length === 0}
+          >
+            {publishStatus === "sent" ? "✓ Sent to live map" : "🚀 Publish to live map"}
           </button>
           <div style={styles.hintText}>
             Matches by plot number. Fills only the columns you filled in the CSV — leaves the rest as-is.

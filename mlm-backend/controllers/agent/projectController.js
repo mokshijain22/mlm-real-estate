@@ -32,7 +32,7 @@ async function map(req, res) {
     await project.save();
   }
 
-  return res.json({ project });
+  return res.json({ project, plots });
 }
 
 module.exports = { index, show, map };
