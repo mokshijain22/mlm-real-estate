@@ -188,6 +188,10 @@ function ProjectMap() {
               </h4>
             </div>
             <div className="d-flex gap-2">
+              <Link to={`/admin/projects/${id}/plot-mapper`} className="btn btn-outline-secondary btn-sm">
+                <iconify-icon icon="solar:map-point-wave-bold-duotone" className="align-middle me-1 fs-16"></iconify-icon>
+                Advanced Mapper
+              </Link>
               <Link to={`/admin/projects/${id}/builder`} className="btn btn-outline-primary btn-sm">
                 <iconify-icon icon="solar:pen-new-square-bold-duotone" className="align-middle me-1 fs-16"></iconify-icon>
                 Build Layout

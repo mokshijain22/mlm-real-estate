@@ -59,6 +59,7 @@ import PlotEdit from "./pages/admin/PlotEdit.jsx";
 import PlotShow from "./pages/admin/PlotShow.jsx";
 import ProjectMap from "./pages/admin/ProjectMap.jsx";
 import ProjectBuilder from "./pages/admin/ProjectBuilder.jsx";
+import PlotMapper from "./pages/admin/PlotMapper.jsx";
 
 function App() {
   return (
@@ -134,6 +135,7 @@ function App() {
         <Route path="/admin/projects/:projectId/plots/:plotId" element={<PlotShow />} />
         <Route path="/admin/projects/:id/map" element={<ProjectMap />} />
         <Route path="/admin/projects/:id/builder" element={<ProjectBuilder />} />
+        <Route path="/admin/projects/:id/plot-mapper" element={<PlotMapper />} />
         <Route path="/admin/withdrawals" element={<Withdrawals />} />
         <Route path="/admin/withdrawals/:id" element={<WithdrawalDetail />} />
         <Route path="/admin/tickets" element={<AdminTickets />} />
