@@ -1,0 +1,70 @@
+const mongoose = require('mongoose');
+
+const bookingSchema = new mongoose.Schema(
+  {
+    bookingNumber: { type: String, required: true, unique: true },
+    customer: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer', required: true },
+    plot: { type: mongoose.Schema.Types.ObjectId, ref: 'Plot', required: true },
+    project: { type: mongoose.Schema.Types.ObjectId, ref: 'Project', required: true },
+    agent: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    agentRank: { type: mongoose.Schema.Types.ObjectId, ref: 'Rank', default: null }, // rank snapshot at booking time
+
+    totalArea: { type: Number, required: true },
+    pricePerSqft: { type: Number, required: true },
+    totalAmount: { type: Number, required: true },
+    bookingAmount: { type: Number, required: true },
+    remainingAmount: { type: Number, required: true },
+    emiMonths: { type: Number, required: true },
+    emiAmount: { type: Number, required: true },
+    paymentMode: { type: String, enum: ['cash', 'online'], required: true },
+    status: { type: String, enum: ['active', 'completed', 'cancelled'], default: 'active' },
+
+    // agent approval flow
+    approvalStatus: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+    approvalReason: { type: String, default: null },
+    rejectionReason: { type: String, default: null },
+    approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    approvedAt: { type: Date, default: null },
+
+    // --- Purchase Details (mirrors the physical Booking Form) ---
+    purchaseDetails: {
+      fathersOrHusbandName: { type: String, default: null },
+      gender: { type: String, enum: ['male', 'female', 'other', null], default: null },
+      maritalStatus: { type: String, default: null },
+      dob: { type: Date, default: null },
+      age: { type: Number, default: null },
+      religion: { type: String, default: null },
+      nominationName: { type: String, default: null },
+      nominationRelation: { type: String, default: null },
+    },
+
+    plcAmount: { type: Number, default: 0 },
+
+    paymentSchedule: {
+      tokenDate: { type: Date, default: null },
+      tokenAmount: { type: Number, default: 0 },
+      dpDate: { type: Date, default: null },
+      dpAmount: { type: Number, default: 0 },
+      installmentDate: { type: Date, default: null },
+      installmentAmount: { type: Number, default: 0 },
+      specificCondition: { type: String, default: null },
+    },
+
+    proposerName: { type: String, default: null },
+
+    bookingDate: { type: Date, required: true },
+    notes: { type: String, default: null },
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    deletedAt: { type: Date, default: null },
+  },
+  { timestamps: true }
+);
+
+bookingSchema.pre(/^find/, function (next) {
+  if (this.getFilter().includeDeleted !== true) {
+    this.where({ deletedAt: null });
+  }
+  next();
+});
+
+module.exports = mongoose.model('Booking', bookingSchema);
