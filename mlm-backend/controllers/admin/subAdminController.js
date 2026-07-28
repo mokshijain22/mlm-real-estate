@@ -5,6 +5,7 @@ const Role = require('../../models/Role');
 const VALID_PERMISSIONS = [
   'kyc', 'agents', 'referrals', 'projects', 'customers',
   'bookings', 'emis', 'reports', 'withdrawals', 'tickets',
+  'reports_emi', 'reports_commissions', 'reports_agent_earnings', 'reports_project_sales', 'reports_payouts',
 ];
 
 function sanitizePermissions(input) {

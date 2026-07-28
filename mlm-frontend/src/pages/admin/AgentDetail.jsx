@@ -11,6 +11,10 @@ function AgentDetail() {
   const [rankData, setRankData] = useState(null);
   const [error, setError] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [editingCode, setEditingCode] = useState(false);
+  const [newCode, setNewCode] = useState("");
+  const [codeError, setCodeError] = useState(null);
+  const [savingCode, setSavingCode] = useState(false);
 
   const loadProfile = () => {
     api
@@ -47,6 +51,23 @@ function AgentDetail() {
       .then(() => loadProfile())
       .catch((err) => alert(err.response?.data?.message || err.message))
       .finally(() => setActionLoading(false));
+  };
+
+  const handleSaveCode = () => {
+    setSavingCode(true);
+    setCodeError(null);
+    api
+      .patch(`/admin/agents/${id}/referral-code`, { referral_code: newCode })
+      .then(() => {
+        setEditingCode(false);
+        loadProfile();
+      })
+      .catch((err) => {
+        setCodeError(
+          err.response?.data?.errors ? Object.values(err.response.data.errors).join(", ") : err.response?.data?.message || err.message
+        );
+      })
+      .finally(() => setSavingCode(false));
   };
 
   if (error) return <div className="alert alert-danger">{error}</div>;
@@ -134,7 +155,43 @@ function AgentDetail() {
                     </tr>
                     <tr>
                       <td className="text-muted">Referral Code</td>
-                      <td className="fw-medium">{agent.referralCode || "-"}</td>
+                      <td className="fw-medium">
+                        {editingCode ? (
+                          <div>
+                            {codeError && <div className="text-danger small mb-1">{codeError}</div>}
+                            <div className="d-flex gap-2">
+                              <input
+                                type="text"
+                                className="form-control form-control-sm"
+                                style={{ maxWidth: 160 }}
+                                placeholder="e.g. GK-1005"
+                                value={newCode}
+                                onChange={(e) => setNewCode(e.target.value)}
+                              />
+                              <button className="btn btn-sm btn-primary" disabled={savingCode} onClick={handleSaveCode}>
+                                {savingCode ? "Saving..." : "Save"}
+                              </button>
+                              <button className="btn btn-sm btn-light" onClick={() => setEditingCode(false)}>
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            {agent.referralCode || "-"}{" "}
+                            <button
+                              className="btn btn-sm btn-link px-1"
+                              onClick={() => {
+                                setNewCode(agent.referralCode || "");
+                                setEditingCode(true);
+                                setCodeError(null);
+                              }}
+                            >
+                              Edit
+                            </button>
+                          </>
+                        )}
+                      </td>
                     </tr>
                     <tr>
                       <td className="text-muted">Referred By</td>

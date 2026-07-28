@@ -38,21 +38,31 @@ function rectToLatLngs(x, y, w, h, imgW, imgH) {
 }
 
 function parseCsv(text) {
-  const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
+  const cleanText = text.replace(/^\uFEFF/, ""); // strip BOM from Excel exports
+  const lines = cleanText.split(/\r?\n/).filter((l) => l.trim().length > 0);
   if (lines.length < 2) return {};
-  const headers = lines[0].split(",").map((h) => h.trim().toLowerCase());
+  const headers = lines[0].split(",").map((h) => h.trim().toLowerCase().replace(/^\uFEFF/, ""));
   const map = {};
   lines.slice(1).forEach((line) => {
     const cells = line.split(",");
     const row = {};
     headers.forEach((h, i) => (row[h] = (cells[i] || "").trim()));
-    const number = row.number || row.plot_number || row.plotnumber;
+    const number = (row.number || row.plot_number || row.plotnumber || "").trim();
     if (!number) return;
+    const sizeMatch = String(row.size || "").match(/([\d.]+)\s*[xX×]\s*([\d.]+)/);
+    const areaFromSize = sizeMatch ? String(parseFloat(sizeMatch[1]) * parseFloat(sizeMatch[2])) : "";
     map[number] = {
-      total_area: row.total_area || row.area || "",
-      price_per_sqft: row.price_per_sqft || row.price || "",
+      total_area: row.total_area || row.area || areaFromSize || "",
+      price_per_sqft: row.price_per_sqft || row.price || row.final_price || row.base_price || "",
       status: STATUSES.includes(row.status) ? row.status : "",
       plc_amount: row.plc_amount || "",
+      facing: row.facing || "",
+      zone_type: row.zone_type || "",
+      corner_plot: row.corner_plot || "",
+      boundary_n: row.boundary_n || "",
+      boundary_s: row.boundary_s || "",
+      boundary_e: row.boundary_e || "",
+      boundary_w: row.boundary_w || "",
     };
   });
   return map;
@@ -71,10 +81,16 @@ function PlotMapper() {
 
   const [draft, setDraft] = useState(null); // first click point
   const [pendingRect, setPendingRect] = useState(null); // rect awaiting form
-  const [form, setForm] = useState({ number: "", total_area: "", price_per_sqft: "", status: "available", plc_amount: "" });
+  const [form, setForm] = useState({
+    number: "", total_area: "", price_per_sqft: "", status: "available", plc_amount: "",
+    facing: "", zone_type: "", corner_plot: "", boundary_n: "", boundary_s: "", boundary_e: "", boundary_w: "",
+  });
 
   const [message, setMessage] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [previewPlot, setPreviewPlot] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [showFormPreview, setShowFormPreview] = useState(false);
 
   const load = () => {
     api.get(`/admin/projects/${id}/builder`).then((res) => {
@@ -144,7 +160,10 @@ function PlotMapper() {
     const h = Math.abs(point.y - draft.y);
     setDraft(null);
     setPendingRect({ x, y, w, h });
-    setForm({ number: "", total_area: "", price_per_sqft: "", status: "available", plc_amount: "" });
+    setForm({
+      number: "", total_area: "", price_per_sqft: "", status: "available", plc_amount: "",
+      facing: "", zone_type: "", corner_plot: "", boundary_n: "", boundary_s: "", boundary_e: "", boundary_w: "",
+    });
   };
 
   const cancelDraft = () => {
@@ -152,16 +171,54 @@ function PlotMapper() {
     setPendingRect(null);
   };
 
+  const handleDeletePlot = () => {
+    if (!previewPlot) return;
+    if (!window.confirm(`Plot #${previewPlot.plotNumber} ko poori tarah delete karna hai? Ye undo nahi hoga.`)) return;
+    setDeleting(true);
+    api
+      .delete(`/admin/projects/${id}/plots/${previewPlot._id}`)
+      .then(() => {
+        setMessage({ type: "success", text: `Plot #${previewPlot.plotNumber} delete ho gaya.` });
+        setPreviewPlot(null);
+        load();
+      })
+      .catch((err) => setMessage({ type: "error", text: err.response?.data?.message || err.message }))
+      .finally(() => setDeleting(false));
+  };
+
+  const handleUnmapPlot = () => {
+    if (!previewPlot) return;
+    if (!window.confirm(`Plot #${previewPlot.plotNumber} ki tracing (image se) hatani hai? Plot record rahega, sirf map se hat jayega.`)) return;
+    setDeleting(true);
+    api
+      .post(`/admin/projects/${id}/layout`, { plots: { [previewPlot._id]: { latlngs: null } } })
+      .then(() => {
+        setMessage({ type: "success", text: `Plot #${previewPlot.plotNumber} map se untrace ho gaya.` });
+        setPreviewPlot(null);
+        load();
+      })
+      .catch((err) => setMessage({ type: "error", text: err.response?.data?.message || err.message }))
+      .finally(() => setDeleting(false));
+  };
+
   const handleNumberChange = (value) => {
-    const existing = plots.find((p) => String(p.plotNumber) === String(value));
-    const csvRow = csvData[value];
+    const trimmed = String(value).trim();
+    const existing = plots.find((p) => String(p.plotNumber) === trimmed);
+    const csvRow = csvData[trimmed];
     setForm((f) => ({
       ...f,
       number: value,
-      total_area: existing ? existing.totalArea : csvRow?.total_area || f.total_area,
-      price_per_sqft: existing ? existing.pricePerSqft : csvRow?.price_per_sqft || f.price_per_sqft,
-      status: existing ? existing.status : csvRow?.status || f.status,
-      plc_amount: existing ? existing.plcAmount || "" : csvRow?.plc_amount || f.plc_amount,
+      total_area: csvRow?.total_area || existing?.totalArea || f.total_area,
+      price_per_sqft: csvRow?.price_per_sqft || existing?.pricePerSqft || f.price_per_sqft,
+      status: csvRow?.status || existing?.status || f.status,
+      plc_amount: csvRow?.plc_amount || existing?.plcAmount || f.plc_amount,
+      facing: csvRow?.facing || f.facing,
+      zone_type: csvRow?.zone_type || f.zone_type,
+      corner_plot: csvRow?.corner_plot || f.corner_plot,
+      boundary_n: csvRow?.boundary_n || f.boundary_n,
+      boundary_s: csvRow?.boundary_s || f.boundary_s,
+      boundary_e: csvRow?.boundary_e || f.boundary_e,
+      boundary_w: csvRow?.boundary_w || f.boundary_w,
     }));
   };
 
@@ -197,6 +254,13 @@ function PlotMapper() {
           price_per_sqft: form.price_per_sqft || 0,
           plc_amount: form.plc_amount || 0,
           status: form.status || "available",
+          facing: form.facing,
+          zone_type: form.zone_type,
+          corner_plot: form.corner_plot,
+          boundary_n: form.boundary_n,
+          boundary_s: form.boundary_s,
+          boundary_e: form.boundary_e,
+          boundary_w: form.boundary_w,
         })
         .then((res) => finish(res.data.data._id))
         .catch((err) => {
@@ -250,6 +314,19 @@ function PlotMapper() {
                   Columns: number, total_area, price_per_sqft, status, plc_amount. Number type karte hi auto-fill hoga.
                   {csvCount > 0 && ` (${csvCount} rows loaded)`}
                 </div>
+                {csvCount > 0 && (
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-danger mt-1"
+                    onClick={() => {
+                      setCsvData({});
+                      setCsvCount(0);
+                      setMessage({ type: "success", text: "CSV data clear kar diya." });
+                    }}
+                  >
+                    Clear CSV data
+                  </button>
+                )}
                 <hr />
                 <label className="form-label small mb-1">Map image badalni ho:</label>
                 <input type="file" accept="image/*" onChange={handleUpload} disabled={uploading} className="form-control form-control-sm" />
@@ -285,33 +362,62 @@ function PlotMapper() {
                   />
 
                   {imgNatural.w > 0 &&
-                    mappedPlots.map((p) => {
-                      const r = latLngsToRect(p.mapCoordinates.latlngs, imgNatural.w, imgNatural.h);
-                      const scale = imgRef.current ? imgRef.current.clientWidth / imgNatural.w : 1;
-                      return (
-                        <div
-                          key={p._id}
-                          style={{
-                            position: "absolute",
-                            left: r.x * scale,
-                            top: r.y * scale,
-                            width: r.w * scale,
-                            height: r.h * scale,
-                            border: `2px solid ${statusColor(p.status)}`,
-                            background: `${statusColor(p.status)}55`,
-                            pointerEvents: "none",
-                            fontSize: 11,
-                            color: "#111",
-                            fontWeight: "bold",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                          }}
-                        >
-                          {p.plotNumber}
-                        </div>
-                      );
-                    })}
+                    mappedPlots
+                      .slice()
+                      .sort((a, b) => {
+                        // draw smaller plots on top so overlapping big/small boxes stay clickable & legible
+                        const ra = latLngsToRect(a.mapCoordinates.latlngs, imgNatural.w, imgNatural.h);
+                        const rb = latLngsToRect(b.mapCoordinates.latlngs, imgNatural.w, imgNatural.h);
+                        return rb.w * rb.h - ra.w * ra.h;
+                      })
+                      .map((p, idx) => {
+                        const r = latLngsToRect(p.mapCoordinates.latlngs, imgNatural.w, imgNatural.h);
+                        const scale = imgRef.current ? imgRef.current.clientWidth / imgNatural.w : 1;
+                        const interactive = !draft && !pendingRect;
+                        return (
+                          <div
+                            key={p._id}
+                            onClick={(e) => {
+                              if (!interactive) return;
+                              e.stopPropagation();
+                              setPreviewPlot(p);
+                            }}
+                            style={{
+                              position: "absolute",
+                              left: r.x * scale,
+                              top: r.y * scale,
+                              width: r.w * scale,
+                              height: r.h * scale,
+                              zIndex: idx + 1,
+                              border: `1.5px solid ${statusColor(p.status)}`,
+                              background: `${statusColor(p.status)}33`,
+                              pointerEvents: interactive ? "auto" : "none",
+                              cursor: interactive ? "pointer" : "default",
+                              fontSize: 10,
+                              lineHeight: 1,
+                              color: "#111",
+                              fontWeight: 600,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              overflow: "hidden",
+                              textShadow: "0 0 3px #fff, 0 0 3px #fff",
+                              transition: "background 0.15s, box-shadow 0.15s",
+                              boxShadow: "inset 0 0 0 9999px rgba(255,255,255,0)",
+                            }}
+                            onMouseEnter={(e) => {
+                              if (!interactive) return;
+                              e.currentTarget.style.background = `${statusColor(p.status)}77`;
+                              e.currentTarget.style.zIndex = 999;
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = `${statusColor(p.status)}33`;
+                              e.currentTarget.style.zIndex = idx + 1;
+                            }}
+                            title={`Plot #${p.plotNumber} — ${p.status}`}
+                          />
+                        );
+                      })}
 
                   {draft && imgRef.current && (
                     <div
@@ -399,12 +505,183 @@ function PlotMapper() {
                     ))}
                   </select>
                 </div>
+                <div className="row">
+                  <div className="col-6 mb-2">
+                    <label className="form-label">Facing</label>
+                    <input className="form-control" value={form.facing} onChange={(e) => setForm((f) => ({ ...f, facing: e.target.value }))} />
+                  </div>
+                  <div className="col-6 mb-2">
+                    <label className="form-label">Zone Type</label>
+                    <input className="form-control" value={form.zone_type} onChange={(e) => setForm((f) => ({ ...f, zone_type: e.target.value }))} />
+                  </div>
+                </div>
+                <div className="mb-2">
+                  <label className="form-label">Corner Plot</label>
+                  <input className="form-control" value={form.corner_plot} onChange={(e) => setForm((f) => ({ ...f, corner_plot: e.target.value }))} placeholder="yes / no" />
+                </div>
+                <div className="row">
+                  <div className="col-6 mb-2">
+                    <label className="form-label">Boundary N</label>
+                    <input className="form-control" value={form.boundary_n} onChange={(e) => setForm((f) => ({ ...f, boundary_n: e.target.value }))} />
+                  </div>
+                  <div className="col-6 mb-2">
+                    <label className="form-label">Boundary S</label>
+                    <input className="form-control" value={form.boundary_s} onChange={(e) => setForm((f) => ({ ...f, boundary_s: e.target.value }))} />
+                  </div>
+                  <div className="col-6 mb-2">
+                    <label className="form-label">Boundary E</label>
+                    <input className="form-control" value={form.boundary_e} onChange={(e) => setForm((f) => ({ ...f, boundary_e: e.target.value }))} />
+                  </div>
+                  <div className="col-6 mb-2">
+                    <label className="form-label">Boundary W</label>
+                    <input className="form-control" value={form.boundary_w} onChange={(e) => setForm((f) => ({ ...f, boundary_w: e.target.value }))} />
+                  </div>
+                </div>
               </div>
               <div className="modal-footer">
                 <button className="btn btn-light" onClick={cancelDraft}>Cancel</button>
+                <button
+                  type="button"
+                  className="btn btn-outline-primary"
+                  disabled={!form.number.trim()}
+                  onClick={() => setShowFormPreview(true)}
+                >
+                  Preview (agent ko kya dikhega)
+                </button>
                 <button className="btn btn-primary" onClick={savePlot} disabled={saving || !form.number.trim()}>
                   {saving ? "Saving..." : "Save plot"}
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showFormPreview && (
+        <div className="modal d-block" style={{ background: "rgba(0,0,0,0.6)", zIndex: 1060 }} onClick={() => setShowFormPreview(false)}>
+          <div className="modal-dialog modal-dialog-centered" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-content">
+              <div className="modal-header" style={{ background: statusColor(form.status), color: "#fff" }}>
+                <h5 className="modal-title">Plot #{form.number || "—"}</h5>
+                <button className="btn-close btn-close-white" onClick={() => setShowFormPreview(false)}></button>
+              </div>
+              <div className="modal-body">
+                <p className="text-muted small mb-3">Agent/customer ko exactly ye details dikhengi jab wo is plot ko dekhega.</p>
+                <div className="row g-2">
+                  <div className="col-6">
+                    <div className="bg-light rounded p-2 text-center">
+                      <small className="text-muted d-block">Total Area</small>
+                      <span className="fw-bold">{form.total_area ? `${Number(form.total_area).toLocaleString()} sqft` : "—"}</span>
+                    </div>
+                  </div>
+                  <div className="col-6">
+                    <div className="bg-light rounded p-2 text-center">
+                      <small className="text-muted d-block">Price / sqft</small>
+                      <span className="fw-bold">{form.price_per_sqft ? `₹${Number(form.price_per_sqft).toLocaleString()}` : "—"}</span>
+                    </div>
+                  </div>
+                  <div className="col-6">
+                    <div className="bg-light rounded p-2 text-center">
+                      <small className="text-muted d-block">Status</small>
+                      <span className="fw-bold text-capitalize" style={{ color: statusColor(form.status) }}>{form.status}</span>
+                    </div>
+                  </div>
+                  <div className="col-6">
+                    <div className="bg-light rounded p-2 text-center">
+                      <small className="text-muted d-block">PLC Amount</small>
+                      <span className="fw-bold">{form.plc_amount ? `₹${Number(form.plc_amount).toLocaleString()}` : "—"}</span>
+                    </div>
+                  </div>
+                  <div className="col-6">
+                    <div className="bg-light rounded p-2 text-center">
+                      <small className="text-muted d-block">Facing</small>
+                      <span className="fw-bold">{form.facing || "—"}</span>
+                    </div>
+                  </div>
+                  <div className="col-6">
+                    <div className="bg-light rounded p-2 text-center">
+                      <small className="text-muted d-block">Zone Type</small>
+                      <span className="fw-bold">{form.zone_type || "—"}</span>
+                    </div>
+                  </div>
+                  <div className="col-6">
+                    <div className="bg-light rounded p-2 text-center">
+                      <small className="text-muted d-block">Corner Plot</small>
+                      <span className="fw-bold">{form.corner_plot || "—"}</span>
+                    </div>
+                  </div>
+                  <div className="col-6">
+                    <div className="bg-light rounded p-2 text-center">
+                      <small className="text-muted d-block">Boundaries</small>
+                      <span className="fw-bold small">
+                        N: {form.boundary_n || "—"} · S: {form.boundary_s || "—"} · E: {form.boundary_e || "—"} · W: {form.boundary_w || "—"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-light" onClick={() => setShowFormPreview(false)}>Close Preview</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {previewPlot && (
+        <div className="modal d-block" style={{ background: "rgba(0,0,0,0.5)" }} onClick={() => setPreviewPlot(null)}>
+          <div className="modal-dialog modal-dialog-centered" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Plot #{previewPlot.plotNumber}</h5>
+                <button className="btn-close" onClick={() => setPreviewPlot(null)}></button>
+              </div>
+              <div className="modal-body">
+                <div className="row g-2 mb-2">
+                  <div className="col-6">
+                    <div className="bg-light rounded p-2 text-center">
+                      <small className="text-muted d-block">Total Area</small>
+                      <span className="fw-bold">{Number(previewPlot.totalArea).toLocaleString()} sqft</span>
+                    </div>
+                  </div>
+                  <div className="col-6">
+                    <div className="bg-light rounded p-2 text-center">
+                      <small className="text-muted d-block">Price / sqft</small>
+                      <span className="fw-bold">₹{Number(previewPlot.pricePerSqft || 0).toLocaleString()}</span>
+                    </div>
+                  </div>
+                  <div className="col-6">
+                    <div className="bg-light rounded p-2 text-center">
+                      <small className="text-muted d-block">Status</small>
+                      <span className="fw-bold text-capitalize" style={{ color: statusColor(previewPlot.status) }}>{previewPlot.status}</span>
+                    </div>
+                  </div>
+                  <div className="col-6">
+                    <div className="bg-light rounded p-2 text-center">
+                      <small className="text-muted d-block">PLC Amount</small>
+                      <span className="fw-bold">₹{Number(previewPlot.plcAmount || 0).toLocaleString()}</span>
+                    </div>
+                  </div>
+                  {previewPlot.facing && (
+                    <div className="col-6">
+                      <div className="bg-light rounded p-2 text-center">
+                        <small className="text-muted d-block">Facing</small>
+                        <span className="fw-bold">{previewPlot.facing}</span>
+                      </div>
+                    </div>
+                  )}
+                  {previewPlot.zoneType && (
+                    <div className="col-6">
+                      <div className="bg-light rounded p-2 text-center">
+                        <small className="text-muted d-block">Zone Type</small>
+                        <span className="fw-bold">{previewPlot.zoneType}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-light" onClick={() => setPreviewPlot(null)}>Close</button>
               </div>
             </div>
           </div>

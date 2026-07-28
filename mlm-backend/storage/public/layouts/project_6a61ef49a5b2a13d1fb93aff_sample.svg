@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg width="200" height="240" viewBox="0 0 200 240" xmlns="http://www.w3.org/2000/svg">
+<svg width="480" height="360" viewBox="0 0 480 360" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <style>
       .plot { cursor: pointer; stroke: #fff; stroke-width: 2; transition: filter 0.2s; }
@@ -12,10 +12,30 @@
     </style>
   </defs>
   <rect width="100%" height="100%" fill="#f8fafc" rx="12" />
-  <text x="100" y="35" text-anchor="middle" style="font-family: sans-serif; font-weight: bold; font-size: 18px; fill: #334155;">test project Site Layout</text>
-  <g class="plot-group" id="plot-group-6a672ff6a10e99c17ed27cd1" data-plot-id="6a672ff6a10e99c17ed27cd1" data-plot-number="138">
+  <text x="240" y="35" text-anchor="middle" style="font-family: sans-serif; font-weight: bold; font-size: 18px; fill: #334155;">test project Site Layout</text>
+  <g class="plot-group" id="plot-group-6a6735af8e7af45af1880dbf" data-plot-id="6a6735af8e7af45af1880dbf" data-plot-number="138">
     <rect id="plot-138" class="plot available" x="40" y="100" width="120" height="100" rx="8" />
     <text x="100" y="145" class="plot-text">138</text>
-    <text x="100" y="165" class="plot-area">0.19 sqft</text>
+    <text x="100" y="165" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a6735bb8e7af45af1880dd0" data-plot-id="6a6735bb8e7af45af1880dd0" data-plot-number="137">
+    <rect id="plot-137" class="plot available" x="180" y="100" width="120" height="100" rx="8" />
+    <text x="240" y="145" class="plot-text">137</text>
+    <text x="240" y="165" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a6737328e7af45af1880e70" data-plot-id="6a6737328e7af45af1880e70" data-plot-number="95">
+    <rect id="plot-95" class="plot available" x="320" y="100" width="120" height="100" rx="8" />
+    <text x="380" y="145" class="plot-text">95</text>
+    <text x="380" y="165" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a6738188e7af45af1880ec4" data-plot-id="6a6738188e7af45af1880ec4" data-plot-number="136">
+    <rect id="plot-136" class="plot available" x="40" y="220" width="120" height="100" rx="8" />
+    <text x="100" y="265" class="plot-text">136</text>
+    <text x="100" y="285" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a6738628e7af45af1880ef8" data-plot-id="6a6738628e7af45af1880ef8" data-plot-number="94">
+    <rect id="plot-94" class="plot available" x="180" y="220" width="120" height="100" rx="8" />
+    <text x="240" y="265" class="plot-text">94</text>
+    <text x="240" y="285" class="plot-area">900 sqft</text>
   </g>
 </svg>

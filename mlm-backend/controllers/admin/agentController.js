@@ -157,4 +157,31 @@ async function rankHistory(req, res) {
   }
 }
 
-module.exports = { index, show, tree, approve, deactivate, activate, rankHistory };
+// PATCH /api/admin/agents/:id/referral-code
+async function updateReferralCode(req, res) {
+  try {
+    const { referral_code } = req.body;
+    if (!referral_code || !referral_code.trim()) {
+      return res.status(422).json({ errors: { referral_code: 'Referral code is required.' } });
+    }
+    const code = referral_code.trim().toUpperCase();
+
+    const agent = await User.findById(req.params.id);
+    if (!agent) return res.status(404).json({ message: 'Agent not found.' });
+
+    const dup = await User.findOne({ referralCode: code, _id: { $ne: agent._id } });
+    if (dup) return res.status(422).json({ errors: { referral_code: 'This code is already in use by another user.' } });
+
+    const oldCode = agent.referralCode;
+    agent.referralCode = code;
+    await agent.save();
+
+    await auditService.log(req, 'agent.referral_code_updated', `Agent ${agent.name} code changed ${oldCode} -> ${code} by ${req.user.name}`, agent);
+
+    return res.json({ message: 'Referral code updated successfully.', data: agent });
+  } catch (err) {
+    return res.status(500).json({ message: 'Failed to update referral code.', error: err.message });
+  }
+}
+
+module.exports = { index, show, tree, approve, deactivate, activate, rankHistory, updateReferralCode };

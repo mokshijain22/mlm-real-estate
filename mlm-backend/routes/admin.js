@@ -63,6 +63,7 @@ router.get('/agents/:id/tree', agentController.tree);
 router.patch('/agents/:id/approve', agentController.approve);
 router.patch('/agents/:id/deactivate', agentController.deactivate);
 router.patch('/agents/:id/activate', agentController.activate);
+router.patch('/agents/:id/referral-code', agentController.updateReferralCode);
 router.get('/agents/:id/rank-history', agentController.rankHistory);
 
 // KYC
@@ -134,19 +135,18 @@ router.post('/sub-admins', subAdminController.store);
 router.patch('/sub-admins/:id', subAdminController.update);
 router.patch('/sub-admins/:id/toggle-status', subAdminController.toggleStatus);
 
-// Reports
-router.use('/reports', requirePermission('reports'));
-router.get('/reports', reportController.overview);
-router.get('/reports/emi-collections', reportController.emiCollections);
-router.get('/reports/emi-collections/export', reportController.emiCollectionsExport);
-router.get('/reports/commissions', reportController.commissions);
-router.get('/reports/commissions/export', reportController.commissionsExport);
-router.get('/reports/agent-earnings', reportController.agentEarnings);
-router.get('/reports/agent-earnings/export', reportController.agentEarningsExport);
-router.get('/reports/project-sales', reportController.projectSales);
-router.get('/reports/project-sales/export', reportController.projectSalesExport);
-router.get('/reports/payouts', reportController.payouts);
-router.get('/reports/payouts/export', reportController.payoutsExport);
+// Reports — split into individually-grantable sub-permissions
+router.get('/reports', requirePermission('reports'), reportController.overview);
+router.get('/reports/emi-collections', requirePermission('reports_emi'), reportController.emiCollections);
+router.get('/reports/emi-collections/export', requirePermission('reports_emi'), reportController.emiCollectionsExport);
+router.get('/reports/commissions', requirePermission('reports_commissions'), reportController.commissions);
+router.get('/reports/commissions/export', requirePermission('reports_commissions'), reportController.commissionsExport);
+router.get('/reports/agent-earnings', requirePermission('reports_agent_earnings'), reportController.agentEarnings);
+router.get('/reports/agent-earnings/export', requirePermission('reports_agent_earnings'), reportController.agentEarningsExport);
+router.get('/reports/project-sales', requirePermission('reports_project_sales'), reportController.projectSales);
+router.get('/reports/project-sales/export', requirePermission('reports_project_sales'), reportController.projectSalesExport);
+router.get('/reports/payouts', requirePermission('reports_payouts'), reportController.payouts);
+router.get('/reports/payouts/export', requirePermission('reports_payouts'), reportController.payoutsExport);
 
 // Settings
 router.use('/settings', restrictTo('super_admin'));

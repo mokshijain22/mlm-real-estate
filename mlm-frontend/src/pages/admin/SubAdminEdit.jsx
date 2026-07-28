@@ -10,7 +10,12 @@ const PERMISSION_OPTIONS = [
   { key: "customers", label: "Customers" },
   { key: "bookings", label: "Bookings" },
   { key: "emis", label: "Installments (EMI)" },
-  { key: "reports", label: "Reports" },
+  { key: "reports", label: "Reports (Overview)" },
+  { key: "reports_emi", label: "Reports — EMI Collections" },
+  { key: "reports_commissions", label: "Reports — Commissions" },
+  { key: "reports_agent_earnings", label: "Reports — Agent Earnings" },
+  { key: "reports_project_sales", label: "Reports — Project Sales" },
+  { key: "reports_payouts", label: "Reports — Payouts" },
   { key: "withdrawals", label: "Withdrawals" },
   { key: "tickets", label: "Support Tickets" },
 ];

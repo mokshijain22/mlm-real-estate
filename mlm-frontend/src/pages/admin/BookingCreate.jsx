@@ -1,6 +1,27 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../../api/axios.js";
+
+const STORAGE_BASE = "http://localhost:5000";
+
+function bookingStatusColor(status) {
+  return status === "available" ? "#10b981" : status === "booked" ? "#f59e0b" : "#ef4444";
+}
+
+function bookingLatLngsToRect(latlngs, imgW, imgH) {
+  const lats = latlngs.map((p) => p[0]);
+  const lngs = latlngs.map((p) => p[1]);
+  const top = 1000 - Math.max(...lats);
+  const bottom = 1000 - Math.min(...lats);
+  const left = Math.min(...lngs);
+  const right = Math.max(...lngs);
+  return {
+    x: (left / 1000) * imgW,
+    y: (top / 1000) * imgH,
+    w: ((right - left) / 1000) * imgW,
+    h: ((bottom - top) / 1000) * imgH,
+  };
+}
 
 function BookingCreate() {
   const navigate = useNavigate();
@@ -9,6 +30,11 @@ function BookingCreate() {
   const [errors, setErrors] = useState({});
 
   const [customers, setCustomers] = useState([]);
+  const [showNewCustomer, setShowNewCustomer] = useState(false);
+  const [newCustomerName, setNewCustomerName] = useState("");
+  const [newCustomerPhone, setNewCustomerPhone] = useState("");
+  const [creatingCustomer, setCreatingCustomer] = useState(false);
+  const [newCustomerError, setNewCustomerError] = useState(null);
   const [projects, setProjects] = useState([]);
   const [agents, setAgents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -20,10 +46,20 @@ function BookingCreate() {
   const [plots, setPlots] = useState([]);
   const [plotsLoading, setPlotsLoading] = useState(false);
 
+  const [mapProject, setMapProject] = useState(null);
+  const [mapPlots, setMapPlots] = useState([]);
+  const [imgNatural, setImgNatural] = useState({ w: 0, h: 0 });
+  const imgRef = useRef(null);
+
   const [selectedPlot, setSelectedPlot] = useState(null); // { area, rate }
   const [bookingAmount, setBookingAmount] = useState(0);
   const [emiMonths, setEmiMonths] = useState(1);
   const [paymentMode, setPaymentMode] = useState("cash");
+  const [transactionId, setTransactionId] = useState("");
+  const [chequeNumber, setChequeNumber] = useState("");
+  const [chequeBankName, setChequeBankName] = useState("");
+  const [paymentDate, setPaymentDate] = useState("");
+  const [paymentTime, setPaymentTime] = useState("");
   const [notes, setNotes] = useState("");
 
   // Purchase Details (applicant info, mirrors the physical booking form)
@@ -61,11 +97,38 @@ function BookingCreate() {
       .finally(() => setLoading(false));
   }, []);
 
+  const handleAddNewCustomer = () => {
+    if (!newCustomerName.trim() || !newCustomerPhone.trim()) {
+      setNewCustomerError("Name aur phone dono zaroori hain.");
+      return;
+    }
+    setCreatingCustomer(true);
+    setNewCustomerError(null);
+    api
+      .post("/admin/customers", { name: newCustomerName.trim(), phone: newCustomerPhone.trim(), status: "active" })
+      .then((res) => {
+        const created = res.data.data || res.data;
+        setCustomers((prev) => [...prev, created]);
+        setCustomerId(created._id);
+        setShowNewCustomer(false);
+        setNewCustomerName("");
+        setNewCustomerPhone("");
+      })
+      .catch((err) => {
+        setNewCustomerError(
+          err.response?.data?.errors ? Object.values(err.response.data.errors).join(", ") : err.response?.data?.message || err.message
+        );
+      })
+      .finally(() => setCreatingCustomer(false));
+  };
+
   const handleProjectChange = (val) => {
     setProjectId(val);
     setPlotId("");
     setSelectedPlot(null);
     setPlots([]);
+    setMapProject(null);
+    setMapPlots([]);
     if (!val) return;
 
     setPlotsLoading(true);
@@ -74,6 +137,17 @@ function BookingCreate() {
       .then((res) => setPlots(res.data))
       .catch((err) => setError(err.response?.data?.message || err.message))
       .finally(() => setPlotsLoading(false));
+
+    api
+      .get(`/admin/projects/${val}/map`)
+      .then((res) => {
+        setMapProject(res.data.project);
+        setMapPlots(res.data.plots || []);
+      })
+      .catch(() => {
+        setMapProject(null);
+        setMapPlots([]);
+      });
   };
 
   const handlePlotChange = (val) => {
@@ -86,6 +160,11 @@ function BookingCreate() {
       setSelectedPlot(null);
       setPlcAmount(0);
     }
+  };
+
+  const handleMapPlotClick = (plot) => {
+    if (plot.status !== "available") return; // booked/sold not selectable
+    handlePlotChange(plot._id);
   };
 
   const totalAmount = selectedPlot ? selectedPlot.area * selectedPlot.rate : 0;
@@ -109,6 +188,11 @@ function BookingCreate() {
       booking_amount: bookingAmount,
       emi_months: emiMonths,
       payment_mode: paymentMode,
+      transaction_id: transactionId,
+      cheque_number: chequeNumber,
+      cheque_bank_name: chequeBankName,
+      payment_date: paymentDate,
+      payment_time: paymentTime,
       notes,
 
       fathers_or_husband_name: fathersOrHusbandName,
@@ -180,6 +264,44 @@ function BookingCreate() {
                       ))}
                     </select>
                     {errors.customer_id && <div className="invalid-feedback">{errors.customer_id}</div>}
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-link px-0"
+                      onClick={() => setShowNewCustomer((v) => !v)}
+                    >
+                      {showNewCustomer ? "Cancel" : "+ Naya customer naam type karke add karo"}
+                    </button>
+                    {showNewCustomer && (
+                      <div className="border rounded p-2 mt-1 bg-light">
+                        {newCustomerError && <div className="alert alert-danger py-1 px-2 small">{newCustomerError}</div>}
+                        <div className="mb-2">
+                          <input
+                            type="text"
+                            className="form-control form-control-sm"
+                            placeholder="Customer ka naam"
+                            value={newCustomerName}
+                            onChange={(e) => setNewCustomerName(e.target.value)}
+                          />
+                        </div>
+                        <div className="mb-2">
+                          <input
+                            type="text"
+                            className="form-control form-control-sm"
+                            placeholder="Phone number"
+                            value={newCustomerPhone}
+                            onChange={(e) => setNewCustomerPhone(e.target.value)}
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-primary"
+                          disabled={creatingCustomer}
+                          onClick={handleAddNewCustomer}
+                        >
+                          {creatingCustomer ? "Adding..." : "Add & Select"}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="col-md-6">
@@ -343,6 +465,53 @@ function BookingCreate() {
                     {errors.plot_id && <div className="invalid-feedback">{errors.plot_id}</div>}
                   </div>
                 </div>
+                {projectId && mapProject?.mapData?.imageUrl && (
+                  <div className="col-12">
+                    <label className="form-label d-block">Digital Map — available plot pe click karke select karo</label>
+                    <div className="d-flex gap-3 mb-2 small">
+                      <span><span className="d-inline-block me-1" style={{ width: 10, height: 10, background: "#10b981", borderRadius: 2 }}></span>Available</span>
+                      <span><span className="d-inline-block me-1" style={{ width: 10, height: 10, background: "#f59e0b", borderRadius: 2 }}></span>Booked</span>
+                      <span><span className="d-inline-block me-1" style={{ width: 10, height: 10, background: "#ef4444", borderRadius: 2 }}></span>Sold</span>
+                    </div>
+                    <div className="card border" style={{ maxHeight: 450, overflow: "auto" }}>
+                      <div style={{ position: "relative", display: "inline-block" }}>
+                        <img
+                          ref={imgRef}
+                          src={`${STORAGE_BASE}/storage/${mapProject.mapData.imageUrl}`}
+                          alt="Project layout"
+                          style={{ maxWidth: "100%", display: "block" }}
+                          onLoad={(e) => setImgNatural({ w: e.target.naturalWidth, h: e.target.naturalHeight })}
+                        />
+                        {imgNatural.w > 0 &&
+                          mapPlots
+                            .filter((p) => p.mapCoordinates?.latlngs)
+                            .map((p) => {
+                              const r = bookingLatLngsToRect(p.mapCoordinates.latlngs, imgNatural.w, imgNatural.h);
+                              const scale = imgRef.current ? imgRef.current.clientWidth / imgNatural.w : 1;
+                              const selectable = p.status === "available";
+                              const isSelected = p._id === plotId;
+                              return (
+                                <div
+                                  key={p._id}
+                                  onClick={() => handleMapPlotClick(p)}
+                                  title={`Plot #${p.plotNumber} — ${p.status}`}
+                                  style={{
+                                    position: "absolute",
+                                    left: r.x * scale,
+                                    top: r.y * scale,
+                                    width: r.w * scale,
+                                    height: r.h * scale,
+                                    border: isSelected ? "2.5px solid #2563eb" : `1.5px solid ${bookingStatusColor(p.status)}`,
+                                    background: isSelected ? "#2563eb55" : `${bookingStatusColor(p.status)}33`,
+                                    cursor: selectable ? "pointer" : "not-allowed",
+                                  }}
+                                />
+                              );
+                            })}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="row mb-4 bg-light p-3 rounded mx-0">
@@ -505,12 +674,81 @@ function BookingCreate() {
                       onChange={(e) => setPaymentMode(e.target.value)}
                       required
                     >
-                      <option value="cash">Cash (PV)</option>
-                      <option value="online">Online (BV)</option>
+                      <option value="cash">Cash</option>
+                      <option value="online">Online</option>
+                      <option value="cheque">Cheque</option>
                     </select>
                     {errors.payment_mode && <div className="invalid-feedback">{errors.payment_mode}</div>}
                   </div>
                 </div>
+
+                {paymentMode === "online" && (
+                  <div className="col-md-4">
+                    <div className="mb-3">
+                      <label className="form-label">Transaction ID</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={transactionId}
+                        onChange={(e) => setTransactionId(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {paymentMode === "cheque" && (
+                  <>
+                    <div className="col-md-4">
+                      <div className="mb-3">
+                        <label className="form-label">Cheque Number</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          value={chequeNumber}
+                          onChange={(e) => setChequeNumber(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="col-md-4">
+                      <div className="mb-3">
+                        <label className="form-label">Bank Name</label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          value={chequeBankName}
+                          onChange={(e) => setChequeBankName(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {paymentMode === "cash" && (
+                  <>
+                    <div className="col-md-4">
+                      <div className="mb-3">
+                        <label className="form-label">Payment Date</label>
+                        <input
+                          type="date"
+                          className="form-control"
+                          value={paymentDate}
+                          onChange={(e) => setPaymentDate(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="col-md-4">
+                      <div className="mb-3">
+                        <label className="form-label">Payment Time</label>
+                        <input
+                          type="time"
+                          className="form-control"
+                          value={paymentTime}
+                          onChange={(e) => setPaymentTime(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
 
               <div className="row mb-4 bg-info-subtle p-3 rounded mx-0">

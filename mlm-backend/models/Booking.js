@@ -16,7 +16,12 @@ const bookingSchema = new mongoose.Schema(
     remainingAmount: { type: Number, required: true },
     emiMonths: { type: Number, required: true },
     emiAmount: { type: Number, required: true },
-    paymentMode: { type: String, enum: ['cash', 'online'], required: true },
+    paymentMode: { type: String, enum: ['cash', 'online', 'cheque'], required: true },
+    transactionId: { type: String, default: null }, // for online payments
+    chequeNumber: { type: String, default: null }, // for cheque payments
+    chequeBankName: { type: String, default: null },
+    paymentDate: { type: Date, default: null },
+    paymentTime: { type: String, default: null }, // e.g. "14:30", mainly for cash
     status: { type: String, enum: ['active', 'completed', 'cancelled'], default: 'active' },
 
     // agent approval flow

@@ -54,7 +54,10 @@ async function store(req, res) {
     const project = await Project.findById(req.params.projectId);
     if (!project) return res.status(404).json({ message: 'Project not found.' });
 
-    const { plot_number, total_area, price_per_sqft, plc_amount, status } = req.body;
+    const {
+      plot_number, total_area, price_per_sqft, plc_amount, status,
+      facing, zone_type, corner_plot, boundary_n, boundary_s, boundary_e, boundary_w,
+    } = req.body;
     const remainingArea = await getRemainingArea(project);
 
     const errors = {};
@@ -80,6 +83,13 @@ async function store(req, res) {
       pricePerSqft: price_per_sqft,
       plcAmount: plc_amount || 0,
       status,
+      facing: facing || '',
+      zoneType: zone_type || '',
+      cornerPlot: corner_plot || '',
+      boundaryN: boundary_n || '',
+      boundaryS: boundary_s || '',
+      boundaryE: boundary_e || '',
+      boundaryW: boundary_w || '',
       createdBy: req.user._id,
     });
 
@@ -121,7 +131,10 @@ async function update(req, res) {
     const plot = await Plot.findOne({ _id: req.params.plotId, project: project._id });
     if (!plot) return res.status(404).json({ message: 'Plot not found.' });
 
-    const { plot_number, total_area, price_per_sqft, plc_amount, status } = req.body;
+    const {
+      plot_number, total_area, price_per_sqft, plc_amount, status,
+      facing, zone_type, corner_plot, boundary_n, boundary_s, boundary_e, boundary_w,
+    } = req.body;
     const remainingArea = await getRemainingArea(project, plot._id);
 
     const errors = {};
@@ -149,6 +162,13 @@ async function update(req, res) {
     plot.pricePerSqft = price_per_sqft;
     plot.plcAmount = plc_amount || 0;
     plot.status = status;
+    plot.facing = facing || '';
+    plot.zoneType = zone_type || '';
+    plot.cornerPlot = corner_plot || '';
+    plot.boundaryN = boundary_n || '';
+    plot.boundaryS = boundary_s || '';
+    plot.boundaryE = boundary_e || '';
+    plot.boundaryW = boundary_w || '';
     await plot.save();
 
     await plotMapGenerator.sync(project);

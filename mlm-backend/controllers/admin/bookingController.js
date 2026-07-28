@@ -98,7 +98,7 @@ async function store(req, res) {
   if (price_per_sqft === undefined || Number(price_per_sqft) < 0) errors.price_per_sqft = 'Valid price per sqft is required.';
   if (booking_amount === undefined || Number(booking_amount) < 0) errors.booking_amount = 'Valid booking amount is required.';
   if (!emi_months || emi_months < 1 || emi_months > 360) errors.emi_months = 'EMI months must be between 1 and 360.';
-  if (!payment_mode || !['cash', 'online'].includes(payment_mode)) errors.payment_mode = 'Invalid payment mode.';
+  if (!payment_mode || !['cash', 'online', 'cheque'].includes(payment_mode)) errors.payment_mode = 'Invalid payment mode.';
   if (Object.keys(errors).length) return res.status(422).json({ errors });
 
   const plot = await Plot.findById(plot_id);
