@@ -66,6 +66,7 @@ async function team(req, res) {
     teamByRank,
     allRanks,
     treeData,
+    totalTeamMembers: downlineIds.length,
   });
 }
 

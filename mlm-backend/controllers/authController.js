@@ -19,8 +19,18 @@ function signToken(userId) {
   });
 }
 
-function generateReferralCode() {
-  return 'AG' + crypto.randomBytes(4).toString('hex').toUpperCase().slice(0, 6);
+async function generateReferralCode() {
+  const PREFIX = 'GK-';
+  const START = 1001;
+  const lastUser = await User.findOne({ referralCode: new RegExp(`^${PREFIX}\\d+$`) })
+    .sort({ referralCode: -1 })
+    .collation({ locale: 'en_US', numericOrdering: true });
+  let nextNumber = START;
+  if (lastUser) {
+    const lastNumber = parseInt(lastUser.referralCode.replace(PREFIX, ''), 10);
+    if (!isNaN(lastNumber)) nextNumber = lastNumber + 1;
+  }
+  return `${PREFIX}${nextNumber}`;
 }
 
 // POST /api/auth/register
@@ -75,7 +85,7 @@ async function register(req, res) {
     // --- unique referral code generation ---
     let newReferralCode;
     do {
-      newReferralCode = generateReferralCode();
+      newReferralCode = await generateReferralCode();
       // eslint-disable-next-line no-await-in-loop
     } while (await User.findOne({ referralCode: newReferralCode }));
 

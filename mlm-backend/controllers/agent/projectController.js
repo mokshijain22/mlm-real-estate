@@ -4,8 +4,15 @@ const plotMapGenerator = require('../../services/plotMapGenerator');
 
 // GET /api/agent/projects
 async function index(req, res) {
-  const projects = await Project.find({ status: 'active' }).sort({ _id: -1 });
-  return res.json({ projects });
+  const projects = await Project.find({ status: 'active' }).sort({ _id: -1 }).lean();
+  const counts = await Plot.aggregate([
+    { $match: { project: { $in: projects.map((p) => p._id) } } },
+    { $group: { _id: '$project', count: { $sum: 1 } } },
+  ]);
+  const countMap = {};
+  counts.forEach((c) => (countMap[c._id.toString()] = c.count));
+  const withCounts = projects.map((p) => ({ ...p, plotsCount: countMap[p._id.toString()] || 0 }));
+  return res.json({ projects: withCounts });
 }
 
 // GET /api/agent/projects/:id
