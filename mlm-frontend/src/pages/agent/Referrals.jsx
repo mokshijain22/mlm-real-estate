@@ -20,7 +20,7 @@ function Referrals() {
   if (error) return <div className="alert alert-danger border-0 shadow-sm">{error}</div>;
   if (!data) return <div className="text-center py-5">Loading...</div>;
 
-  const { agent, directReferrals, totalTeam, activeMembers, pendingKyc, eligibleRanks } = data;
+  const { agent, directReferrals, totalTeam, activeMembers, pendingKyc, eligibleRanks, kycVerified } = data;
   const referralLink = `${window.location.origin}/register?ref=${agent.referralCode}`;
 
   const handleCopy = () => {
@@ -37,14 +37,24 @@ function Referrals() {
       <div className="card border-0 shadow-sm mb-4">
         <div className="card-body p-4">
           <h6 className="fw-bold mb-2">Your Referral Link</h6>
-          <div className="input-group">
-            <input type="text" className="form-control" value={referralLink} readOnly />
-            <button className="btn btn-outline-primary fw-bold" onClick={handleCopy}>
-              {copied ? "Copied!" : "Copy"}
-            </button>
-          </div>
 
-          {eligibleRanks?.length > 0 && (
+          {!kycVerified ? (
+            <div className="alert alert-warning border-0 mb-0 d-flex justify-content-between align-items-center flex-wrap gap-2">
+              <span>Complete your KYC verification to unlock your referral link.</span>
+              <a href="/agent/kyc" className="btn btn-sm btn-warning fw-bold">
+                Complete KYC Now
+              </a>
+            </div>
+          ) : (
+            <div className="input-group">
+              <input type="text" className="form-control" value={referralLink} readOnly />
+              <button className="btn btn-outline-primary fw-bold" onClick={handleCopy}>
+                {copied ? "Copied!" : "Copy"}
+              </button>
+            </div>
+          )}
+
+          {kycVerified && eligibleRanks?.length > 0 && (
             <div className="mt-4">
               <h6 className="fw-bold fs-13 text-muted mb-2">Rank-wise Referral Links</h6>
               <p className="text-muted fs-13 mb-3">

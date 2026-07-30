@@ -93,4 +93,18 @@ async function update(req, res) {
   }
 }
 
-module.exports = { index, update };
+// GET /api/settings/public — no auth, used by login/register pages
+async function publicSettings(req, res) {
+  try {
+    const logo = await settingService.get('site_logo');
+    const title = await settingService.get('site_title');
+    return res.json({
+      site_logo: logo || null,
+      site_title: title || 'MLM Real Estate',
+    });
+  } catch (err) {
+    return res.status(500).json({ message: 'Failed to fetch settings.', error: err.message });
+  }
+}
+
+module.exports = { index, update, publicSettings };

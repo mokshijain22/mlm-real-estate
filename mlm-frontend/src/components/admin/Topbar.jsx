@@ -38,7 +38,7 @@ function Topbar() {
             </div>
 
             <div className="topbar-item">
-              <h4 className="fw-bold topbar-button pe-none text-uppercase mb-0">Admin Panel</h4>
+              <h4 className="topbar-panel-title fw-bold topbar-button pe-none text-uppercase mb-0">Admin Panel</h4>
             </div>
           </div>
 

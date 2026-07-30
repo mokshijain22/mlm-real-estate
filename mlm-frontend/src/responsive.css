@@ -1,0 +1,152 @@
+/* Responsive additions for screens that share the dashboard shell. */
+html,
+body,
+#root {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+img,
+svg,
+canvas {
+  max-width: 100%;
+}
+
+.page-content {
+  min-width: 0;
+}
+
+.page-content .container-fluid {
+  min-width: 0;
+}
+
+/* Keep data usable on narrow screens: tables scroll inside their card. */
+.table-responsive {
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 767.98px) {
+  :root {
+    --bs-topbar-height: 72px;
+  }
+
+  .container-fluid,
+  .container-sm,
+  .container-md,
+  .container-lg,
+  .container-xl,
+  .container-xxl {
+    max-width: 100%;
+  }
+
+  .page-content {
+    padding-bottom: 1.5rem;
+  }
+
+  .page-content > .container-fluid {
+    padding-right: .75rem;
+    padding-left: .75rem;
+  }
+
+  .topbar .navbar-header {
+    min-width: 0;
+  }
+
+  .topbar .topbar-button {
+    padding-right: .4rem;
+    padding-left: .4rem;
+  }
+
+  .page-title-box,
+  .page-content .card-header.d-flex,
+  .page-content .card-body.d-flex,
+  .page-content .card-footer.d-flex {
+    gap: .75rem;
+    flex-wrap: wrap;
+  }
+
+  .page-title-box > .d-flex,
+  .page-content .card-header.d-flex > .d-flex,
+  .page-content .card-body.d-flex > .d-flex,
+  .page-content .card-footer.d-flex > .d-flex {
+    flex-wrap: wrap;
+  }
+
+  .page-title-box > .d-flex {
+    width: 100%;
+  }
+
+  .page-content .nav-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .page-content .nav-tabs .nav-link {
+    padding-right: .7rem;
+    padding-left: .7rem;
+  }
+
+  .page-content .card-body > table {
+    display: block;
+    width: max-content;
+    min-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .page-content .table-responsive > .table {
+    min-width: 620px;
+  }
+
+  .page-content .btn-group {
+    max-width: 100%;
+  }
+
+  .page-content .btn-group .btn {
+    white-space: nowrap;
+  }
+
+  .org-tree-scroll {
+    padding: 1rem !important;
+  }
+
+  .org-children {
+    gap: 1rem !important;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .topbar-panel-title {
+    display: none;
+  }
+
+  .page-content .row {
+    --bs-gutter-x: 1rem;
+  }
+
+  .page-content h3,
+  .page-content .h3 {
+    font-size: 1.25rem;
+  }
+
+  .page-content .card-body {
+    padding: 1rem;
+  }
+
+  .page-content .card-body.p-0 {
+    padding: 0;
+  }
+
+  .page-content .page-title-box .btn,
+  .page-content .card-header .btn,
+  .page-content .card-body > .d-flex .btn {
+    white-space: nowrap;
+  }
+
+  .page-content .modal-dialog {
+    margin: .5rem;
+  }
+}

@@ -206,9 +206,22 @@ function Customers() {
                         </span>
                       </td>
                       <td>
-                        <Link to={`/agent/customers/${c._id}`} className="btn btn-sm btn-outline-primary">
-                          View
-                        </Link>
+                        <div className="d-flex gap-2">
+                          <Link
+                            to={`/agent/customers/${c._id}`}
+                            className="btn btn-sm btn-light border"
+                            title="View customer"
+                          >
+                            <iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>
+                          </Link>
+                          <Link
+                            to={`/agent/bookings/new?customer_id=${c._id}`}
+                            className="btn btn-sm btn-success-subtle text-success border-0"
+                            title="Book plot for this customer"
+                          >
+                            <iconify-icon icon="solar:cart-large-2-bold-duotone"></iconify-icon>
+                          </Link>
+                        </div>
                       </td>
                     </tr>
                   ))}

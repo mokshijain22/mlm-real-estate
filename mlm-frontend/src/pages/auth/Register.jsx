@@ -21,6 +21,7 @@ function Register() {
   const [errors, setErrors] = useState([]);
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
+  const [logo, setLogo] = useState(null);
 
   useEffect(() => {
     if (!referralCode) return;
@@ -31,6 +32,17 @@ function Register() {
       })
       .catch(() => {});
   }, [referralCode]);
+
+  useEffect(() => {
+    api
+      .get("/auth/settings/public")
+      .then((res) => {
+        if (res.data.site_logo) {
+          setLogo(`http://localhost:5000/storage/${res.data.site_logo}`);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   function handleChange(e) {
     const { name, value, type, checked } = e.target;
@@ -79,12 +91,20 @@ function Register() {
               <div className="col-lg-7 py-lg-5">
                 <div className="d-flex flex-column h-100 justify-content-center">
                   <div className="auth-logo mb-4">
-                    <a href="/" className="logo-dark">
-                      <span className="fw-bold fs-24">MLM Real Estate</span>
-                    </a>
-                    <a href="/" className="logo-light">
-                      <span className="fw-bold fs-24 text-white">MLM Real Estate</span>
-                    </a>
+                    {logo ? (
+                      <a href="/">
+                        <img src={logo} alt="Logo" style={{ maxHeight: "40px" }} />
+                      </a>
+                    ) : (
+                      <>
+                        <a href="/" className="logo-dark">
+                          <span className="fw-bold fs-24">MLM Real Estate</span>
+                        </a>
+                        <a href="/" className="logo-light">
+                          <span className="fw-bold fs-24 text-white">MLM Real Estate</span>
+                        </a>
+                      </>
+                    )}
                   </div>
 
                   <h2 className="fw-bold fs-24">Create Account</h2>

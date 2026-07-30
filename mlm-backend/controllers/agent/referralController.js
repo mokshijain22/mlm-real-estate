@@ -31,6 +31,7 @@ async function index(req, res) {
     activeMembers,
     pendingKyc,
     eligibleRanks,
+    kycVerified: agent.isKycVerified,
   });
 }
 

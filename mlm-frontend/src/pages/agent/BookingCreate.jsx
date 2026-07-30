@@ -10,6 +10,13 @@ function BookingCreate() {
   const [error, setError] = useState(null);
   const [customers, setCustomers] = useState([]);
   const [plots, setPlots] = useState([]);
+  const [showNewCustomer, setShowNewCustomer] = useState(false);
+  const [newCustomer, setNewCustomer] = useState({
+    name: "", email: "", phone: "", alternate_phone: "",
+    address: "", city: "", state: "", pincode: "", aadhaar_number: "", pan_number: "",
+  });
+  const [newCustomerErrors, setNewCustomerErrors] = useState({});
+  const [creatingCustomer, setCreatingCustomer] = useState(false);
 
   const [form, setForm] = useState({
     customer_id: searchParams.get("customer_id") || "",
@@ -50,6 +57,33 @@ function BookingCreate() {
       }
       return next;
     });
+  };
+
+  const handleNewCustomerChange = (e) => setNewCustomer({ ...newCustomer, [e.target.name]: e.target.value });
+
+  const handleAddNewCustomer = () => {
+    setCreatingCustomer(true);
+    setNewCustomerErrors({});
+    api
+      .post("/agent/customers", newCustomer)
+      .then((res) => {
+        const created = res.data.data || res.data.customer || res.data;
+        setCustomers((prev) => [...prev, created]);
+        setForm((f) => ({ ...f, customer_id: created._id }));
+        setShowNewCustomer(false);
+        setNewCustomer({
+          name: "", email: "", phone: "", alternate_phone: "",
+          address: "", city: "", state: "", pincode: "", aadhaar_number: "", pan_number: "",
+        });
+      })
+      .catch((err) => {
+        if (err.response?.status === 422 && err.response.data.errors) {
+          setNewCustomerErrors(err.response.data.errors);
+        } else {
+          setError(err.response?.data?.message || err.message);
+        }
+      })
+      .finally(() => setCreatingCustomer(false));
   };
 
   const totalAmount =
@@ -108,7 +142,138 @@ function BookingCreate() {
                     ))}
                   </select>
                   {fieldErrors.customer_id && <div className="invalid-feedback">{fieldErrors.customer_id}</div>}
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-link px-0"
+                    onClick={() => setShowNewCustomer((v) => !v)}
+                  >
+                    {showNewCustomer ? "Cancel" : "+ Add New Customer here"}
+                  </button>
                 </div>
+
+                {showNewCustomer && (
+                  <div className="col-12 mb-3">
+                    <div className="border rounded p-3 bg-light">
+                      <h6 className="fw-bold mb-3">New Customer</h6>
+                      <div className="row">
+                        <div className="col-md-6 mb-3">
+                          <label className="form-label fw-semibold">Name *</label>
+                          <input
+                            type="text"
+                            name="name"
+                            className={`form-control ${newCustomerErrors.name ? "is-invalid" : ""}`}
+                            value={newCustomer.name}
+                            onChange={handleNewCustomerChange}
+                          />
+                          {newCustomerErrors.name && <div className="invalid-feedback">{newCustomerErrors.name}</div>}
+                        </div>
+                        <div className="col-md-6 mb-3">
+                          <label className="form-label fw-semibold">Phone *</label>
+                          <input
+                            type="text"
+                            name="phone"
+                            className={`form-control ${newCustomerErrors.phone ? "is-invalid" : ""}`}
+                            value={newCustomer.phone}
+                            onChange={handleNewCustomerChange}
+                          />
+                          {newCustomerErrors.phone && <div className="invalid-feedback">{newCustomerErrors.phone}</div>}
+                        </div>
+                        <div className="col-md-6 mb-3">
+                          <label className="form-label fw-semibold">Email</label>
+                          <input
+                            type="email"
+                            name="email"
+                            className={`form-control ${newCustomerErrors.email ? "is-invalid" : ""}`}
+                            value={newCustomer.email}
+                            onChange={handleNewCustomerChange}
+                          />
+                          {newCustomerErrors.email && <div className="invalid-feedback">{newCustomerErrors.email}</div>}
+                        </div>
+                        <div className="col-md-6 mb-3">
+                          <label className="form-label fw-semibold">Alternate Phone</label>
+                          <input
+                            type="text"
+                            name="alternate_phone"
+                            className="form-control"
+                            value={newCustomer.alternate_phone}
+                            onChange={handleNewCustomerChange}
+                          />
+                        </div>
+                        <div className="col-md-12 mb-3">
+                          <label className="form-label fw-semibold">Address</label>
+                          <input
+                            type="text"
+                            name="address"
+                            className="form-control"
+                            value={newCustomer.address}
+                            onChange={handleNewCustomerChange}
+                          />
+                        </div>
+                        <div className="col-md-4 mb-3">
+                          <label className="form-label fw-semibold">City</label>
+                          <input
+                            type="text"
+                            name="city"
+                            className="form-control"
+                            value={newCustomer.city}
+                            onChange={handleNewCustomerChange}
+                          />
+                        </div>
+                        <div className="col-md-4 mb-3">
+                          <label className="form-label fw-semibold">State</label>
+                          <input
+                            type="text"
+                            name="state"
+                            className="form-control"
+                            value={newCustomer.state}
+                            onChange={handleNewCustomerChange}
+                          />
+                        </div>
+                        <div className="col-md-4 mb-3">
+                          <label className="form-label fw-semibold">Pincode</label>
+                          <input
+                            type="text"
+                            name="pincode"
+                            className={`form-control ${newCustomerErrors.pincode ? "is-invalid" : ""}`}
+                            value={newCustomer.pincode}
+                            onChange={handleNewCustomerChange}
+                          />
+                          {newCustomerErrors.pincode && <div className="invalid-feedback">{newCustomerErrors.pincode}</div>}
+                        </div>
+                        <div className="col-md-6 mb-3">
+                          <label className="form-label fw-semibold">Aadhaar Number</label>
+                          <input
+                            type="text"
+                            name="aadhaar_number"
+                            className={`form-control ${newCustomerErrors.aadhaar_number ? "is-invalid" : ""}`}
+                            value={newCustomer.aadhaar_number}
+                            onChange={handleNewCustomerChange}
+                          />
+                          {newCustomerErrors.aadhaar_number && <div className="invalid-feedback">{newCustomerErrors.aadhaar_number}</div>}
+                        </div>
+                        <div className="col-md-6 mb-3">
+                          <label className="form-label fw-semibold">PAN Number</label>
+                          <input
+                            type="text"
+                            name="pan_number"
+                            className={`form-control text-uppercase ${newCustomerErrors.pan_number ? "is-invalid" : ""}`}
+                            value={newCustomer.pan_number}
+                            onChange={handleNewCustomerChange}
+                          />
+                          {newCustomerErrors.pan_number && <div className="invalid-feedback">{newCustomerErrors.pan_number}</div>}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-primary"
+                        disabled={creatingCustomer}
+                        onClick={handleAddNewCustomer}
+                      >
+                        {creatingCustomer ? "Adding..." : "Add & Select Customer"}
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 <div className="col-md-6 mb-3">
                   <label className="form-label fw-semibold">Plot</label>

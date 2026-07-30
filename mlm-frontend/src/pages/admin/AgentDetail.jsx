@@ -155,43 +155,7 @@ function AgentDetail() {
                     </tr>
                     <tr>
                       <td className="text-muted">Referral Code</td>
-                      <td className="fw-medium">
-                        {editingCode ? (
-                          <div>
-                            {codeError && <div className="text-danger small mb-1">{codeError}</div>}
-                            <div className="d-flex gap-2">
-                              <input
-                                type="text"
-                                className="form-control form-control-sm"
-                                style={{ maxWidth: 160 }}
-                                placeholder="e.g. GK-1005"
-                                value={newCode}
-                                onChange={(e) => setNewCode(e.target.value)}
-                              />
-                              <button className="btn btn-sm btn-primary" disabled={savingCode} onClick={handleSaveCode}>
-                                {savingCode ? "Saving..." : "Save"}
-                              </button>
-                              <button className="btn btn-sm btn-light" onClick={() => setEditingCode(false)}>
-                                Cancel
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <>
-                            {agent.referralCode || "-"}{" "}
-                            <button
-                              className="btn btn-sm btn-link px-1"
-                              onClick={() => {
-                                setNewCode(agent.referralCode || "");
-                                setEditingCode(true);
-                                setCodeError(null);
-                              }}
-                            >
-                              Edit
-                            </button>
-                          </>
-                        )}
-                      </td>
+                      <td className="fw-medium">{agent.referralCode || "-"}</td>
                     </tr>
                     <tr>
                       <td className="text-muted">Referred By</td>
