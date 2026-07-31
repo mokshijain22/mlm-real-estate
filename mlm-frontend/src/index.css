@@ -100,3 +100,10 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+#mobile-sidebar-overlay {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+html.sidebar-enable #mobile-sidebar-overlay {
+  display: block !important;
+}

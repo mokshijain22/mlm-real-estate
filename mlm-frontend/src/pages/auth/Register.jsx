@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../../api/axios.js";
+import "./new-login.css";
 
 function Register() {
   const navigate = useNavigate();
@@ -83,190 +84,234 @@ function Register() {
   }
 
   return (
-    <div className="d-flex flex-column min-vh-100 p-3" style={{ backgroundColor: "var(--bs-body-bg)" }}>
-      <div className="d-flex flex-column flex-grow-1">
-        <div className="row h-100">
-          <div className="col-xxl-7">
-            <div className="row justify-content-center h-100">
-              <div className="col-lg-7 py-lg-5">
-                <div className="d-flex flex-column h-100 justify-content-center">
-                  <div className="auth-logo mb-4">
-                    {logo ? (
-                      <a href="/">
-                        <img src={logo} alt="Logo" style={{ maxHeight: "40px" }} />
-                      </a>
-                    ) : (
-                      <>
-                        <a href="/" className="logo-dark">
-                          <span className="fw-bold fs-24">MLM Real Estate</span>
-                        </a>
-                        <a href="/" className="logo-light">
-                          <span className="fw-bold fs-24 text-white">MLM Real Estate</span>
-                        </a>
-                      </>
-                    )}
-                  </div>
+    <div className="new-login-page">
+      {/* LEFT SIDE — video background */}
+      <div className="new-login-left d-none d-lg-flex">
+        <video
+          className="new-login-video"
+          src="/videos/login-bg.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+        />
+        <div className="new-login-overlay"></div>
 
-                  <h2 className="fw-bold fs-24">Create Account</h2>
+        <div className="new-login-left-content">
+          <div className="new-login-logo">
+            {logo ? (
+              <img src={logo} alt="Logo" style={{ maxHeight: "40px" }} />
+            ) : (
+              <>
+                <div className="new-login-logo-icon">
+                  <iconify-icon icon="solar:buildings-2-bold"></iconify-icon>
+                </div>
+                <div>
+                  <div className="new-login-logo-text">MLM REAL ESTATE</div>
+                  <div className="new-login-logo-tagline">FIND • INVEST • GROW</div>
+                </div>
+              </>
+            )}
+          </div>
 
-                  <p className="text-muted mt-1 mb-4">
-                    {referrerName
-                      ? `You're joining via ${referrerName}'s referral link.`
-                      : "Fill in your details to register as an agent."}
-                  </p>
+          <div className="new-login-hero">
+            <h1 className="new-login-hero-greeting">Join Us Today</h1>
+            <h1 className="new-login-hero-title">
+              Start Your <span className="text-accent">Real Estate</span> Journey
+            </h1>
+            <p className="new-login-hero-sub">
+              {referrerName
+                ? `You're joining via ${referrerName}'s referral link.`
+                : "Create your agent account and grow with us."}
+            </p>
 
-                  <div className="mb-5">
-                    <form className="authentication-form" onSubmit={handleSubmit}>
-                      {successMsg && <div className="alert alert-success mb-3">{successMsg}</div>}
-                      {errors.length > 0 && (
-                        <div className="alert alert-danger mb-3">
-                          <ul className="mb-0">
-                            {errors.map((err, i) => (
-                              <li key={i}>{err}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-
-                      <div className="mb-3">
-                        <label className="form-label" htmlFor="reg-name">
-                          Full Name
-                        </label>
-                        <input
-                          type="text"
-                          id="reg-name"
-                          name="name"
-                          className="form-control"
-                          placeholder="Enter your full name"
-                          value={form.name}
-                          onChange={handleChange}
-                          required
-                        />
-                      </div>
-
-                      <div className="mb-3">
-                        <label className="form-label" htmlFor="reg-email">
-                          Email
-                        </label>
-                        <input
-                          type="email"
-                          id="reg-email"
-                          name="email"
-                          className="form-control"
-                          placeholder="Enter your email"
-                          value={form.email}
-                          onChange={handleChange}
-                          required
-                        />
-                      </div>
-
-                      <div className="mb-3">
-                        <label className="form-label" htmlFor="reg-phone">
-                          Phone
-                        </label>
-                        <input
-                          type="text"
-                          id="reg-phone"
-                          name="phone"
-                          className="form-control"
-                          placeholder="10-15 digit phone number"
-                          value={form.phone}
-                          onChange={handleChange}
-                          required
-                        />
-                      </div>
-
-                      <div className="mb-3">
-                        <label className="form-label" htmlFor="reg-pan">
-                          PAN Number
-                        </label>
-                        <input
-                          type="text"
-                          id="reg-pan"
-                          name="pan_number"
-                          className="form-control text-uppercase"
-                          placeholder="ABCDE1234F"
-                          value={form.pan_number}
-                          onChange={handleChange}
-                          maxLength={10}
-                          required
-                        />
-                      </div>
-
-                      <div className="mb-3">
-                        <label className="form-label" htmlFor="reg-password">
-                          Password
-                        </label>
-                        <input
-                          type="password"
-                          id="reg-password"
-                          name="password"
-                          className="form-control"
-                          placeholder="Minimum 8 characters"
-                          value={form.password}
-                          onChange={handleChange}
-                          required
-                        />
-                      </div>
-
-                      <div className="mb-3">
-                        <label className="form-label" htmlFor="reg-password-confirm">
-                          Confirm Password
-                        </label>
-                        <input
-                          type="password"
-                          id="reg-password-confirm"
-                          name="password_confirmation"
-                          className="form-control"
-                          placeholder="Re-enter your password"
-                          value={form.password_confirmation}
-                          onChange={handleChange}
-                          required
-                        />
-                      </div>
-
-                      <div className="mb-3">
-                        <div className="form-check">
-                          <input
-                            type="checkbox"
-                            className="form-check-input"
-                            id="reg-terms"
-                            name="terms"
-                            checked={form.terms}
-                            onChange={handleChange}
-                            required
-                          />
-                          <label className="form-check-label" htmlFor="reg-terms">
-                            I agree to the Terms &amp; Conditions
-                          </label>
-                        </div>
-                      </div>
-
-                      <div className="mb-1 text-center d-grid">
-                        <button className="btn btn-soft-primary" type="submit" disabled={loading}>
-                          {loading ? "Creating Account..." : "Create Account"}
-                        </button>
-                      </div>
-
-                      <div className="text-center mt-3">
-                        <p className="text-muted mb-0">
-                          Already have an account? <a href="/login">Sign In</a>
-                        </p>
-                      </div>
-                    </form>
-                  </div>
+            <div className="new-login-features">
+              <div className="new-login-feature">
+                <div className="new-login-feature-icon">
+                  <iconify-icon icon="solar:home-2-bold"></iconify-icon>
+                </div>
+                <div>
+                  <div className="new-login-feature-title">Verified Properties</div>
+                  <div className="new-login-feature-sub">100% verified &amp; trusted listings</div>
+                </div>
+              </div>
+              <div className="new-login-feature">
+                <div className="new-login-feature-icon">
+                  <iconify-icon icon="solar:hand-shake-bold"></iconify-icon>
+                </div>
+                <div>
+                  <div className="new-login-feature-title">Best Deals</div>
+                  <div className="new-login-feature-sub">Exclusive offers for you</div>
+                </div>
+              </div>
+              <div className="new-login-feature">
+                <div className="new-login-feature-icon">
+                  <iconify-icon icon="solar:shield-check-bold"></iconify-icon>
+                </div>
+                <div>
+                  <div className="new-login-feature-title">Secure &amp; Private</div>
+                  <div className="new-login-feature-sub">Your data is safe with us</div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="col-xxl-5 d-none d-xxl-flex">
-            <div className="card h-100 mb-0 overflow-hidden">
-              <div className="d-flex flex-column h-100">
-                <img src="/images/small/img-10.jpg" alt="" className="w-100 h-100" />
-              </div>
+          <div className="new-login-trust">
+            <iconify-icon icon="solar:shield-check-bold"></iconify-icon>
+            <span>Trusted by 10,000+ users across India</span>
+          </div>
+        </div>
+      </div>
+
+      {/* RIGHT SIDE — form */}
+      <div className="new-login-right">
+        <div className="new-login-card new-register-card">
+          <div className="new-login-card-header">
+            <div>
+              <h2 className="new-login-card-title">Create Account</h2>
+              <p className="new-login-card-sub">
+                {referrerName
+                  ? `Joining via ${referrerName}'s referral link`
+                  : "Register as an agent to get started"}
+              </p>
+            </div>
+            <div className="new-login-card-icon">
+              <iconify-icon icon="solar:buildings-3-bold-duotone"></iconify-icon>
             </div>
           </div>
+
+          {successMsg && <div className="alert alert-success mb-3">{successMsg}</div>}
+          {errors.length > 0 && (
+            <div className="alert alert-danger mb-3">
+              <ul className="mb-0">
+                {errors.map((err, i) => (
+                  <li key={i}>{err}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit}>
+            <div className="new-login-field">
+              <label className="new-login-label">Full Name</label>
+              <div className="new-login-input-wrap">
+                <iconify-icon icon="solar:user-linear" className="new-login-input-icon"></iconify-icon>
+                <input
+                  type="text"
+                  name="name"
+                  className="new-login-input"
+                  placeholder="Enter your full name"
+                  value={form.name}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="new-login-field">
+              <label className="new-login-label">Email Address</label>
+              <div className="new-login-input-wrap">
+                <iconify-icon icon="solar:letter-linear" className="new-login-input-icon"></iconify-icon>
+                <input
+                  type="email"
+                  name="email"
+                  className="new-login-input"
+                  placeholder="Enter your email"
+                  value={form.email}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="new-login-field">
+              <label className="new-login-label">Phone</label>
+              <div className="new-login-input-wrap">
+                <iconify-icon icon="solar:phone-linear" className="new-login-input-icon"></iconify-icon>
+                <input
+                  type="text"
+                  name="phone"
+                  className="new-login-input"
+                  placeholder="10-15 digit phone number"
+                  value={form.phone}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="new-login-field">
+              <label className="new-login-label">PAN Number</label>
+              <div className="new-login-input-wrap">
+                <iconify-icon icon="solar:document-text-linear" className="new-login-input-icon"></iconify-icon>
+                <input
+                  type="text"
+                  name="pan_number"
+                  className="new-login-input text-uppercase"
+                  placeholder="ABCDE1234F"
+                  value={form.pan_number}
+                  onChange={handleChange}
+                  maxLength={10}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="new-login-field">
+              <label className="new-login-label">Password</label>
+              <div className="new-login-input-wrap">
+                <iconify-icon icon="solar:lock-password-linear" className="new-login-input-icon"></iconify-icon>
+                <input
+                  type="password"
+                  name="password"
+                  className="new-login-input"
+                  placeholder="Minimum 8 characters"
+                  value={form.password}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="new-login-field">
+              <label className="new-login-label">Confirm Password</label>
+              <div className="new-login-input-wrap">
+                <iconify-icon icon="solar:lock-password-linear" className="new-login-input-icon"></iconify-icon>
+                <input
+                  type="password"
+                  name="password_confirmation"
+                  className="new-login-input"
+                  placeholder="Re-enter your password"
+                  value={form.password_confirmation}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="new-login-row">
+              <div className="new-login-remember">
+                <input
+                  type="checkbox"
+                  id="reg-terms"
+                  name="terms"
+                  checked={form.terms}
+                  onChange={handleChange}
+                  required
+                />
+                <label htmlFor="reg-terms">I agree to the Terms &amp; Conditions</label>
+              </div>
+            </div>
+
+            <button className="new-login-submit" type="submit" disabled={loading}>
+              {loading ? "Creating Account..." : "Create Account"}
+              <iconify-icon icon="solar:arrow-right-linear"></iconify-icon>
+            </button>
+          </form>
+
+          <p className="new-login-signup">
+            Already have an account? <a href="/login">Sign In</a>
+          </p>
         </div>
       </div>
     </div>

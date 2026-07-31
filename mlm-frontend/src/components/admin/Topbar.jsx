@@ -13,10 +13,15 @@ function Topbar() {
 
   function toggleSidebar() {
     const html = document.documentElement;
-    html.classList.toggle("sidebar-enable");
-    const currentSize = html.getAttribute("data-menu-size");
     if (window.innerWidth > 1140) {
-      html.setAttribute("data-menu-size", currentSize === "hidden" ? "sm-hover-active" : "hidden");
+      const currentSize = html.getAttribute("data-menu-size");
+      if (currentSize === "hidden") {
+        html.removeAttribute("data-menu-size");
+      } else {
+        html.setAttribute("data-menu-size", "hidden");
+      }
+    } else {
+      html.classList.toggle("sidebar-enable");
     }
   }
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios.js";
+import "./new-login.css";
 
 function Login() {
   const navigate = useNavigate();
@@ -44,108 +45,174 @@ function Login() {
   }
 
   return (
-    <div className="d-flex flex-column min-vh-100 p-3" style={{ backgroundColor: "var(--bs-body-bg)" }}>
-      <div className="d-flex flex-column flex-grow-1">
-        <div className="row h-100">
-          <div className="col-xxl-7">
-            <div className="row justify-content-center h-100">
-              <div className="col-lg-6 py-lg-5">
-                <div className="d-flex flex-column h-100 justify-content-center">
-                  <div className="auth-logo mb-4">
-                    {logo ? (
-                      <a href="/">
-                        <img src={logo} alt="Logo" style={{ maxHeight: "40px" }} />
-                      </a>
-                    ) : (
-                      <>
-                        <a href="/" className="logo-dark">
-                          <span className="fw-bold fs-24">MLM Real Estate</span>
-                        </a>
-                        <a href="/" className="logo-light">
-                          <span className="fw-bold fs-24 text-white">MLM Real Estate</span>
-                        </a>
-                      </>
-                    )}
-                  </div>
+    <div className="new-login-page">
+      {/* LEFT SIDE — video background */}
+      <div className="new-login-left d-none d-lg-flex">
+        <video
+          className="new-login-video"
+          src="/videos/login-bg.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+        />
+        <div className="new-login-overlay"></div>
 
-                  <h2 className="fw-bold fs-24">Sign In</h2>
+        <div className="new-login-left-content">
+          <div className="new-login-logo">
+            {logo ? (
+              <img src={logo} alt="Logo" style={{ maxHeight: "40px" }} />
+            ) : (
+              <>
+                <div className="new-login-logo-icon">
+                  <iconify-icon icon="solar:buildings-2-bold"></iconify-icon>
+                </div>
+                <div>
+                  <div className="new-login-logo-text">MLM REAL ESTATE</div>
+                  <div className="new-login-logo-tagline">FIND • INVEST • GROW</div>
+                </div>
+              </>
+            )}
+          </div>
 
-                  <p className="text-muted mt-1 mb-4">Enter your email address and password to access panel.</p>
+          <div className="new-login-hero">
+            <h1 className="new-login-hero-greeting">Welcome Back</h1>
+            <h1 className="new-login-hero-title">
+              Let&apos;s Find Your <span className="text-accent">Dream</span> Property
+            </h1>
+            <p className="new-login-hero-sub">
+              Premium properties. Trusted deals. Seamless experience.
+            </p>
 
-                  <div className="mb-5">
-                    <form className="authentication-form" onSubmit={handleSubmit}>
-                      {errors.length > 0 && (
-                        <div className="alert alert-danger mb-3">
-                          <ul className="mb-0">
-                            {errors.map((err, i) => (
-                              <li key={i}>{err}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-
-                      <div className="mb-3">
-                        <label className="form-label" htmlFor="example-email">
-                          Email
-                        </label>
-                        <input
-                          type="email"
-                          id="example-email"
-                          className="form-control"
-                          placeholder="Enter your email"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          required
-                        />
-                      </div>
-                      <div className="mb-3">
-                        <label className="form-label" htmlFor="example-password">
-                          Password
-                        </label>
-                        <input
-                          type="password"
-                          id="example-password"
-                          className="form-control"
-                          placeholder="Enter your password"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          required
-                        />
-                      </div>
-                      <div className="mb-3">
-                        <div className="form-check">
-                          <input
-                            type="checkbox"
-                            className="form-check-input"
-                            id="checkbox-signin"
-                            checked={remember}
-                            onChange={(e) => setRemember(e.target.checked)}
-                          />
-                          <label className="form-check-label" htmlFor="checkbox-signin">
-                            Remember me
-                          </label>
-                        </div>
-                      </div>
-
-                      <div className="mb-1 text-center d-grid">
-                        <button className="btn btn-soft-primary" type="submit" disabled={loading}>
-                          {loading ? "Signing In..." : "Sign In"}
-                        </button>
-                      </div>
-                    </form>
-                  </div>
+            <div className="new-login-features">
+              <div className="new-login-feature">
+                <div className="new-login-feature-icon">
+                  <iconify-icon icon="solar:home-2-bold"></iconify-icon>
+                </div>
+                <div>
+                  <div className="new-login-feature-title">Verified Properties</div>
+                  <div className="new-login-feature-sub">100% verified &amp; trusted listings</div>
+                </div>
+              </div>
+              <div className="new-login-feature">
+                <div className="new-login-feature-icon">
+                  <iconify-icon icon="solar:hand-shake-bold"></iconify-icon>
+                </div>
+                <div>
+                  <div className="new-login-feature-title">Best Deals</div>
+                  <div className="new-login-feature-sub">Exclusive offers for you</div>
+                </div>
+              </div>
+              <div className="new-login-feature">
+                <div className="new-login-feature-icon">
+                  <iconify-icon icon="solar:shield-check-bold"></iconify-icon>
+                </div>
+                <div>
+                  <div className="new-login-feature-title">Secure &amp; Private</div>
+                  <div className="new-login-feature-sub">Your data is safe with us</div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="col-xxl-5 d-none d-xxl-flex">
-            <div className="card h-100 mb-0 overflow-hidden">
-              <div className="d-flex flex-column h-100">
-                <img src="/images/small/img-10.jpg" alt="" className="w-100 h-100" />
-              </div>
+          <div className="new-login-trust">
+            <iconify-icon icon="solar:shield-check-bold"></iconify-icon>
+            <span>Trusted by 10,000+ users across India</span>
+          </div>
+        </div>
+      </div>
+
+      {/* RIGHT SIDE — form */}
+      <div className="new-login-right">
+        <div className="new-login-card">
+          <div className="new-login-card-header">
+            <div>
+              <h2 className="new-login-card-title">Sign In</h2>
+              <p className="new-login-card-sub">Welcome back! Please sign in to continue</p>
+            </div>
+            <div className="new-login-card-icon">
+              <iconify-icon icon="solar:buildings-3-bold-duotone"></iconify-icon>
             </div>
           </div>
+
+          {errors.length > 0 && (
+            <div className="alert alert-danger mb-3">
+              <ul className="mb-0">
+                {errors.map((err, i) => (
+                  <li key={i}>{err}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit}>
+            <div className="new-login-field">
+              <label className="new-login-label">Email Address</label>
+              <div className="new-login-input-wrap">
+                <iconify-icon icon="solar:letter-linear" className="new-login-input-icon"></iconify-icon>
+                <input
+                  type="email"
+                  className="new-login-input"
+                  placeholder="Enter your email address"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="new-login-field">
+              <label className="new-login-label">Password</label>
+              <div className="new-login-input-wrap">
+                <iconify-icon icon="solar:lock-password-linear" className="new-login-input-icon"></iconify-icon>
+                <input
+                  type="password"
+                  className="new-login-input"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="new-login-row">
+              <div className="new-login-remember">
+                <input
+                  type="checkbox"
+                  id="checkbox-signin"
+                  checked={remember}
+                  onChange={(e) => setRemember(e.target.checked)}
+                />
+                <label htmlFor="checkbox-signin">Remember me</label>
+              </div>
+              <a href="/forgot-password" className="new-login-forgot">
+                Forgot Password?
+              </a>
+            </div>
+
+            <button className="new-login-submit" type="submit" disabled={loading}>
+              {loading ? "Signing In..." : "Sign In"}
+              <iconify-icon icon="solar:arrow-right-linear"></iconify-icon>
+            </button>
+          </form>
+
+          <div className="new-login-divider">
+            <span>or continue with</span>
+          </div>
+
+          <button type="button" className="new-login-social">
+            <iconify-icon icon="flat-color-icons:google"></iconify-icon>
+            Continue with Google
+          </button>
+          <button type="button" className="new-login-social">
+            <iconify-icon icon="ic:baseline-apple"></iconify-icon>
+            Continue with Apple
+          </button>
+
+          <p className="new-login-signup">
+            Don&apos;t have an account? <a href="/register">Sign up here</a>
+          </p>
         </div>
       </div>
     </div>

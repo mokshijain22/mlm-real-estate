@@ -1,7 +1,27 @@
 import { NavLink } from "react-router-dom";
 
 function Sidebar() {
+  function collapseSidebar() {
+    document.documentElement.removeAttribute("data-menu-size");
+  }
+
+  function closeMobileSidebar() {
+    document.documentElement.classList.remove("sidebar-enable");
+  }
+
   return (
+    <>
+      <div
+        className="menu-overlay"
+        onClick={closeMobileSidebar}
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 1035,
+          display: "none",
+        }}
+        id="mobile-sidebar-overlay"
+      ></div>
     <div className="main-nav">
       <div className="logo-box">
         <a href="/" className="logo-dark">
@@ -12,7 +32,7 @@ function Sidebar() {
         </a>
       </div>
 
-      <button type="button" className="button-sm-hover" aria-label="Show Full Sidebar">
+      <button type="button" className="button-sm-hover" aria-label="Show Full Sidebar" onClick={collapseSidebar}>
         <iconify-icon icon="solar:double-alt-arrow-right-bold-duotone" className="button-sm-hover-icon"></iconify-icon>
       </button>
 
@@ -144,6 +164,7 @@ function Sidebar() {
         </ul>
       </div>
     </div>
+    </>
   );
 }
 
