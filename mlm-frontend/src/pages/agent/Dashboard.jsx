@@ -94,30 +94,26 @@ function Dashboard() {
       )}
 
       {/* Welcome Header */}
-      <div className="row align-items-center mb-4">
-        <div className="col-sm-8">
-          <h3 className="fw-bold mb-1">Welcome back, {agentUser.name || "Agent"}!</h3>
-          <div className="d-flex align-items-center gap-2">
-            <span className="badge bg-primary-subtle text-primary border border-primary border-opacity-25 fs-13">
-              <iconify-icon icon="solar:medal-star-bold-duotone" className="align-middle me-1"></iconify-icon>
+      <div className="dash-welcome-banner dash-animate">
+        <div className="row align-items-center position-relative" style={{ zIndex: 1 }}>
+          <div className="col-sm-8">
+            <h3 className="dash-welcome-title">Welcome back, {agentUser.name || "Agent"}!</h3>
+            <span className="badge bg-white bg-opacity-10 border border-white border-opacity-25 text-white fs-13 px-3 py-2">
+              <iconify-icon icon="solar:medal-star-bold-duotone" className="align-middle me-1" style={{ color: "#ffb08a" }}></iconify-icon>
               {rank.currentRank?.name || "Agent"} ({rank.currentRank?.abbreviation || "B.EX"})
             </span>
           </div>
-        </div>
-        <div className="col-sm-4 text-sm-end mt-3 mt-sm-0">
-          <div className="bg-white p-2 px-3 rounded border d-inline-block shadow-sm">
-            <span className="text-muted small d-block mb-1">Referral Code</span>
-            <div className="d-flex align-items-center">
-              <code className="fs-16 fw-bold text-primary me-2" id="referralCode">
-                {referral.referralCode}
-              </code>
-              <button
-                className="btn btn-sm btn-soft-primary p-1 leading-none"
-                onClick={() => copyToClipboard(referral.referralCode)}
-                title="Copy Code"
-              >
-                <iconify-icon icon="solar:copy-bold-duotone" className="fs-18"></iconify-icon>
-              </button>
+          <div className="col-sm-4 text-sm-end mt-3 mt-sm-0">
+            <div className="dash-referral-chip d-inline-block">
+              <span className="text-white-50 small d-block mb-1">Referral Code</span>
+              <div className="d-flex align-items-center gap-2">
+                <code className="fs-16 fw-bold" id="referralCode">
+                  {referral.referralCode}
+                </code>
+                <button className="dash-copy-btn" onClick={() => copyToClipboard(referral.referralCode)} title="Copy Code">
+                  <iconify-icon icon="solar:copy-bold-duotone" className="fs-16"></iconify-icon>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -127,110 +123,86 @@ function Dashboard() {
         <>
           {/* Top Stats Cards */}
           <div className="row">
-            <div className="col-md-6 col-sm-6">
-              <div className="card overflow-hidden border-0 shadow-sm">
-                <div className="card-body">
-                  <div className="row">
-                    <div className="col-6">
-                      <div className="avatar-md bg-soft-primary rounded">
-                        <iconify-icon icon="solar:wallet-bold-duotone" className="avatar-title fs-32 text-primary"></iconify-icon>
-                      </div>
-                    </div>
-                    <div className="col-6 text-end">
-                      <p className="text-muted mb-0 text-truncate">BV Balance</p>
-                      <h3 className="text-dark mt-1 mb-0">{Number(wallet.bvBalance).toFixed(2)}</h3>
-                    </div>
+            <div className="col-md-6 col-sm-6 mb-3">
+              <div className="dash-stat-card dash-animate">
+                <div className="dash-stat-body">
+                  <div className="dash-stat-icon dash-grad-orange">
+                    <iconify-icon icon="solar:wallet-bold-duotone"></iconify-icon>
+                  </div>
+                  <div className="flex-grow-1">
+                    <p className="dash-stat-value">{Number(wallet.bvBalance).toFixed(2)}</p>
+                    <p className="dash-stat-label">BV Balance</p>
                   </div>
                 </div>
-                <div className="card-footer py-2 bg-light bg-opacity-50 border-0">
-                  <div className="d-flex align-items-center justify-content-between">
-                    <span className="text-muted small">Total: {Math.round(wallet.totalBvEarned)}</span>
-                    <Link to="/agent/wallet" className="text-reset fw-semibold fs-12">
-                      Details
-                    </Link>
-                  </div>
+                <div className="px-3 pb-3 d-flex align-items-center justify-content-between">
+                  <span className="text-muted small">Total: {Math.round(wallet.totalBvEarned)}</span>
+                  <Link to="/agent/wallet" className="fw-semibold fs-12" style={{ color: "#ff7a45" }}>
+                    Details
+                  </Link>
                 </div>
               </div>
             </div>
 
-            <div className="col-md-6 col-sm-6">
-              <div className="card overflow-hidden border-0 shadow-sm">
-                <div className="card-body">
-                  <div className="row">
-                    <div className="col-6">
-                      <div className="avatar-md bg-soft-info rounded">
-                        <iconify-icon icon="solar:safe-2-bold-duotone" className="avatar-title fs-32 text-info"></iconify-icon>
-                      </div>
-                    </div>
-                    <div className="col-6 text-end">
-                      <p className="text-muted mb-0 text-truncate">PV Balance</p>
-                      <h3 className="text-dark mt-1 mb-0">{Number(wallet.pvBalance).toFixed(2)}</h3>
-                    </div>
+            <div className="col-md-6 col-sm-6 mb-3">
+              <div className="dash-stat-card dash-animate">
+                <div className="dash-stat-body">
+                  <div className="dash-stat-icon dash-grad-blue">
+                    <iconify-icon icon="solar:safe-2-bold-duotone"></iconify-icon>
+                  </div>
+                  <div className="flex-grow-1">
+                    <p className="dash-stat-value">{Number(wallet.pvBalance).toFixed(2)}</p>
+                    <p className="dash-stat-label">PV Balance</p>
                   </div>
                 </div>
-                <div className="card-footer py-2 bg-light bg-opacity-50 border-0">
-                  <div className="d-flex align-items-center justify-content-between">
-                    <span className="text-muted small">Total: {Math.round(wallet.totalPvEarned)}</span>
-                    <Link to="/agent/wallet" className="text-reset fw-semibold fs-12">
-                      Details
-                    </Link>
-                  </div>
+                <div className="px-3 pb-3 d-flex align-items-center justify-content-between">
+                  <span className="text-muted small">Total: {Math.round(wallet.totalPvEarned)}</span>
+                  <Link to="/agent/wallet" className="fw-semibold fs-12" style={{ color: "#ff7a45" }}>
+                    Details
+                  </Link>
                 </div>
               </div>
             </div>
 
-            <div className="col-md-6 col-sm-6">
-              <div className="card overflow-hidden border-0 shadow-sm">
-                <div className="card-body">
-                  <div className="row">
-                    <div className="col-6">
-                      <div className="avatar-md bg-soft-success rounded">
-                        <iconify-icon icon="solar:graph-up-bold-duotone" className="avatar-title fs-32 text-success"></iconify-icon>
-                      </div>
-                    </div>
-                    <div className="col-6 text-end">
-                      <p className="text-muted mb-0 text-truncate">This Month</p>
-                      <h3 className="text-dark mt-1 mb-0">
-                        {Math.round(commissions.thisMonthBv)} <small className="fs-12">BV</small>
-                      </h3>
-                    </div>
+            <div className="col-md-6 col-sm-6 mb-3">
+              <div className="dash-stat-card dash-animate">
+                <div className="dash-stat-body">
+                  <div className="dash-stat-icon dash-grad-green">
+                    <iconify-icon icon="solar:graph-up-bold-duotone"></iconify-icon>
+                  </div>
+                  <div className="flex-grow-1">
+                    <p className="dash-stat-value">
+                      {Math.round(commissions.thisMonthBv)} <small className="fs-12">BV</small>
+                    </p>
+                    <p className="dash-stat-label">This Month</p>
                   </div>
                 </div>
-                <div className="card-footer py-2 bg-light bg-opacity-50 border-0">
-                  <div className="d-flex align-items-center justify-content-between">
-                    <span className="text-muted small">Cash: {Math.round(commissions.thisMonthPv)} PV</span>
-                    <span className="text-success small">
-                      <i className="bx bxs-up-arrow fs-12"></i> Active
-                    </span>
-                  </div>
+                <div className="px-3 pb-3 d-flex align-items-center justify-content-between">
+                  <span className="text-muted small">Cash: {Math.round(commissions.thisMonthPv)} PV</span>
+                  <span className="small fw-semibold" style={{ color: "#059669" }}>
+                    <iconify-icon icon="solar:arrow-up-bold" className="fs-12"></iconify-icon> Active
+                  </span>
                 </div>
               </div>
             </div>
 
-            <div className="col-md-6 col-sm-6">
-              <div className="card overflow-hidden border-0 shadow-sm">
-                <div className="card-body">
-                  <div className="row">
-                    <div className="col-6">
-                      <div className="avatar-md bg-soft-warning rounded">
-                        <iconify-icon icon="solar:file-text-bold-duotone" className="avatar-title fs-32 text-warning"></iconify-icon>
-                      </div>
-                    </div>
-                    <div className="col-6 text-end">
-                      <p className="text-muted mb-0 text-truncate">My Bookings</p>
-                      <h3 className="text-dark mt-1 mb-0">{bookings.totalBookings}</h3>
-                    </div>
+            <div className="col-md-6 col-sm-6 mb-3">
+              <div className="dash-stat-card dash-animate">
+                <div className="dash-stat-body">
+                  <div className="dash-stat-icon dash-grad-amber">
+                    <iconify-icon icon="solar:file-text-bold-duotone"></iconify-icon>
+                  </div>
+                  <div className="flex-grow-1">
+                    <p className="dash-stat-value">{bookings.totalBookings}</p>
+                    <p className="dash-stat-label">My Bookings</p>
                   </div>
                 </div>
-                <div className="card-footer py-2 bg-light bg-opacity-50 border-0">
-                  <div className="d-flex align-items-center justify-content-between">
-                    <span className="text-muted small">
-                      {bookings.activeBookings} Active | {bookings.pendingBookings} Pending
-                    </span>
-                    <Link to="/agent/bookings" className="text-reset fw-semibold fs-12">
-                      View All
-                    </Link>
-                  </div>
+                <div className="px-3 pb-3 d-flex align-items-center justify-content-between">
+                  <span className="text-muted small">
+                    {bookings.activeBookings} Active | {bookings.pendingBookings} Pending
+                  </span>
+                  <Link to="/agent/bookings" className="fw-semibold fs-12" style={{ color: "#ff7a45" }}>
+                    View All
+                  </Link>
                 </div>
               </div>
             </div>
