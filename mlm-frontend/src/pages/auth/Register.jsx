@@ -10,6 +10,7 @@ function Register() {
   const group = searchParams.get("rank") || searchParams.get("group") || "";
 
   const [referrerName, setReferrerName] = useState(null);
+  const [refValid, setRefValid] = useState(null); // null = not checked, true = valid, false = invalid
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -29,9 +30,14 @@ function Register() {
     api
       .get(`/auth/validate-referral/${referralCode}`)
       .then((res) => {
-        if (res.data.valid) setReferrerName(res.data.agent_name);
+        if (res.data.valid) {
+          setReferrerName(res.data.agent_name);
+          setRefValid(true);
+        } else {
+          setRefValid(false);
+        }
       })
-      .catch(() => {});
+      .catch(() => setRefValid(false));
   }, [referralCode]);
 
   useEffect(() => {
@@ -289,6 +295,40 @@ function Register() {
               </div>
             </div>
 
+            {referralCode && (
+              <div className="new-login-field">
+                <label className="new-login-label">Referral Code</label>
+                <div className="new-login-input-wrap">
+                  <iconify-icon icon="solar:link-linear" className="new-login-input-icon"></iconify-icon>
+                  <input
+                    type="text"
+                    className="new-login-input"
+                    value={referralCode}
+                    readOnly
+                  />
+                </div>
+                {refValid === true && (
+                  <div className="mt-1 small" style={{ color: "#16a34a", fontWeight: 600 }}>
+                    ✓ Valid Referral: {referrerName}
+                  </div>
+                )}
+                {refValid === false && (
+                  <div className="mt-1 small" style={{ color: "#dc2626", fontWeight: 600 }}>
+                    ✗ Invalid or inactive referral code.
+                  </div>
+                )}
+              </div>
+            )}
+
+            {group && (
+              <div
+                className="alert alert-info py-2 px-3 small mb-3"
+                style={{ borderRadius: 8 }}
+              >
+                You're joining the <strong>{group}</strong> group.
+              </div>
+            )}
+
             <div className="new-login-row">
               <div className="new-login-remember">
                 <input
@@ -303,7 +343,7 @@ function Register() {
               </div>
             </div>
 
-            <button className="new-login-submit" type="submit" disabled={loading}>
+            <button className="new-login-submit" type="submit" disabled={loading || refValid === false}>
               {loading ? "Creating Account..." : "Create Account"}
               <iconify-icon icon="solar:arrow-right-linear"></iconify-icon>
             </button>

@@ -1,6 +1,6 @@
 import { NavLink } from "react-router-dom";
 
-function Sidebar() {
+function Sidebar({ isKycVerified }) {
   function collapseSidebar() {
     document.documentElement.removeAttribute("data-menu-size");
   }
@@ -48,76 +48,80 @@ function Sidebar() {
             </NavLink>
           </li>
 
-          <li className="nav-item">
-            <NavLink className="nav-link" to="/agent/projects">
-              <span className="nav-icon">
-                <iconify-icon icon="solar:home-2-bold-duotone"></iconify-icon>
-              </span>
-              <span className="nav-text"> Projects </span>
-            </NavLink>
-          </li>
+          {isKycVerified && (
+            <>
+              <li className="nav-item">
+                <NavLink className="nav-link" to="/agent/projects">
+                  <span className="nav-icon">
+                    <iconify-icon icon="solar:home-2-bold-duotone"></iconify-icon>
+                  </span>
+                  <span className="nav-text"> Projects </span>
+                </NavLink>
+              </li>
 
-          <li className="menu-title mt-2">My Business</li>
-          <li className="nav-item">
-            <NavLink className="nav-link" to="/agent/customers">
-              <span className="nav-icon">
-                <iconify-icon icon="solar:users-group-two-rounded-bold-duotone"></iconify-icon>
-              </span>
-              <span className="nav-text"> My Customers </span>
-            </NavLink>
-          </li>
-          <li className="nav-item">
-            <NavLink className="nav-link" to="/agent/bookings">
-              <span className="nav-icon">
-                <iconify-icon icon="solar:bill-list-bold-duotone"></iconify-icon>
-              </span>
-              <span className="nav-text"> My Bookings </span>
-            </NavLink>
-          </li>
+              <li className="menu-title mt-2">My Business</li>
+              <li className="nav-item">
+                <NavLink className="nav-link" to="/agent/customers">
+                  <span className="nav-icon">
+                    <iconify-icon icon="solar:users-group-two-rounded-bold-duotone"></iconify-icon>
+                  </span>
+                  <span className="nav-text"> My Customers </span>
+                </NavLink>
+              </li>
+              <li className="nav-item">
+                <NavLink className="nav-link" to="/agent/bookings">
+                  <span className="nav-icon">
+                    <iconify-icon icon="solar:bill-list-bold-duotone"></iconify-icon>
+                  </span>
+                  <span className="nav-text"> My Bookings </span>
+                </NavLink>
+              </li>
 
-          <li className="menu-title mt-2">My Team</li>
-          <li className="nav-item">
-            <NavLink className="nav-link" to="/agent/referrals">
-              <span className="nav-icon">
-                <iconify-icon icon="solar:share-bold-duotone"></iconify-icon>
-              </span>
-              <span className="nav-text"> Referrals </span>
-            </NavLink>
-          </li>
-          <li className="nav-item">
-            <NavLink className="nav-link" to="/agent/team">
-              <span className="nav-icon">
-                <iconify-icon icon="solar:chart-square-bold-duotone"></iconify-icon>
-              </span>
-              <span className="nav-text"> My Team </span>
-            </NavLink>
-          </li>
+              <li className="menu-title mt-2">My Team</li>
+              <li className="nav-item">
+                <NavLink className="nav-link" to="/agent/referrals">
+                  <span className="nav-icon">
+                    <iconify-icon icon="solar:share-bold-duotone"></iconify-icon>
+                  </span>
+                  <span className="nav-text"> Referrals </span>
+                </NavLink>
+              </li>
+              <li className="nav-item">
+                <NavLink className="nav-link" to="/agent/team">
+                  <span className="nav-icon">
+                    <iconify-icon icon="solar:chart-square-bold-duotone"></iconify-icon>
+                  </span>
+                  <span className="nav-text"> My Team </span>
+                </NavLink>
+              </li>
 
-          <li className="menu-title mt-2">Earnings</li>
-          <li className="nav-item">
-            <NavLink className="nav-link" to="/agent/commissions">
-              <span className="nav-icon">
-                <iconify-icon icon="solar:wad-of-money-bold-duotone"></iconify-icon>
-              </span>
-              <span className="nav-text"> Commissions </span>
-            </NavLink>
-          </li>
-          <li className="nav-item">
-            <NavLink className="nav-link" to="/agent/wallet">
-              <span className="nav-icon">
-                <iconify-icon icon="solar:wallet-bold-duotone"></iconify-icon>
-              </span>
-              <span className="nav-text"> My Wallet </span>
-            </NavLink>
-          </li>
-          <li className="nav-item">
-            <NavLink className="nav-link" to="/agent/rank">
-              <span className="nav-icon">
-                <iconify-icon icon="solar:medal-star-bold-duotone"></iconify-icon>
-              </span>
-              <span className="nav-text"> My Rank </span>
-            </NavLink>
-          </li>
+              <li className="menu-title mt-2">Earnings</li>
+              <li className="nav-item">
+                <NavLink className="nav-link" to="/agent/commissions">
+                  <span className="nav-icon">
+                    <iconify-icon icon="solar:wad-of-money-bold-duotone"></iconify-icon>
+                  </span>
+                  <span className="nav-text"> Commissions </span>
+                </NavLink>
+              </li>
+              <li className="nav-item">
+                <NavLink className="nav-link" to="/agent/wallet">
+                  <span className="nav-icon">
+                    <iconify-icon icon="solar:wallet-bold-duotone"></iconify-icon>
+                  </span>
+                  <span className="nav-text"> My Wallet </span>
+                </NavLink>
+              </li>
+              <li className="nav-item">
+                <NavLink className="nav-link" to="/agent/rank">
+                  <span className="nav-icon">
+                    <iconify-icon icon="solar:medal-star-bold-duotone"></iconify-icon>
+                  </span>
+                  <span className="nav-text"> My Rank </span>
+                </NavLink>
+              </li>
+            </>
+          )}
 
           <li className="menu-title mt-2">Account</li>
           <li className="nav-item">

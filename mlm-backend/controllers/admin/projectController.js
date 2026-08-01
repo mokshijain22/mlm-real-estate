@@ -7,6 +7,24 @@ const plotMapGenerator = require('../../services/plotMapGenerator');
 
 const PROJECT_STATUSES = ['active', 'inactive', 'completed'];
 const PLOT_ACTIVE_STATUSES = ['booked', 'sold'];
+const PROJECT_TYPES = ['Plotted Development (Society)', 'Apartment', 'Villa', 'Commercial', 'Mixed Use'];
+const FACILITY_OPTIONS = [
+  'Clubhouse', 'Jogging Track', '24x7 Security', 'Swimming Pool', 'Gym/Fitness Center',
+  'Kids Play Area', 'Landscaped Gardens', 'Power Backup', 'CCTV Surveillance',
+  'Parking', 'Community Hall', 'Rainwater Harvesting',
+];
+
+// Parses facilities/nearby_landmarks whether they arrive as JSON strings
+// (multipart/form-data can't send nested arrays natively) or already-parsed arrays.
+function parseJsonField(value, fallback) {
+  if (value === undefined || value === null || value === '') return fallback;
+  if (typeof value !== 'string') return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+}
 
 // GET /api/admin/projects?page=1
 async function index(req, res) {
@@ -41,13 +59,21 @@ async function index(req, res) {
 // POST /api/admin/projects
 async function store(req, res) {
   try {
-    const { name, description, location, total_area, status } = req.body;
+    const {
+      name, description, location, total_area, status,
+      project_type, total_plots, default_rate, default_owner_minimum,
+      facilities, nearby_landmarks,
+    } = req.body;
 
     const errors = {};
     if (!name) errors.name = 'Name is required.';
     if (!total_area || Number(total_area) < 1) errors.total_area = 'Total area must be at least 1.';
     if (!status || !PROJECT_STATUSES.includes(status)) errors.status = 'Invalid status.';
+    if (project_type && !PROJECT_TYPES.includes(project_type)) errors.project_type = 'Invalid project type.';
     if (Object.keys(errors).length) return res.status(422).json({ errors });
+
+    const defaultRate = Number(default_rate) || 0;
+    const defaultOwnerMinimum = Number(default_owner_minimum) || 0;
 
     const payload = {
       name,
@@ -55,6 +81,13 @@ async function store(req, res) {
       location: location || null,
       totalArea: total_area,
       status,
+      projectType: project_type || null,
+      totalPlots: Number(total_plots) || 0,
+      defaultRate,
+      defaultOwnerMinimum,
+      commissionPool: defaultRate - defaultOwnerMinimum,
+      facilities: parseJsonField(facilities, []).filter((f) => FACILITY_OPTIONS.includes(f)),
+      nearbyLandmarks: parseJsonField(nearby_landmarks, []),
       createdBy: req.user._id,
     };
 
@@ -101,19 +134,34 @@ async function update(req, res) {
     const project = await Project.findById(req.params.id);
     if (!project) return res.status(404).json({ message: 'Project not found.' });
 
-    const { name, description, location, total_area, status } = req.body;
+    const {
+      name, description, location, total_area, status,
+      project_type, total_plots, default_rate, default_owner_minimum,
+      facilities, nearby_landmarks,
+    } = req.body;
 
     const errors = {};
     if (!name) errors.name = 'Name is required.';
     if (!total_area || Number(total_area) < 1) errors.total_area = 'Total area must be at least 1.';
     if (!status || !PROJECT_STATUSES.includes(status)) errors.status = 'Invalid status.';
+    if (project_type && !PROJECT_TYPES.includes(project_type)) errors.project_type = 'Invalid project type.';
     if (Object.keys(errors).length) return res.status(422).json({ errors });
+
+    const defaultRate = Number(default_rate) || 0;
+    const defaultOwnerMinimum = Number(default_owner_minimum) || 0;
 
     project.name = name;
     project.description = description || null;
     project.location = location || null;
     project.totalArea = total_area;
     project.status = status;
+    project.projectType = project_type || null;
+    project.totalPlots = Number(total_plots) || 0;
+    project.defaultRate = defaultRate;
+    project.defaultOwnerMinimum = defaultOwnerMinimum;
+    project.commissionPool = defaultRate - defaultOwnerMinimum;
+    project.facilities = parseJsonField(facilities, project.facilities).filter((f) => FACILITY_OPTIONS.includes(f));
+    project.nearbyLandmarks = parseJsonField(nearby_landmarks, project.nearbyLandmarks);
 
     if (req.file) {
       // delete old layout file if it exists on disk

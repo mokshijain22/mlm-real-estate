@@ -220,4 +220,156 @@ async function availablePlots(req, res) {
   return res.json(plots);
 }
 
-module.exports = { index, create, store, show, edit, update, destroy, updateStatus, availablePlots };
+// POST /api/admin/projects/:projectId/plots/bulk-import
+// Bulk-create plots from rows already parsed client-side from a CSV
+// (number, total_area, price_per_sqft, status, plc_amount). Plot numbers
+// that already exist for this project are skipped (not overwritten), so
+// this is safe to re-run.
+async function bulkImport(req, res) {
+  try {
+    const project = await Project.findById(req.params.projectId);
+    if (!project) return res.status(404).json({ message: 'Project not found.' });
+
+    const rows = Array.isArray(req.body.rows) ? req.body.rows : [];
+    if (!rows.length) {
+      return res.status(422).json({ errors: { rows: 'At least one row is required.' } });
+    }
+
+    const existingPlots = await Plot.find({ project: project._id }, 'plotNumber');
+    const existingNumbers = new Set(existingPlots.map((p) => p.plotNumber.toLowerCase().trim()));
+
+    let remainingArea = await getRemainingArea(project);
+    let created = 0;
+    const skippedExisting = [];
+    const skippedNoSpace = [];
+
+    for (const row of rows) {
+      const number = String(row.number || '').trim();
+      const key = number.toLowerCase();
+
+      if (!number || existingNumbers.has(key)) {
+        if (number) skippedExisting.push(number);
+        continue;
+      }
+
+      const area = Number(row.total_area);
+      if (!area || area > remainingArea) {
+        skippedNoSpace.push(number);
+        continue;
+      }
+
+      await Plot.create({
+        project: project._id,
+        plotNumber: number,
+        totalArea: area,
+        pricePerSqft: Number(row.price_per_sqft) || 0,
+        plcAmount: Number(row.plc_amount) || 0,
+        status: PLOT_STATUSES.includes(row.status) ? row.status : 'available',
+        createdBy: req.user._id,
+      });
+
+      existingNumbers.add(key);
+      remainingArea -= area;
+      created++;
+    }
+
+    await plotMapGenerator.sync(project);
+
+    return res.json({
+      success: true,
+      created,
+      skipped_existing: skippedExisting,
+      skipped_no_space: skippedNoSpace,
+    });
+  } catch (err) {
+    return res.status(500).json({ message: 'Bulk import failed.', error: err.message });
+  }
+}
+
+// POST /api/admin/projects/:projectId/plots/quick-create
+// Create a plot AND its drawn map shape in a single step — used by the
+// "Draw New Plot" tool on the Map Builder page (draw a rectangle, fill in
+// the details in the popup, save).
+async function quickCreate(req, res) {
+  try {
+    const project = await Project.findById(req.params.projectId);
+    if (!project) return res.status(404).json({ message: 'Project not found.' });
+
+    const {
+      plot_number, total_area, price_per_sqft, plc_amount, status, map_coordinates,
+    } = req.body;
+    const remainingArea = await getRemainingArea(project);
+
+    const errors = {};
+    if (!plot_number) errors.plot_number = 'Plot number is required.';
+    else {
+      const dup = await Plot.findOne({ project: project._id, plotNumber: plot_number });
+      if (dup) errors.plot_number = 'Plot number already exists in this project.';
+    }
+    if (!total_area || Number(total_area) < 0.01) errors.total_area = 'Total area must be at least 0.01.';
+    else if (Number(total_area) > remainingArea) {
+      errors.total_area = `The plot area exceeds the remaining project area (${remainingArea} sqft).`;
+    }
+    if (price_per_sqft === undefined || Number(price_per_sqft) < 0) errors.price_per_sqft = 'Price per sqft is required.';
+    if (!map_coordinates) errors.map_coordinates = 'Map coordinates are required.';
+
+    if (Object.keys(errors).length) return res.status(422).json({ errors });
+
+    const plot = await Plot.create({
+      project: project._id,
+      plotNumber: plot_number,
+      totalArea: total_area,
+      pricePerSqft: price_per_sqft,
+      plcAmount: Number(plc_amount) || 0,
+      status: PLOT_STATUSES.includes(status) ? status : 'available',
+      mapCoordinates: map_coordinates,
+      createdBy: req.user._id,
+    });
+
+    return res.status(201).json({ success: true, plot });
+  } catch (err) {
+    return res.status(500).json({ message: 'Quick create failed.', error: err.message });
+  }
+}
+
+// GET /api/admin/projects/:projectId/plots/map
+// Returns ALL plots (any status) for a project, including their drawn map
+// coordinates, so a digital map picker can render every plot color-coded
+// by status. Falls back to the auto-generated SVG grid layout when no
+// hand-drawn polygons exist yet.
+async function mapPlots(req, res) {
+  const project = await Project.findById(req.params.projectId);
+  if (!project) return res.status(404).json({ message: 'Project not found.' });
+
+  const plots = await Plot.find(
+    { project: project._id },
+    'plotNumber totalArea pricePerSqft plcAmount status mapCoordinates'
+  );
+
+  const hasHandDrawnLayout = plots.some((p) => !!p.mapCoordinates);
+
+  let layoutSvgUrl = null;
+  if (!hasHandDrawnLayout) {
+    await plotMapGenerator.sync(project);
+    const refreshed = await Project.findById(project._id);
+    layoutSvgUrl = refreshed.layoutSvgUrl || null;
+  }
+
+  return res.json({
+    plots: plots.map((p) => ({
+      id: p._id,
+      plot_number: p.plotNumber,
+      total_area: p.totalArea,
+      price_per_sqft: p.pricePerSqft,
+      plc_amount: p.plcAmount,
+      status: p.status,
+      coordinates: p.mapCoordinates,
+    })),
+    layout_svg_url: layoutSvgUrl,
+  });
+}
+
+module.exports = {
+  index, create, store, show, edit, update, destroy, updateStatus, availablePlots,
+  bulkImport, quickCreate, mapPlots,
+};
