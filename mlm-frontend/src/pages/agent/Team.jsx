@@ -1,41 +1,12 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import api from "../../api/axios.js";
-
-function OrgNode({ node, isRoot }) {
-  const hasChildren = node.children && node.children.length > 0;
-  return (
-    <div className="org-node">
-      <div className={`org-card ${isRoot ? "org-card-root" : ""}`}>
-        <img
-          src={node.photo}
-          alt={node.name}
-          width="40"
-          height="40"
-          className="rounded-circle mb-1"
-          onError={(e) => (e.target.style.display = "none")}
-        />
-        <div className="fw-semibold fs-13">{node.name}</div>
-        <div className="text-muted" style={{ fontSize: 11 }}>
-          {node.rank_name}
-        </div>
-      </div>
-      {hasChildren && (
-        <div className="org-children">
-          {node.children.map((child) => (
-            <OrgNode key={child.id} node={child} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
+import { OrgNode, OrgTreeStyles } from "../../components/shared/OrgTree.jsx";
 
 function Team() {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [view, setView] = useState("tree"); // "tree" | "list"
   const [scale, setScale] = useState(1);
-  const scrollRef = useRef(null);
 
   useEffect(() => {
     api
@@ -59,25 +30,7 @@ function Team() {
 
   return (
     <>
-      <style>{`
-        .org-tree-scroll { overflow: auto; padding: 24px; }
-        .org-tree-wrap { transform-origin: top left; transition: transform 0.15s; display: inline-block; }
-        .org-node { display: flex; flex-direction: column; align-items: center; position: relative; }
-        .org-card {
-          display: flex; flex-direction: column; align-items: center;
-          border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px 14px;
-          background: #fff; min-width: 130px; text-align: center; white-space: nowrap;
-        }
-        .org-card-root { background: #eef2ff; border-color: #6366f1; }
-        .org-children {
-          display: flex; gap: 24px; margin-top: 24px; position: relative; padding-top: 24px;
-          border-top: 2px solid #f3a15a;
-        }
-        .org-node .org-children::before {
-          content: ""; position: absolute; top: -24px; left: 50%; width: 0; height: 24px;
-          border-left: 2px solid #f3a15a;
-        }
-      `}</style>
+      <OrgTreeStyles />
 
       <div className="d-flex justify-content-between align-items-center mb-3">
         <div>
@@ -119,7 +72,7 @@ function Team() {
               <iconify-icon icon="solar:restart-bold"></iconify-icon>
             </button>
           </div>
-          <div className="org-tree-scroll" ref={scrollRef}>
+          <div className="org-tree-scroll" style={{ minHeight: 320 }}>
             <div className="org-tree-wrap" style={{ transform: `scale(${scale})` }}>
               {treeData ? <OrgNode node={treeData} isRoot /> : <p className="text-muted mb-0">No team data available.</p>}
             </div>

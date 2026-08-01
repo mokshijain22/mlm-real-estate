@@ -13,6 +13,8 @@ const bookingSchema = new mongoose.Schema(
     pricePerSqft: { type: Number, required: true },
     totalAmount: { type: Number, required: true },
     bookingAmount: { type: Number, required: true },
+    downPaymentAmount: { type: Number, default: 0 },
+    downPaymentDueDate: { type: Date, default: null },
     remainingAmount: { type: Number, required: true },
     emiMonths: { type: Number, required: true },
     emiAmount: { type: Number, required: true },

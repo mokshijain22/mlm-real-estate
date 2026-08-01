@@ -1,0 +1,10 @@
+﻿{
+    "terms":  true,
+    "referral_code":  "GK-1022",
+    "name":  "Level3 Agent",
+    "password":  "password123",
+    "password_confirmation":  "password123",
+    "phone":  "9000000005",
+    "pan_number":  "ABCDE5555F",
+    "email":  "level3@test.com"
+}

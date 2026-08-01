@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Rank = require('../models/Rank');
 const User = require('../models/User');
 const settingService = require('./settingService');
@@ -7,72 +8,95 @@ const treeBuilderService = require('./treeBuilderService');
 
 /**
  * Process commission for a paid EMI. Mirrors CommissionService::processEmiCommission.
+ *
+ * Wrapped in a single Mongo transaction (like Laravel's DB::transaction) so
+ * the seller credit, every upline credit, and the commissionProcessed flag
+ * either all commit or all roll back — otherwise a mid-loop failure could
+ * leave some agents paid, commissionProcessed still false, and a retry would
+ * double-pay whoever already got credited.
  */
 async function processEmiCommission(emi) {
   if (emi.commissionProcessed) return;
 
   const Booking = require('../models/Booking');
-  const booking = await Booking.findById(emi.booking).populate('agent').populate('agentRank');
-  const sellingAgent = booking.agent;
-  const mode = emi.paymentMode || booking.paymentMode;
-  const sqftPortion = Number(emi.sqftPortion);
+  const session = await mongoose.startSession();
+  let sellingAgentForRankRefresh;
 
-  const pointsType = mode.toUpperCase() === 'ONLINE' ? 'BV' : 'PV';
-  const multiplier = await settingService.get(`${pointsType.toLowerCase()}_per_sqft`, 1.0);
+  try {
+    await session.withTransaction(async () => {
+      const booking = await Booking.findById(emi.booking).populate('agent').populate('agentRank').session(session);
+      const sellingAgent = booking.agent;
+      sellingAgentForRankRefresh = sellingAgent;
+      const mode = emi.paymentMode || booking.paymentMode;
+      const sqftPortion = Number(emi.sqftPortion);
 
-  // 1. Seller commission based on snapshot rank at booking time
-  let bookingRank = booking.agentRank;
-  if (!bookingRank) {
-    bookingRank = await Rank.findOne().sort({ sortOrder: 1 });
-  }
+      const pointsType = mode.toUpperCase() === 'ONLINE' ? 'BV' : 'PV';
+      const multiplier = await settingService.get(`${pointsType.toLowerCase()}_per_sqft`, 1.0);
 
-  const sellerPoints = pointsType === 'BV' ? Number(bookingRank?.bvPoints || 0) : Number(bookingRank?.pvPoints || 0);
-  const sellerEarning = sqftPortion * sellerPoints * multiplier;
+      // 1. Seller commission based on snapshot rank at booking time
+      let bookingRank = booking.agentRank;
+      if (!bookingRank) {
+        bookingRank = await Rank.findOne().sort({ sortOrder: 1 }).session(session);
+      }
 
-  await walletService.credit(
-    sellingAgent,
-    sellerEarning,
-    pointsType,
-    'emi_commission',
-    `EMI Commission - ${booking.bookingNumber} - Month ${emi.emiNumber}`,
-    booking._id,
-    emi._id
-  );
-
-  // 2. Traverse upline chain for rank-difference commission
-  const uplineChain = await treeBuilderService.getUplineChain(sellingAgent);
-  let previousRankPoints = sellerPoints;
-
-  for (const [level, uplineId] of Object.entries(uplineChain)) {
-    const uplineAgent = await User.findById(uplineId).populate('rank');
-    if (!uplineAgent) continue;
-
-    const uplinePoints = await rankService.getAgentRankPoints(uplineAgent, pointsType);
-    const difference = uplinePoints - previousRankPoints;
-
-    if (difference > 0) {
-      const commission = sqftPortion * difference * multiplier;
+      const sellerPoints = pointsType === 'BV' ? Number(bookingRank?.bvPoints || 0) : Number(bookingRank?.pvPoints || 0);
+      const sellerEarning = sqftPortion * sellerPoints * multiplier;
 
       await walletService.credit(
-        uplineAgent,
-        commission,
+        sellingAgent,
+        sellerEarning,
         pointsType,
-        'rank_difference',
-        `Rank Difference Commission - ${booking.bookingNumber} - Month ${emi.emiNumber} - From ${sellingAgent.name}`,
+        'emi_commission',
+        `EMI Commission - ${booking.bookingNumber} - Month ${emi.emiNumber}`,
         booking._id,
-        emi._id
+        emi._id,
+        null,
+        session
       );
 
-      previousRankPoints = uplinePoints;
-    }
+      // 2. Traverse upline chain for rank-difference commission
+      const uplineChain = await treeBuilderService.getUplineChain(sellingAgent);
+      let previousRankPoints = sellerPoints;
+
+      for (const [level, uplineId] of Object.entries(uplineChain)) {
+        const uplineAgent = await User.findById(uplineId).populate('rank').session(session);
+        if (!uplineAgent) continue;
+
+        const uplinePoints = await rankService.getAgentRankPoints(uplineAgent, pointsType);
+        const difference = uplinePoints - previousRankPoints;
+
+        if (difference > 0) {
+          const commission = sqftPortion * difference * multiplier;
+
+          await walletService.credit(
+            uplineAgent,
+            commission,
+            pointsType,
+            'rank_difference',
+            `Rank Difference Commission - ${booking.bookingNumber} - Month ${emi.emiNumber} - From ${sellingAgent.name}`,
+            booking._id,
+            emi._id,
+            null,
+            session
+          );
+
+          previousRankPoints = uplinePoints;
+        }
+      }
+
+      // 3. Mark EMI as processed
+      emi.commissionProcessed = true;
+      await emi.save({ session });
+    });
+  } finally {
+    session.endSession();
   }
 
-  // 3. Mark EMI as processed
-  emi.commissionProcessed = true;
-  await emi.save();
-
-  // 4. Rank/stats refresh
-  await rankService.checkAndUpgradeRank(sellingAgent);
+  // 4. Rank/stats refresh — outside the transaction (matches Laravel, which
+  // runs this after the DB::transaction closure completes).
+  if (sellingAgentForRankRefresh) {
+    await rankService.checkAndUpgradeRank(sellingAgentForRankRefresh);
+  }
 }
 
 /**
@@ -86,65 +110,81 @@ async function processCombinedDepositCommission(downPaymentEmi, depositEmi) {
   if (downPaymentEmi.commissionProcessed && depositEmi.commissionProcessed) return;
 
   const Booking = require('../models/Booking');
-  const booking = await Booking.findById(downPaymentEmi.booking).populate('agent').populate('agentRank');
-  const sellingAgent = booking.agent;
-  const mode = downPaymentEmi.paymentMode || booking.paymentMode;
-  const combinedSqft = Number(downPaymentEmi.sqftPortion) + Number(depositEmi.sqftPortion);
+  const session = await mongoose.startSession();
+  let sellingAgentForRankRefresh;
 
-  const pointsType = mode.toUpperCase() === 'ONLINE' ? 'BV' : 'PV';
-  const multiplier = await settingService.get(`${pointsType.toLowerCase()}_per_sqft`, 1.0);
+  try {
+    await session.withTransaction(async () => {
+      const booking = await Booking.findById(downPaymentEmi.booking).populate('agent').populate('agentRank').session(session);
+      const sellingAgent = booking.agent;
+      sellingAgentForRankRefresh = sellingAgent;
+      const mode = downPaymentEmi.paymentMode || booking.paymentMode;
+      const combinedSqft = Number(downPaymentEmi.sqftPortion) + Number(depositEmi.sqftPortion);
 
-  let bookingRank = booking.agentRank;
-  if (!bookingRank) {
-    bookingRank = await Rank.findOne().sort({ sortOrder: 1 });
-  }
+      const pointsType = mode.toUpperCase() === 'ONLINE' ? 'BV' : 'PV';
+      const multiplier = await settingService.get(`${pointsType.toLowerCase()}_per_sqft`, 1.0);
 
-  const sellerPoints = pointsType === 'BV' ? Number(bookingRank?.bvPoints || 0) : Number(bookingRank?.pvPoints || 0);
-  const sellerEarning = combinedSqft * sellerPoints * multiplier;
+      let bookingRank = booking.agentRank;
+      if (!bookingRank) {
+        bookingRank = await Rank.findOne().sort({ sortOrder: 1 }).session(session);
+      }
 
-  await walletService.credit(
-    sellingAgent,
-    sellerEarning,
-    pointsType,
-    'emi_commission',
-    `Booking Deposit + Down Payment Commission - ${booking.bookingNumber}`,
-    booking._id,
-    downPaymentEmi._id
-  );
-
-  const uplineChain = await treeBuilderService.getUplineChain(sellingAgent);
-  let previousRankPoints = sellerPoints;
-
-  for (const [level, uplineId] of Object.entries(uplineChain)) {
-    const uplineAgent = await User.findById(uplineId).populate('rank');
-    if (!uplineAgent) continue;
-
-    const uplinePoints = await rankService.getAgentRankPoints(uplineAgent, pointsType);
-    const difference = uplinePoints - previousRankPoints;
-
-    if (difference > 0) {
-      const commission = combinedSqft * difference * multiplier;
+      const sellerPoints = pointsType === 'BV' ? Number(bookingRank?.bvPoints || 0) : Number(bookingRank?.pvPoints || 0);
+      const sellerEarning = combinedSqft * sellerPoints * multiplier;
 
       await walletService.credit(
-        uplineAgent,
-        commission,
+        sellingAgent,
+        sellerEarning,
         pointsType,
-        'rank_difference',
-        `Rank Difference (Deposit + Down Payment) - ${booking.bookingNumber} - From ${sellingAgent.name}`,
+        'emi_commission',
+        `Booking Deposit + Down Payment Commission - ${booking.bookingNumber}`,
         booking._id,
-        downPaymentEmi._id
+        downPaymentEmi._id,
+        null,
+        session
       );
 
-      previousRankPoints = uplinePoints;
-    }
+      const uplineChain = await treeBuilderService.getUplineChain(sellingAgent);
+      let previousRankPoints = sellerPoints;
+
+      for (const [level, uplineId] of Object.entries(uplineChain)) {
+        const uplineAgent = await User.findById(uplineId).populate('rank').session(session);
+        if (!uplineAgent) continue;
+
+        const uplinePoints = await rankService.getAgentRankPoints(uplineAgent, pointsType);
+        const difference = uplinePoints - previousRankPoints;
+
+        if (difference > 0) {
+          const commission = combinedSqft * difference * multiplier;
+
+          await walletService.credit(
+            uplineAgent,
+            commission,
+            pointsType,
+            'rank_difference',
+            `Rank Difference (Deposit + Down Payment) - ${booking.bookingNumber} - From ${sellingAgent.name}`,
+            booking._id,
+            downPaymentEmi._id,
+            null,
+            session
+          );
+
+          previousRankPoints = uplinePoints;
+        }
+      }
+
+      downPaymentEmi.commissionProcessed = true;
+      await downPaymentEmi.save({ session });
+      depositEmi.commissionProcessed = true;
+      await depositEmi.save({ session });
+    });
+  } finally {
+    session.endSession();
   }
 
-  downPaymentEmi.commissionProcessed = true;
-  await downPaymentEmi.save();
-  depositEmi.commissionProcessed = true;
-  await depositEmi.save();
-
-  await rankService.checkAndUpgradeRank(sellingAgent);
+  if (sellingAgentForRankRefresh) {
+    await rankService.checkAndUpgradeRank(sellingAgentForRankRefresh);
+  }
 }
 
 /**
@@ -157,7 +197,8 @@ async function previewCommission(booking) {
   const preview = [];
   const sellingAgent = booking.agent;
   const mode = booking.paymentMode;
-  const sqftPortion = Number(booking.totalArea) / Number(booking.emiMonths);
+  const pricePerSqft = Number(booking.pricePerSqft) || 0;
+  const sqftPortion = pricePerSqft > 0 ? Number(booking.emiAmount) / pricePerSqft : 0;
 
   const pointsType = mode.toUpperCase() === 'ONLINE' ? 'BV' : 'PV';
   const multiplier = await settingService.get(`${pointsType.toLowerCase()}_per_sqft`, 1.0);

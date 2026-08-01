@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import api from "../../api/axios.js";
+import { OrgNode, OrgTreeStyles } from "../../components/shared/OrgTree.jsx";
 
 function AgentDetail() {
   const { id } = useParams();
@@ -259,6 +260,18 @@ function AgentDetail() {
                     </div>
                   </div>
                 )}
+
+                <h5 className="fw-bold mb-3">Network Tree</h5>
+                <OrgTreeStyles />
+                <div className="org-tree-scroll mb-4" style={{ minHeight: 260 }}>
+                  <div className="org-tree-wrap">
+                    {treeData.treeData ? (
+                      <OrgNode node={treeData.treeData} isRoot />
+                    ) : (
+                      <p className="text-muted mb-0">No team data available.</p>
+                    )}
+                  </div>
+                </div>
 
                 <h5 className="fw-bold mb-3">Downline (By Level)</h5>
                 {Object.keys(treeData.teamByLevel).length === 0 ? (

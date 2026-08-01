@@ -83,7 +83,7 @@ async function tree(req, res) {
       teamByLevel[level] = usersWithCounts;
     }
 
-    return res.json({ agent, uplineChain, teamByLevel });
+    return res.json({ agent, uplineChain, teamByLevel, treeData: await treeBuilderService.getHierarchicalTree(agent) });
   } catch (err) {
     return res.status(500).json({ message: 'Failed to fetch agent tree.', error: err.message });
   }

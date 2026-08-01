@@ -7,6 +7,12 @@ const User = require('../models/User');
 const { isSuperAdmin, isSubAdmin } = require('../utils/userHelpers');
 const { checkAndUpgradeRank } = require('./rankService');
 
+function addDays(date, days) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
 async function createBooking(data, actingUser) {
   const session = await mongoose.startSession();
   try {
@@ -31,9 +37,13 @@ async function createBooking(data, actingUser) {
 
       const totalArea = plot.totalArea;
       const pricePerSqft = Number(data.price_per_sqft);
-      const totalAmount = Number(totalArea) * pricePerSqft;
+      const baseAmount = Number(totalArea) * pricePerSqft;
+      const plcAmount = Number(plot.plcAmount) || 0;
+      const totalAmount = baseAmount + plcAmount;
       const bookingAmount = Number(data.booking_amount);
-      const remainingAmount = totalAmount - bookingAmount;
+      const downPaymentAmount = Number(data.down_payment_amount) || 0;
+      const downPaymentDueDate = downPaymentAmount > 0 ? addDays(new Date(), 30) : null;
+      const remainingAmount = totalAmount - bookingAmount - downPaymentAmount;
       const emiMonths = parseInt(data.emi_months, 10);
       const emiAmount = emiMonths > 0 ? remainingAmount / emiMonths : 0;
 
@@ -56,6 +66,8 @@ async function createBooking(data, actingUser) {
             pricePerSqft,
             totalAmount,
             bookingAmount,
+            downPaymentAmount,
+            downPaymentDueDate,
             remainingAmount,
             emiMonths,
             emiAmount,
@@ -83,7 +95,7 @@ async function createBooking(data, actingUser) {
               nominationName: data.nomination_name || null,
               nominationRelation: data.nomination_relation || null,
             },
-            plcAmount: Number(data.plc_amount) || 0,
+            plcAmount,
             paymentSchedule: {
               tokenDate: data.token_date || null,
               tokenAmount: Number(data.token_amount) || 0,
@@ -122,7 +134,39 @@ async function createBooking(data, actingUser) {
 }
 
 async function generateEmis(booking, session = null) {
+  const pricePerSqft = Number(booking.pricePerSqft) || 0;
+  const sqftFor = (amount) => (pricePerSqft > 0 ? Math.round((Number(amount) / pricePerSqft) * 100) / 100 : 0);
+
   const emis = [];
+
+  if (Number(booking.bookingAmount) > 0) {
+    emis.push({
+      booking: booking._id,
+      agent: booking.agent,
+      emiNumber: 0,
+      amount: booking.bookingAmount,
+      sqftPortion: sqftFor(booking.bookingAmount),
+      dueDate: booking.bookingDate,
+      status: 'pending',
+      commissionProcessed: false,
+      createdBy: booking.createdBy,
+    });
+  }
+
+  if (Number(booking.downPaymentAmount) > 0) {
+    emis.push({
+      booking: booking._id,
+      agent: booking.agent,
+      emiNumber: -1,
+      amount: booking.downPaymentAmount,
+      sqftPortion: sqftFor(booking.downPaymentAmount),
+      dueDate: booking.downPaymentDueDate || addDays(new Date(booking.bookingDate), 30),
+      status: 'pending',
+      commissionProcessed: false,
+      createdBy: booking.createdBy,
+    });
+  }
+
   for (let i = 1; i <= booking.emiMonths; i++) {
     const dueDate = new Date(booking.bookingDate);
     dueDate.setMonth(dueDate.getMonth() + i);
@@ -132,7 +176,7 @@ async function generateEmis(booking, session = null) {
       agent: booking.agent,
       emiNumber: i,
       amount: booking.emiAmount,
-      sqftPortion: booking.totalArea / booking.emiMonths,
+      sqftPortion: sqftFor(booking.emiAmount),
       dueDate,
       status: 'pending',
       commissionProcessed: false,

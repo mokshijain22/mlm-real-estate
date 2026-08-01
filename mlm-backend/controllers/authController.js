@@ -171,7 +171,7 @@ async function register(req, res) {
     return res.status(201).json({
       message: 'Registration successful. Please complete your KYC.',
       token,
-      user: { id: user._id, name: user.name, email: user.email, status: user.status },
+      user: { id: user._id, name: user.name, email: user.email, status: user.status, referralCode: user.referralCode },
     });
   } catch (err) {
     return res.status(500).json({ message: 'Registration failed.', error: err.message });
