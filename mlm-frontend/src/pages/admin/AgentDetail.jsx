@@ -103,7 +103,7 @@ function AgentDetail() {
   if (error) return <div className="alert alert-danger">{error}</div>;
   if (!profileData) return <div className="text-center py-5">Loading...</div>;
 
-  const { agent, referrals, assignedProjects } = profileData;
+  const { agent, referrals, assignedProjects, bankDetails } = profileData;
 
   return (
     <>
