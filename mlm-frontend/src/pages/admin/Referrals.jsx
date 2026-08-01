@@ -79,6 +79,8 @@ function Referrals() {
               <tr>
                 <th className="ps-3 text-muted small">Rank</th>
                 <th className="text-muted small">Agents</th>
+                <th className="text-muted small">₹/sqft (Online)</th>
+                <th className="text-muted small">₹/sqft (Cash)</th>
                 <th className="text-muted small">Referral Link</th>
                 <th className="text-muted small text-end pe-3">Action</th>
               </tr>
@@ -96,6 +98,18 @@ function Referrals() {
                     </td>
                     <td>
                       <span className="badge bg-light text-dark border">{rank.agentsCount}</span>
+                    </td>
+                    <td>
+                      <span className="fw-semibold text-success">
+                        ₹{rank.onlineRatePerSqft.toLocaleString("en-IN")}
+                      </span>
+                      <span className="text-muted">/sqft</span>
+                    </td>
+                    <td>
+                      <span className="fw-semibold text-success">
+                        ₹{rank.cashRatePerSqft.toLocaleString("en-IN")}
+                      </span>
+                      <span className="text-muted">/sqft</span>
                     </td>
                     <td>
                       <code className="small text-truncate d-inline-block" style={{ maxWidth: "350px" }}>

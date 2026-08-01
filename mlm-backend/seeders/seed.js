@@ -26,8 +26,8 @@ async function seedRanks() {
     { name: 'Senior Business Executive', abbreviation: 'S.BEX', minGroupSales: 75, minTeamSize: 10, bvPoints: 75, pvPoints: 75, sortOrder: 2 },
     { name: 'Team Leader', abbreviation: 'T.L', minGroupSales: 100, minTeamSize: 20, bvPoints: 100, pvPoints: 100, sortOrder: 3 },
     { name: 'Senior Team Leader', abbreviation: 'ST.L', minGroupSales: 125, minTeamSize: 40, bvPoints: 125, pvPoints: 125, sortOrder: 4 },
-    { name: 'Taratari Business Manager', abbreviation: 'T.B.M', minGroupSales: 150, minTeamSize: 80, bvPoints: 150, pvPoints: 150, sortOrder: 5 },
-    { name: 'Senior Taratari Business Mgr', abbreviation: 'ST.B.M', minGroupSales: 175, minTeamSize: 160, bvPoints: 175, pvPoints: 175, sortOrder: 6 },
+    { name: 'Territory Business Manager', abbreviation: 'T.B.M', minGroupSales: 150, minTeamSize: 80, bvPoints: 150, pvPoints: 150, sortOrder: 5 },
+    { name: 'Senior Territory Business Mgr', abbreviation: 'ST.B.M', minGroupSales: 175, minTeamSize: 160, bvPoints: 175, pvPoints: 175, sortOrder: 6 },
     { name: 'Assist Sales Director', abbreviation: 'A.S.D', minGroupSales: 200, minTeamSize: 200, bvPoints: 200, pvPoints: 200, sortOrder: 7 },
     { name: 'Sales Director', abbreviation: 'S.D', minGroupSales: 320, minTeamSize: 320, bvPoints: 250, pvPoints: 250, sortOrder: 8 },
   ];
