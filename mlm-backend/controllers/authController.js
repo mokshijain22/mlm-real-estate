@@ -269,17 +269,23 @@ async function getProfile(req, res) {
       profilePhoto: user.profilePhoto,
       rank: user.rank ? { name: user.rank.name, abbreviation: user.rank.abbreviation } : null,
       createdAt: user.createdAt,
+      gender: user.gender,
+      address: user.address,
+      position: user.position,
+      slabPerSqft: user.slabPerSqft,
+      permissions: user.permissions || [],
     },
   });
 }
 
 // PATCH /api/auth/profile
 async function updateProfile(req, res) {
-  const { name, phone, current_password, new_password } = req.body;
+  const { name, phone, gender, address, current_password, new_password } = req.body;
 
   const errors = {};
   if (!name) errors.name = 'Name is required.';
   if (phone && !/^\d{10,15}$/.test(phone)) errors.phone = 'Valid phone (10-15 digits) is required.';
+  if (gender && !['male', 'female', 'other'].includes(gender)) errors.gender = 'Invalid gender value.';
   if (new_password && new_password.length < 8) errors.new_password = 'New password must be at least 8 characters.';
   if (Object.keys(errors).length) return res.status(422).json({ errors });
 
@@ -301,6 +307,8 @@ async function updateProfile(req, res) {
 
   user.name = name;
   if (phone) user.phone = phone;
+  if (gender) user.gender = gender;
+  if (address !== undefined) user.address = address;
   await user.save();
 
   await auditService.log(req, 'profile.updated', `User ${user.name} updated their profile`);

@@ -67,6 +67,7 @@ router.patch('/agents/:id/approve', agentController.approve);
 router.patch('/agents/:id/deactivate', agentController.deactivate);
 router.patch('/agents/:id/activate', agentController.activate);
 router.patch('/agents/:id/referral-code', agentController.updateReferralCode);
+router.patch('/agents/:id/details', agentController.updateDetails);
 router.get('/agents/:id/rank-history', agentController.rankHistory);
 
 // KYC

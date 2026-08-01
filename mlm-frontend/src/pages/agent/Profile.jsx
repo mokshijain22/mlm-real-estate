@@ -5,7 +5,7 @@ function Profile() {
   const [user, setUser] = useState(null);
   const [error, setError] = useState(null);
 
-  const [form, setForm] = useState({ name: "", phone: "" });
+  const [form, setForm] = useState({ name: "", phone: "", gender: "", address: "" });
   const [pwForm, setPwForm] = useState({ current_password: "", new_password: "", new_password_confirmation: "" });
   const [fieldErrors, setFieldErrors] = useState({});
   const [pwErrors, setPwErrors] = useState({});
@@ -19,7 +19,12 @@ function Profile() {
       .get("/auth/profile")
       .then((res) => {
         setUser(res.data.user);
-        setForm({ name: res.data.user.name || "", phone: res.data.user.phone || "" });
+        setForm({
+          name: res.data.user.name || "",
+          phone: res.data.user.phone || "",
+          gender: res.data.user.gender || "",
+          address: res.data.user.address || "",
+        });
       })
       .catch((err) => setError(err.response?.data?.message || err.message));
   };
@@ -35,7 +40,7 @@ function Profile() {
     setSuccessMsg(null);
 
     api
-      .patch("/auth/profile", { name: form.name, phone: form.phone })
+      .patch("/auth/profile", { name: form.name, phone: form.phone, gender: form.gender, address: form.address })
       .then((res) => {
         setSuccessMsg(res.data.message);
         load();
@@ -93,20 +98,40 @@ function Profile() {
         <div className="card border-0 shadow-sm mb-4">
           <div className="card-body p-4">
             <div className="row mb-3">
-              <div className="col-md-4">
+              <div className="col-md-3">
                 <small className="text-muted d-block">Referral Code</small>
                 <span className="fw-semibold">{user.referralCode}</span>
               </div>
-              <div className="col-md-4">
+              <div className="col-md-3">
                 <small className="text-muted d-block">Rank</small>
                 <span className="fw-semibold">{user.rank?.name || "Unranked"}</span>
               </div>
+              <div className="col-md-3">
+                <small className="text-muted d-block">Position</small>
+                <span className="fw-semibold">{user.position || "Not set"}</span>
+              </div>
+              <div className="col-md-3">
+                <small className="text-muted d-block">Slab / sqft</small>
+                <span className="fw-semibold">{user.slabPerSqft != null ? `₹${user.slabPerSqft}` : "Not set"}</span>
+              </div>
+            </div>
+            <div className="row mb-3">
               <div className="col-md-4">
                 <small className="text-muted d-block">KYC Status</small>
                 <span className={`badge bg-${user.isKycVerified ? "success" : "warning"}-subtle text-${user.isKycVerified ? "success" : "warning"}`}>
                   {user.isKycVerified ? "Verified" : "Not Verified"}
                 </span>
               </div>
+              {user.permissions && user.permissions.length > 0 && (
+                <div className="col-md-8">
+                  <small className="text-muted d-block mb-1">Permissions Given</small>
+                  {user.permissions.map((p) => (
+                    <span key={p} className="badge bg-primary-subtle text-primary me-1 mb-1">
+                      {p}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
             {successMsg && <div className="alert alert-success border-0 py-2">{successMsg}</div>}
@@ -137,6 +162,29 @@ function Profile() {
                   <label className="form-label fw-semibold">Email</label>
                   <input type="email" className="form-control" value={user.email} disabled />
                   <small className="text-muted">Email cannot be changed.</small>
+                </div>
+                <div className="col-md-6 mb-3">
+                  <label className="form-label fw-semibold">Gender</label>
+                  <select
+                    className={`form-select ${fieldErrors.gender ? "is-invalid" : ""}`}
+                    value={form.gender}
+                    onChange={(e) => setForm({ ...form, gender: e.target.value })}
+                  >
+                    <option value="">Select Gender</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                  </select>
+                  {fieldErrors.gender && <div className="invalid-feedback">{fieldErrors.gender}</div>}
+                </div>
+                <div className="col-md-12 mb-3">
+                  <label className="form-label fw-semibold">Address</label>
+                  <textarea
+                    className="form-control"
+                    rows="2"
+                    value={form.address}
+                    onChange={(e) => setForm({ ...form, address: e.target.value })}
+                  />
                 </div>
               </div>
               <button type="submit" className="btn btn-primary fw-bold" disabled={savingInfo}>

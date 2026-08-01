@@ -117,6 +117,10 @@ if (treeData) flatten(treeData, 0);
                       <th>Name</th>
                       <th>Level</th>
                       <th>Rank</th>
+                      <th>Position</th>
+                      <th>Slab / sqft</th>
+                      <th>Created Date</th>
+                      <th>Status</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -128,6 +132,24 @@ if (treeData) flatten(treeData, 0);
                         </td>
                         <td>{n.depth}</td>
                         <td>{n.rank_name}</td>
+                        <td>{n.position || "-"}</td>
+                        <td>{n.slab_per_sqft != null ? `₹${n.slab_per_sqft}` : "-"}</td>
+                        <td className="text-muted small">
+                          {n.created_at ? new Date(n.created_at).toLocaleDateString("en-IN") : "-"}
+                        </td>
+                        <td>
+                          <span
+                            className={`badge ${
+                              n.status === "active"
+                                ? "bg-success-subtle text-success"
+                                : n.status === "blocked"
+                                ? "bg-danger-subtle text-danger"
+                                : "bg-secondary-subtle text-secondary"
+                            }`}
+                          >
+                            {n.status || "-"}
+                          </span>
+                        </td>
                       </tr>
                     ))}
                   </tbody>

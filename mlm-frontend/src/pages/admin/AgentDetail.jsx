@@ -17,6 +17,11 @@ function AgentDetail() {
   const [codeError, setCodeError] = useState(null);
   const [savingCode, setSavingCode] = useState(false);
 
+  const [editingDetails, setEditingDetails] = useState(false);
+  const [detailsForm, setDetailsForm] = useState({ position: "", slab_per_sqft: "", gender: "", address: "" });
+  const [savingDetails, setSavingDetails] = useState(false);
+  const [detailsError, setDetailsError] = useState(null);
+
   const loadProfile = () => {
     api
       .get(`/admin/agents/${id}`)
@@ -54,6 +59,30 @@ function AgentDetail() {
       .finally(() => setActionLoading(false));
   };
 
+  const startEditDetails = () => {
+    setDetailsForm({
+      position: profileData?.agent?.position || "",
+      slab_per_sqft: profileData?.agent?.slabPerSqft ?? "",
+      gender: profileData?.agent?.gender || "",
+      address: profileData?.agent?.address || "",
+    });
+    setDetailsError(null);
+    setEditingDetails(true);
+  };
+
+  const handleSaveDetails = () => {
+    setSavingDetails(true);
+    setDetailsError(null);
+    api
+      .patch(`/admin/agents/${id}/details`, detailsForm)
+      .then(() => {
+        setEditingDetails(false);
+        loadProfile();
+      })
+      .catch((err) => setDetailsError(err.response?.data?.message || err.message))
+      .finally(() => setSavingDetails(false));
+  };
+
   const handleSaveCode = () => {
     setSavingCode(true);
     setCodeError(null);
@@ -74,7 +103,7 @@ function AgentDetail() {
   if (error) return <div className="alert alert-danger">{error}</div>;
   if (!profileData) return <div className="text-center py-5">Loading...</div>;
 
-  const { agent, referrals } = profileData;
+  const { agent, referrals, assignedProjects } = profileData;
 
   return (
     <>
@@ -169,8 +198,98 @@ function AgentDetail() {
                       </td>
                     </tr>
                     <tr>
-                      <td className="text-muted">MLM Level</td>
-                      <td className="fw-medium">{agent.mlmLevel}</td>
+                      <td className="text-muted">System Role</td>
+                      <td className="fw-medium">{agent.role?.name || "Agent"}</td>
+                    </tr>
+                    <tr>
+                      <td className="text-muted">Country</td>
+                      <td className="fw-medium">{agent.country || "India"}</td>
+                    </tr>
+                    <tr>
+                      <td className="text-muted">Rank</td>
+                      <td className="fw-medium">{agent.rank?.name || "Unranked"}</td>
+                    </tr>
+                    <tr>
+                      <td className="text-muted">Position</td>
+                      <td className="fw-medium">
+                        {editingDetails ? (
+                          <input
+                            type="text"
+                            className="form-control form-control-sm"
+                            value={detailsForm.position}
+                            onChange={(e) => setDetailsForm({ ...detailsForm, position: e.target.value })}
+                            placeholder="e.g. Sales Executive"
+                          />
+                        ) : (
+                          agent.position || "-"
+                        )}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="text-muted">Slab / sqft</td>
+                      <td className="fw-medium">
+                        {editingDetails ? (
+                          <input
+                            type="number"
+                            className="form-control form-control-sm"
+                            value={detailsForm.slab_per_sqft}
+                            onChange={(e) => setDetailsForm({ ...detailsForm, slab_per_sqft: e.target.value })}
+                            placeholder="e.g. 50"
+                          />
+                        ) : (
+                          agent.slabPerSqft != null ? `₹${agent.slabPerSqft}` : "-"
+                        )}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="text-muted">Gender</td>
+                      <td className="fw-medium">
+                        {editingDetails ? (
+                          <select
+                            className="form-select form-select-sm"
+                            value={detailsForm.gender}
+                            onChange={(e) => setDetailsForm({ ...detailsForm, gender: e.target.value })}
+                          >
+                            <option value="">Select</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                            <option value="other">Other</option>
+                          </select>
+                        ) : (
+                          agent.gender || "-"
+                        )}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="text-muted">Address</td>
+                      <td className="fw-medium">
+                        {editingDetails ? (
+                          <textarea
+                            className="form-control form-control-sm"
+                            rows="2"
+                            value={detailsForm.address}
+                            onChange={(e) => setDetailsForm({ ...detailsForm, address: e.target.value })}
+                          />
+                        ) : (
+                          agent.address || "-"
+                        )}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="text-muted">Status</td>
+                      <td className="fw-medium">
+                        <span
+                          className={`badge ${
+                            agent.status === "active"
+                              ? "bg-success-subtle text-success"
+                              : agent.status === "blocked"
+                              ? "bg-danger-subtle text-danger"
+                              : "bg-secondary-subtle text-secondary"
+                          }`}
+                        >
+                          {agent.status}
+                        </span>
+                      </td>
                     </tr>
                     <tr>
                       <td className="text-muted">Total Team Size</td>
@@ -184,8 +303,95 @@ function AgentDetail() {
                       <td className="text-muted">Joined On</td>
                       <td className="fw-medium">{new Date(agent.createdAt).toLocaleDateString("en-IN")}</td>
                     </tr>
+                    {agent.permissions && agent.permissions.length > 0 && (
+                      <tr>
+                        <td className="text-muted">Permissions</td>
+                        <td className="fw-medium">
+                          {agent.permissions.map((p) => (
+                            <span key={p} className="badge bg-primary-subtle text-primary me-1 mb-1">
+                              {p}
+                            </span>
+                          ))}
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
+
+                {detailsError && <div className="alert alert-danger py-2 mt-2 mb-0">{detailsError}</div>}
+
+                <div className="mt-3">
+                  {editingDetails ? (
+                    <>
+                      <button
+                        className="btn btn-sm btn-primary me-2"
+                        disabled={savingDetails}
+                        onClick={handleSaveDetails}
+                      >
+                        {savingDetails ? "Saving..." : "Save"}
+                      </button>
+                      <button
+                        className="btn btn-sm btn-outline-secondary"
+                        disabled={savingDetails}
+                        onClick={() => setEditingDetails(false)}
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <button className="btn btn-sm btn-outline-primary" onClick={startEditDetails}>
+                      Edit Position / Slab / Gender / Address
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="card border-0 shadow-sm mt-3">
+              <div className="card-header bg-white border-bottom py-3">
+                <h4 className="card-title mb-0">Assigned Projects</h4>
+              </div>
+              <div className="card-body">
+                {!assignedProjects || assignedProjects.length === 0 ? (
+                  <p className="text-muted mb-0">No projects assigned yet (no bookings made).</p>
+                ) : (
+                  <ul className="list-unstyled mb-0">
+                    {assignedProjects.map((p) => (
+                      <li key={p._id} className="d-flex justify-content-between border-bottom py-2">
+                        <span className="fw-medium">{p.name}</span>
+                        <span className="text-muted fs-13">{p.location || "-"}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+
+            <div className="card border-0 shadow-sm mt-3">
+              <div className="card-header bg-white border-bottom py-3">
+                <h4 className="card-title mb-0">Bank / Payout Details</h4>
+              </div>
+              <div className="card-body">
+                {!bankDetails || !bankDetails.bankAccountNumber ? (
+                  <p className="text-muted mb-0">No payout details added yet by this agent.</p>
+                ) : (
+                  <table className="table table-borderless mb-0">
+                    <tbody>
+                      <tr>
+                        <td className="text-muted" style={{ width: "40%" }}>Bank Name</td>
+                        <td className="fw-medium">{bankDetails.bankName || "-"}</td>
+                      </tr>
+                      <tr>
+                        <td className="text-muted">Account Number</td>
+                        <td className="fw-medium">{bankDetails.bankAccountNumber || "-"}</td>
+                      </tr>
+                      <tr>
+                        <td className="text-muted">IFSC Code</td>
+                        <td className="fw-medium">{bankDetails.bankIfscCode || "-"}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                )}
               </div>
             </div>
           </div>

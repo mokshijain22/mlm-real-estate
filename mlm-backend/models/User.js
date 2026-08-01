@@ -22,6 +22,15 @@ const userSchema = new mongoose.Schema(
     rank: { type: mongoose.Schema.Types.ObjectId, ref: 'Rank', default: null },
     totalGroupSales: { type: Number, default: 0 }, // renamed from total_group_sqft
 
+    // --- Personal info (agent-editable) ---
+    gender: { type: String, enum: ['male', 'female', 'other', null], default: null },
+    address: { type: String, default: null },
+    country: { type: String, default: 'India' },
+
+    // --- Position / commission slab (admin-set only) ---
+    position: { type: String, default: null },
+    slabPerSqft: { type: Number, default: null },
+
     // --- Sub Admin module-level permissions ---
     // Only relevant for role slug 'sub_admin'. super_admin always has full access
     // regardless of this array. Valid keys: kyc, agents, referrals, projects,

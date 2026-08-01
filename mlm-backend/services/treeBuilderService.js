@@ -105,6 +105,10 @@ async function getHierarchicalTree(agent, maxLevel = 7) {
     photo: agent.profilePhoto || '/images/users/avatar-1.jpg',
     role: agent.role?.name || 'Agent',
     rank_name: agent.rank?.name || 'N/A',
+    position: agent.position || null,
+    slab_per_sqft: agent.slabPerSqft ?? null,
+    status: agent.status,
+    created_at: agent.createdAt,
     children: await getChildrenRecursive(agent._id, 1, maxLevel),
   };
 }
@@ -123,6 +127,10 @@ async function getChildrenRecursive(parentId, currentLevel, maxLevel) {
       photo: child.profilePhoto || '/images/users/avatar-1.jpg',
       role: child.role?.name || 'Agent',
       rank_name: child.rank?.name || 'N/A',
+      position: child.position || null,
+      slab_per_sqft: child.slabPerSqft ?? null,
+      status: child.status,
+      created_at: child.createdAt,
       children: await getChildrenRecursive(child._id, currentLevel + 1, maxLevel),
     });
   }

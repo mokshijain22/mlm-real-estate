@@ -1,233 +1,241 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import api from "../../api/axios.js";
+const User = require('../../models/User');
+const Role = require('../../models/Role');
+const RankHistory = require('../../models/RankHistory');
+const Booking = require('../../models/Booking');
+const KycVerification = require('../../models/KycVerification');
+const treeBuilderService = require('../../services/treeBuilderService');
+const auditService = require('../../services/auditService');
 
-function Agents() {
-  const [agents, setAgents] = useState(null);
-  const [meta, setMeta] = useState(null);
-  const [error, setError] = useState(null);
-  const [status, setStatus] = useState("");
-  const [kycStatus, setKycStatus] = useState("");
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const [actionLoading, setActionLoading] = useState(null);
+// GET /api/admin/agents?status=&kyc_status=&search=&page=
+async function index(req, res) {
+  try {
+    const agentRole = await Role.findOne({ slug: 'agent' });
+    if (!agentRole) return res.json({ data: [], meta: { page: 1, limit: 20, total: 0, lastPage: 1 } });
 
-  const load = () => {
-    const params = { page };
-    if (status) params.status = status;
-    if (kycStatus !== "") params.kyc_status = kycStatus;
-    if (search.trim()) params.search = search.trim();
+    const query = { role: agentRole._id };
 
-    api
-      .get("/admin/agents", { params })
-      .then((res) => {
-        setAgents(res.data.data);
-        setMeta(res.data.meta);
-      })
-      .catch((err) => setError(err.response?.data?.message || err.message));
-  };
+    if (req.query.status) query.status = req.query.status;
+    if (req.query.kyc_status !== undefined && req.query.kyc_status !== '') {
+      query.isKycVerified = req.query.kyc_status === '1' || req.query.kyc_status === 'true';
+    }
+    if (req.query.search && req.query.search.trim()) {
+      const re = new RegExp(req.query.search.trim(), 'i');
+      query.$or = [
+        { name: re },
+        { email: re },
+        { phone: re },
+        { referralCode: re },
+      ];
+    }
 
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, status, kycStatus]);
+    const page = parseInt(req.query.page) || 1;
+    const limit = 20;
+    const skip = (page - 1) * limit;
 
-  useEffect(() => {
-    const t = setTimeout(() => {
-      setPage(1);
-      load();
-    }, 400);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search]);
+    const [agents, total] = await Promise.all([
+      User.find(query)
+        .populate('referredBy', 'name email')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      User.countDocuments(query),
+    ]);
 
-  const handleAction = (id, action) => {
-    setActionLoading(id + action);
-    api
-      .patch(`/admin/agents/${id}/${action}`)
-      .then(() => load())
-      .catch((err) => alert(err.response?.data?.message || err.message))
-      .finally(() => setActionLoading(null));
-  };
-
-  if (error) return <div className="alert alert-danger">{error}</div>;
-
-  return (
-    <>
-      <div className="row align-items-center mb-4">
-        <div className="col-sm-8">
-          <h3 className="fw-bold mb-1">Agent Management</h3>
-          <p className="text-muted mb-0">View, approve, and manage all agents.</p>
-        </div>
-      </div>
-
-      <div className="card border-0 shadow-sm mb-3">
-        <div className="card-body">
-          <div className="row g-2">
-            <div className="col-md-4">
-              <div className="input-group">
-                <span className="input-group-text bg-light border-end-0">
-                  <iconify-icon icon="solar:magnifer-linear"></iconify-icon>
-                </span>
-                <input
-                  type="text"
-                  className="form-control border-start-0"
-                  placeholder="Search by name, email, phone..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              </div>
-            </div>
-            <div className="col-md-3">
-              <select
-                className="form-select"
-                value={status}
-                onChange={(e) => {
-                  setPage(1);
-                  setStatus(e.target.value);
-                }}
-              >
-                <option value="">All Status</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-                <option value="blocked">Blocked</option>
-              </select>
-            </div>
-            <div className="col-md-3">
-              <select
-                className="form-select"
-                value={kycStatus}
-                onChange={(e) => {
-                  setPage(1);
-                  setKycStatus(e.target.value);
-                }}
-              >
-                <option value="">All KYC</option>
-                <option value="1">KYC Verified</option>
-                <option value="0">KYC Not Verified</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="card border-0 shadow-sm">
-        <div className="table-responsive">
-          <table className="table table-hover table-nowrap align-middle mb-0">
-            <thead className="bg-light bg-opacity-50">
-              <tr>
-                <th className="ps-3 text-muted small">Name</th>
-                <th className="text-muted small">Email</th>
-                <th className="text-muted small">Phone</th>
-                <th className="text-muted small">Referred By</th>
-                <th className="text-muted small">KYC</th>
-                <th className="text-muted small">Status</th>
-                <th className="text-muted small">Joined</th>
-                <th className="text-muted small text-end pe-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {!agents ? (
-                <tr>
-                  <td colSpan="8" className="text-center py-5">
-                    Loading...
-                  </td>
-                </tr>
-              ) : agents.length === 0 ? (
-                <tr>
-                  <td colSpan="8" className="text-center py-5 text-muted">
-                    No agents found.
-                  </td>
-                </tr>
-              ) : (
-                agents.map((agent) => (
-                  <tr key={agent._id}>
-                    <td className="ps-3 fw-medium">
-                      <Link to={`/admin/agents/${agent._id}`}>{agent.name}</Link>
-                    </td>
-                    <td>{agent.email}</td>
-                    <td>{agent.phone || "-"}</td>
-                    <td>{agent.referredBy?.name || "-"}</td>
-                    <td>
-                      {agent.isKycVerified ? (
-                        <span className="badge bg-success-subtle text-success">Verified</span>
-                      ) : (
-                        <span className="badge bg-warning-subtle text-warning">Pending</span>
-                      )}
-                    </td>
-                    <td>
-                      <span
-                        className={`badge ${
-                          agent.status === "active"
-                            ? "bg-success-subtle text-success"
-                            : agent.status === "blocked"
-                            ? "bg-danger-subtle text-danger"
-                            : "bg-secondary-subtle text-secondary"
-                        }`}
-                      >
-                        {agent.status.charAt(0).toUpperCase() + agent.status.slice(1)}
-                      </span>
-                    </td>
-                    <td className="text-muted small">
-                      {new Date(agent.createdAt).toLocaleDateString("en-IN")}
-                    </td>
-                    <td className="text-end pe-3">
-                      <div className="d-flex gap-1 justify-content-end">
-                        <Link to={`/admin/agents/${agent._id}`} className="btn btn-sm btn-soft-primary">
-                          View
-                        </Link>
-                        {agent.status === "active" ? (
-                          <button
-                            className="btn btn-sm btn-soft-danger"
-                            disabled={actionLoading === agent._id + "deactivate"}
-                            onClick={() => handleAction(agent._id, "deactivate")}
-                          >
-                            {actionLoading === agent._id + "deactivate" ? "..." : "Deactivate"}
-                          </button>
-                        ) : (
-                          <button
-                            className="btn btn-sm btn-soft-success"
-                            disabled={actionLoading === agent._id + "activate"}
-                            onClick={() => handleAction(agent._id, "activate")}
-                          >
-                            {actionLoading === agent._id + "activate" ? "..." : "Activate"}
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {meta && (
-          <div className="card-footer bg-white d-flex justify-content-between align-items-center">
-            <span className="text-muted small">
-              Page {meta.page} of {meta.lastPage || 1} ({meta.total} total)
-            </span>
-            <div className="d-flex gap-2">
-              <button
-                className="btn btn-sm btn-outline-secondary"
-                disabled={page <= 1}
-                onClick={() => setPage((p) => p - 1)}
-              >
-                Previous
-              </button>
-              <button
-                className="btn btn-sm btn-outline-secondary"
-                disabled={page >= meta.lastPage}
-                onClick={() => setPage((p) => p + 1)}
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-    </>
-  );
+    return res.json({
+      data: agents,
+      meta: { page, limit, total, lastPage: Math.ceil(total / limit) },
+    });
+  } catch (err) {
+    return res.status(500).json({ message: 'Failed to fetch agents.', error: err.message });
+  }
 }
 
-export default Agents;
+// GET /api/admin/agents/:id
+async function show(req, res) {
+  try {
+    const agent = await User.findById(req.params.id).populate('referredBy').populate('role');
+    if (!agent) return res.status(404).json({ message: 'Agent not found.' });
+
+    const referrals = await User.find({ referredBy: agent._id });
+
+    // Assigned Projects — distinct projects where this agent has bookings
+    const agentBookings = await Booking.find({ agent: agent._id }).populate('project', 'name location status');
+    const projectMap = {};
+    agentBookings.forEach((b) => {
+      if (b.project) projectMap[b.project._id] = b.project;
+    });
+    const assignedProjects = Object.values(projectMap);
+
+    // Bank / payout details from KYC
+    const kyc = await KycVerification.findOne({ user: agent._id });
+    const bankDetails = kyc
+      ? {
+          bankName: kyc.bankName,
+          bankAccountNumber: kyc.bankAccountNumber,
+          bankIfscCode: kyc.bankIfscCode,
+        }
+      : null;
+
+    return res.json({ agent, referrals, assignedProjects, bankDetails });
+  } catch (err) {
+    return res.status(500).json({ message: 'Failed to fetch agent.', error: err.message });
+  }
+}
+
+// GET /api/admin/agents/:id/tree
+async function tree(req, res) {
+  try {
+    const agent = await User.findById(req.params.id).populate('referredBy').populate('role');
+    if (!agent) return res.status(404).json({ message: 'Agent not found.' });
+
+    const uplineChainMap = await treeBuilderService.getUplineChain(agent);
+    const uplineIds = Object.values(uplineChainMap).filter(Boolean);
+    const uplineUsersRaw = await User.find({ _id: { $in: uplineIds } });
+    // preserve order Root -> ... -> Direct Upline (reverse of collected order)
+    const uplineChain = uplineIds
+      .map((id) => uplineUsersRaw.find((u) => u._id.toString() === id.toString()))
+      .filter(Boolean)
+      .reverse();
+
+    const levelsData = await treeBuilderService.getDownlineByLevel(agent);
+    const teamByLevel = {};
+
+    for (const [level, userIds] of Object.entries(levelsData)) {
+      const users = await User.find({ _id: { $in: userIds } });
+      // attach referral counts (equivalent of withCount('referrals'))
+      const usersWithCounts = await Promise.all(
+        users.map(async (u) => {
+          const referralsCount = await User.countDocuments({ referredBy: u._id });
+          return { ...u.toObject(), referralsCount };
+        })
+      );
+      teamByLevel[level] = usersWithCounts;
+    }
+
+    return res.json({ agent, uplineChain, teamByLevel, treeData: await treeBuilderService.getHierarchicalTree(agent) });
+  } catch (err) {
+    return res.status(500).json({ message: 'Failed to fetch agent tree.', error: err.message });
+  }
+}
+
+// PATCH /api/admin/agents/:id/approve
+async function approve(req, res) {
+  try {
+    const agent = await User.findById(req.params.id);
+    if (!agent) return res.status(404).json({ message: 'Agent not found.' });
+
+    agent.status = 'active';
+    await agent.save();
+
+    await auditService.log(req, 'agent.approved', `Agent ${agent.name} approved by ${req.user.name}`, agent);
+
+    return res.json({ message: 'Agent approved successfully.', data: agent });
+  } catch (err) {
+    return res.status(500).json({ message: 'Failed to approve agent.', error: err.message });
+  }
+}
+
+// PATCH /api/admin/agents/:id/deactivate
+async function deactivate(req, res) {
+  try {
+    const agent = await User.findById(req.params.id);
+    if (!agent) return res.status(404).json({ message: 'Agent not found.' });
+
+    agent.status = 'inactive';
+    await agent.save();
+
+    await auditService.log(req, 'agent.deactivated', `Agent ${agent.name} deactivated by ${req.user.name}`, agent);
+
+    return res.json({ message: 'Agent deactivated successfully.', data: agent });
+  } catch (err) {
+    return res.status(500).json({ message: 'Failed to deactivate agent.', error: err.message });
+  }
+}
+
+// PATCH /api/admin/agents/:id/activate
+async function activate(req, res) {
+  try {
+    const agent = await User.findById(req.params.id);
+    if (!agent) return res.status(404).json({ message: 'Agent not found.' });
+
+    agent.status = 'active';
+    await agent.save();
+
+    await auditService.log(req, 'agent.approved', `Agent ${agent.name} activated by ${req.user.name}`, agent);
+
+    return res.json({ message: 'Agent activated successfully.', data: agent });
+  } catch (err) {
+    return res.status(500).json({ message: 'Failed to activate agent.', error: err.message });
+  }
+}
+
+// GET /api/admin/agents/:id/rank-history
+async function rankHistory(req, res) {
+  try {
+    const agent = await User.findById(req.params.id).populate('rank');
+    if (!agent) return res.status(404).json({ message: 'Agent not found.' });
+
+    const rankHistoryList = await RankHistory.find({ agent: agent._id })
+      .populate('oldRank')
+      .populate('newRank')
+      .sort({ upgradedAt: -1 });
+
+    return res.json({ agent, rankHistory: rankHistoryList });
+  } catch (err) {
+    return res.status(500).json({ message: 'Failed to fetch rank history.', error: err.message });
+  }
+}
+
+// PATCH /api/admin/agents/:id/referral-code
+async function updateReferralCode(req, res) {
+  try {
+    const { referral_code } = req.body;
+    if (!referral_code || !referral_code.trim()) {
+      return res.status(422).json({ errors: { referral_code: 'Referral code is required.' } });
+    }
+    const code = referral_code.trim().toUpperCase();
+
+    const agent = await User.findById(req.params.id);
+    if (!agent) return res.status(404).json({ message: 'Agent not found.' });
+
+    const dup = await User.findOne({ referralCode: code, _id: { $ne: agent._id } });
+    if (dup) return res.status(422).json({ errors: { referral_code: 'This code is already in use by another user.' } });
+
+    const oldCode = agent.referralCode;
+    agent.referralCode = code;
+    await agent.save();
+
+    await auditService.log(req, 'agent.referral_code_updated', `Agent ${agent.name} code changed ${oldCode} -> ${code} by ${req.user.name}`, agent);
+
+    return res.json({ message: 'Referral code updated successfully.', data: agent });
+  } catch (err) {
+    return res.status(500).json({ message: 'Failed to update referral code.', error: err.message });
+  }
+}
+
+// PATCH /api/admin/agents/:id/details
+async function updateDetails(req, res) {
+  try {
+    const { position, slab_per_sqft, gender, address } = req.body;
+
+    const agent = await User.findById(req.params.id);
+    if (!agent) return res.status(404).json({ message: 'Agent not found.' });
+
+    if (position !== undefined) agent.position = position;
+    if (slab_per_sqft !== undefined && slab_per_sqft !== '') agent.slabPerSqft = Number(slab_per_sqft);
+    if (gender !== undefined && ['male', 'female', 'other', ''].includes(gender)) {
+      agent.gender = gender || null;
+    }
+    if (address !== undefined) agent.address = address;
+
+    await agent.save();
+
+    await auditService.log(req, 'agent.details_updated', `Agent ${agent.name} details updated by ${req.user.name}`, agent);
+
+    return res.json({ message: 'Agent details updated successfully.', data: agent });
+  } catch (err) {
+    return res.status(500).json({ message: 'Failed to update agent details.', error: err.message });
+  }
+}
+
+module.exports = { index, show, tree, approve, deactivate, activate, rankHistory, updateReferralCode, updateDetails };
