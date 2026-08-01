@@ -76,7 +76,7 @@ function ReportsOverview() {
           <div className="card border-0 h-100" style={{ background: "#f3e8ff" }}>
             <div className="card-body">
               <p className="fw-semibold mb-1" style={{ color: "#7e22ce" }}>
-                BV Distributed
+                Online Distributed
               </p>
               <h4 className="fs-18 fw-bold mb-0" style={{ color: "#6b21a8" }}>
                 {fmt(stats.current_month.bv_distributed)}
@@ -87,7 +87,7 @@ function ReportsOverview() {
         <div className="col">
           <div className="card bg-info-subtle border-0 h-100">
             <div className="card-body">
-              <p className="text-info-emphasis fw-semibold mb-1">PV Distributed</p>
+              <p className="text-info-emphasis fw-semibold mb-1">Cash Distributed</p>
               <h4 className="fs-18 fw-bold text-info mb-0">{fmt(stats.current_month.pv_distributed)}</h4>
             </div>
           </div>

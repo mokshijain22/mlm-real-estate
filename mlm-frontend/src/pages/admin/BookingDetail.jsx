@@ -525,7 +525,7 @@ function BookingDetail() {
             <div className="mb-3">
               <label className="text-muted small">Payment Mode</label>
               <p className="mb-0 fw-semibold text-uppercase">
-                {booking.paymentMode} ({booking.paymentMode === "cash" ? "PV" : "BV"})
+                {booking.paymentMode} ({booking.paymentMode === "cash" ? "Cash" : "Online"})
               </p>
             </div>
             {booking.notes && (

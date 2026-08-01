@@ -58,7 +58,7 @@ function Commissions() {
         <div className="col-md-6 mb-4">
           <div className="card border-0 shadow-sm h-100">
             <div className="card-body p-4">
-              <span className="text-muted fs-13">Total BV Earned</span>
+              <span className="text-muted fs-13">Total Online Earned</span>
               <h2 className="fw-bold mb-0 text-success">+{totalBvEarned?.toLocaleString("en-IN")}</h2>
             </div>
           </div>
@@ -66,7 +66,7 @@ function Commissions() {
         <div className="col-md-6 mb-4">
           <div className="card border-0 shadow-sm h-100">
             <div className="card-body p-4">
-              <span className="text-muted fs-13">Total PV Earned</span>
+              <span className="text-muted fs-13">Total Cash Earned</span>
               <h2 className="fw-bold mb-0 text-success">+{totalPvEarned?.toLocaleString("en-IN")}</h2>
             </div>
           </div>
@@ -96,8 +96,8 @@ function Commissions() {
                 onChange={(e) => setFilters({ ...filters, points_type: e.target.value })}
               >
                 <option value="">All</option>
-                <option value="BV">BV</option>
-                <option value="PV">PV</option>
+                <option value="BV">Online</option>
+                <option value="PV">Cash</option>
               </select>
             </div>
             <div className="col-md-2">

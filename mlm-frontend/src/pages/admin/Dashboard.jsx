@@ -228,7 +228,7 @@ function Dashboard() {
               </div>
               <div>
                 <p className="dash-stat-value text-white">{num(stats.distributed_bv)}</p>
-                <p className="dash-stat-label text-white opacity-75">Distributed BV</p>
+                <p className="dash-stat-label text-white opacity-75">Distributed Online</p>
               </div>
             </div>
           </div>
@@ -242,7 +242,7 @@ function Dashboard() {
               </div>
               <div>
                 <p className="dash-stat-value text-white">{num(stats.distributed_pv)}</p>
-                <p className="dash-stat-label text-white opacity-75">Distributed PV</p>
+                <p className="dash-stat-label text-white opacity-75">Distributed Cash</p>
               </div>
             </div>
           </div>
@@ -283,7 +283,7 @@ function Dashboard() {
                 <iconify-icon icon="solar:cash-out-bold-duotone"></iconify-icon>
               </div>
               <div>
-                <p className="text-white opacity-75 fw-semibold mb-1 fs-13">BV Paid Out (This Month)</p>
+                <p className="text-white opacity-75 fw-semibold mb-1 fs-13">Online Paid Out (This Month)</p>
                 <h3 className="mb-0 text-white fw-bold">{num(stats.total_bv_paid_out)}</h3>
               </div>
             </div>
@@ -297,7 +297,7 @@ function Dashboard() {
                 <iconify-icon icon="solar:wad-of-money-bold-duotone"></iconify-icon>
               </div>
               <div>
-                <p className="text-white opacity-75 fw-semibold mb-1 fs-13">PV Paid Out (This Month)</p>
+                <p className="text-white opacity-75 fw-semibold mb-1 fs-13">Cash Paid Out (This Month)</p>
                 <h3 className="mb-0 text-white fw-bold">{num(stats.total_pv_paid_out)}</h3>
               </div>
             </div>

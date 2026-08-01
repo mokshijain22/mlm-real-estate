@@ -254,12 +254,12 @@ function WithdrawalDetail() {
                   <tbody>
                     <tr>
                       <td className="text-muted" style={{ width: "40%" }}>
-                        BV Balance
+                        Online Balance
                       </td>
                       <td className="fw-medium">{Number(wallet.bvBalance).toFixed(2)}</td>
                     </tr>
                     <tr>
-                      <td className="text-muted">PV Balance</td>
+                      <td className="text-muted">Cash Balance</td>
                       <td className="fw-medium">{Number(wallet.pvBalance).toFixed(2)}</td>
                     </tr>
                     

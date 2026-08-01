@@ -231,8 +231,8 @@ function PayoutsReport() {
                   <label className="form-label">Points Type</label>
                   <select className="form-select" value={pointsType} onChange={(e) => resetToPage1(setPointsType)(e.target.value)}>
                     <option value="all">All Points</option>
-                    <option value="BV">BV Payouts</option>
-                    <option value="PV">PV Payouts</option>
+                    <option value="BV">Online Payouts</option>
+                    <option value="PV">Cash Payouts</option>
                   </select>
                 </div>
                 <div className="col-md-3">
@@ -299,7 +299,7 @@ function PayoutsReport() {
                             )}
                           </td>
                           <td>
-                            <span className={`badge bg-${p.pointsType === "BV" ? "success" : "info"}`}>{p.pointsType}</span>
+                            <span className={`badge bg-${p.pointsType === "BV" ? "success" : "info"}`}>{p.pointsType === "BV" ? "Online" : "Cash"}</span>
                           </td>
                           <td className="text-end text-muted">₹ {fmt(p.amount)}</td>
                           <td className="text-end text-danger">₹ {fmt(p.tdsAmount)}</td>

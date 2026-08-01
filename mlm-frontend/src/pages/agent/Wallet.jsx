@@ -60,7 +60,7 @@ function Wallet() {
   return (
     <>
       <h4 className="fw-bold mb-1">My Wallet</h4>
-      <p className="text-muted mb-4 fs-13">Manage your BV/PV balance and withdrawal requests.</p>
+      <p className="text-muted mb-4 fs-13">Manage your Online/Cash balance and withdrawal requests.</p>
 
       {successMsg && <div className="alert alert-success border-0 shadow-sm">{successMsg}</div>}
 
@@ -68,7 +68,7 @@ function Wallet() {
         <div className="col-md-6 mb-4">
           <div className="card border-0 shadow-sm h-100">
             <div className="card-body p-4">
-              <span className="text-muted fs-13">BV Balance</span>
+              <span className="text-muted fs-13">Online Balance</span>
               <h2 className="fw-bold mb-0">{wallet.bvBalance?.toLocaleString("en-IN")}</h2>
             </div>
           </div>
@@ -76,7 +76,7 @@ function Wallet() {
         <div className="col-md-6 mb-4">
           <div className="card border-0 shadow-sm h-100">
             <div className="card-body p-4">
-              <span className="text-muted fs-13">PV Balance</span>
+              <span className="text-muted fs-13">Cash Balance</span>
               <h2 className="fw-bold mb-0">{wallet.pvBalance?.toLocaleString("en-IN")}</h2>
             </div>
           </div>
@@ -99,8 +99,8 @@ function Wallet() {
                     value={form.points_type}
                     onChange={(e) => setForm({ ...form, points_type: e.target.value })}
                   >
-                    <option value="BV">BV</option>
-                    <option value="PV">PV</option>
+                    <option value="BV">Online</option>
+                    <option value="PV">Cash</option>
                   </select>
                   {fieldErrors.points_type && <div className="invalid-feedback">{fieldErrors.points_type}</div>}
                 </div>

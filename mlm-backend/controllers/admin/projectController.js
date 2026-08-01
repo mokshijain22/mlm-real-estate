@@ -26,15 +26,25 @@ function parseJsonField(value, fallback) {
   }
 }
 
-// GET /api/admin/projects?page=1
+// GET /api/admin/projects?page=1&search=term
 async function index(req, res) {
   const page = parseInt(req.query.page) || 1;
   const limit = 10;
   const skip = (page - 1) * limit;
+  const search = (req.query.search || '').trim();
+
+  const filter = search
+    ? {
+        $or: [
+          { name: { $regex: search, $options: 'i' } },
+          { location: { $regex: search, $options: 'i' } },
+        ],
+      }
+    : {};
 
   const [projects, total] = await Promise.all([
-    Project.find().sort({ _id: -1 }).skip(skip).limit(limit),
-    Project.countDocuments(),
+    Project.find(filter).sort({ _id: -1 }).skip(skip).limit(limit),
+    Project.countDocuments(filter),
   ]);
 
   const projectIds = projects.map((p) => p._id);

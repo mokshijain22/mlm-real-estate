@@ -66,7 +66,7 @@ function Withdrawals() {
             <div className="card border-0 shadow-sm">
               <div className="card-body text-center">
                 <h3 className="fw-bold mb-0 text-primary">₹{Math.round(stats.total_paid_bv).toLocaleString("en-IN")}</h3>
-                <p className="text-muted small mb-0">Total Paid (BV)</p>
+                <p className="text-muted small mb-0">Total Paid (Online)</p>
               </div>
             </div>
           </div>
@@ -74,7 +74,7 @@ function Withdrawals() {
             <div className="card border-0 shadow-sm">
               <div className="card-body text-center">
                 <h3 className="fw-bold mb-0 text-info">₹{Math.round(stats.total_paid_pv).toLocaleString("en-IN")}</h3>
-                <p className="text-muted small mb-0">Total Paid (PV)</p>
+                <p className="text-muted small mb-0">Total Paid (Cash)</p>
               </div>
             </div>
           </div>
@@ -123,8 +123,8 @@ function Withdrawals() {
                 }}
               >
                 <option value="">All Types</option>
-                <option value="BV">BV</option>
-                <option value="PV">PV</option>
+                <option value="BV">Online</option>
+                <option value="PV">Cash</option>
               </select>
             </div>
           </div>
@@ -165,7 +165,7 @@ function Withdrawals() {
                     <td className="ps-3 fw-medium">{w.agent?.name || "-"}</td>
                     <td>
                       <span className={`badge border ${w.pointsType === "BV" ? "border-primary text-primary" : "border-info text-info"}`}>
-                        {w.pointsType}
+                        {w.pointsType === "BV" ? "Online" : "Cash"}
                       </span>
                     </td>
                     <td>₹{Math.round(w.amount).toLocaleString("en-IN")}</td>

@@ -83,8 +83,8 @@ function Ranks() {
             <thead className="bg-light bg-opacity-50">
               <tr>
                 <th className="ps-3 text-muted small">Rank</th>
-                <th className="text-muted small">BV Points</th>
-                <th className="text-muted small">PV Points</th>
+                <th className="text-muted small">Online Points</th>
+                <th className="text-muted small">Cash Points</th>
                 <th className="text-muted small">Min Group Sales (SQFT)</th>
                 <th className="text-muted small">Min Team Size</th>
                 <th className="text-muted small">Agents</th>

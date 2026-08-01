@@ -131,7 +131,7 @@ function Dashboard() {
                   </div>
                   <div className="flex-grow-1">
                     <p className="dash-stat-value">{Number(wallet.bvBalance).toFixed(2)}</p>
-                    <p className="dash-stat-label">BV Balance</p>
+                    <p className="dash-stat-label">Online Balance</p>
                   </div>
                 </div>
                 <div className="px-3 pb-3 d-flex align-items-center justify-content-between">
@@ -151,7 +151,7 @@ function Dashboard() {
                   </div>
                   <div className="flex-grow-1">
                     <p className="dash-stat-value">{Number(wallet.pvBalance).toFixed(2)}</p>
-                    <p className="dash-stat-label">PV Balance</p>
+                    <p className="dash-stat-label">Cash Balance</p>
                   </div>
                 </div>
                 <div className="px-3 pb-3 d-flex align-items-center justify-content-between">
@@ -171,13 +171,13 @@ function Dashboard() {
                   </div>
                   <div className="flex-grow-1">
                     <p className="dash-stat-value">
-                      {Math.round(commissions.thisMonthBv)} <small className="fs-12">BV</small>
+                      {Math.round(commissions.thisMonthBv)} <small className="fs-12">Online</small>
                     </p>
                     <p className="dash-stat-label">This Month</p>
                   </div>
                 </div>
                 <div className="px-3 pb-3 d-flex align-items-center justify-content-between">
-                  <span className="text-muted small">Cash: {Math.round(commissions.thisMonthPv)} PV</span>
+                  <span className="text-muted small">Cash: {Math.round(commissions.thisMonthPv)}</span>
                   <span className="small fw-semibold" style={{ color: "#059669" }}>
                     <iconify-icon icon="solar:arrow-up-bold" className="fs-12"></iconify-icon> Active
                   </span>
@@ -581,7 +581,7 @@ function Dashboard() {
                                     comm.pointsType === "BV" ? "border-primary text-primary" : "border-info text-info"
                                   }`}
                                 >
-                                  {comm.pointsType}
+                                  {comm.pointsType === "BV" ? "Online" : "Cash"}
                                 </span>
                               </td>
                             </tr>

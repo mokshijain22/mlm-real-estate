@@ -109,7 +109,7 @@ function AgentEarningsReport() {
           <div className="col-md-3 col-6">
             <div className="card bg-primary-subtle border-0">
               <div className="card-body">
-                <p className="text-primary-emphasis fw-semibold mb-1">Top Earner (BV)</p>
+                <p className="text-primary-emphasis fw-semibold mb-1">Top Earner (Online)</p>
                 <h4
                   className="fs-18 fw-bold text-primary mb-0 text-truncate"
                   title={summary.top_earner_bv?.name || "N/A"}
@@ -117,7 +117,7 @@ function AgentEarningsReport() {
                   {summary.top_earner_bv?.name || "N/A"}
                   {summary.top_earner_bv && (
                     <span className="fs-14 fw-normal text-muted d-block mt-1">
-                      {fmt(summary.top_earner_bv.total_bv_earned)} BV
+                      {fmt(summary.top_earner_bv.total_bv_earned)} Online
                     </span>
                   )}
                 </h4>
@@ -127,7 +127,7 @@ function AgentEarningsReport() {
           <div className="col-md-3 col-6">
             <div className="card bg-info-subtle border-0">
               <div className="card-body">
-                <p className="text-info-emphasis fw-semibold mb-1">Top Earner (PV)</p>
+                <p className="text-info-emphasis fw-semibold mb-1">Top Earner (Cash)</p>
                 <h4
                   className="fs-18 fw-bold text-info mb-0 text-truncate"
                   title={summary.top_earner_pv?.name || "N/A"}
@@ -135,7 +135,7 @@ function AgentEarningsReport() {
                   {summary.top_earner_pv?.name || "N/A"}
                   {summary.top_earner_pv && (
                     <span className="fs-14 fw-normal text-muted d-block mt-1">
-                      {fmt(summary.top_earner_pv.total_pv_earned)} PV
+                      {fmt(summary.top_earner_pv.total_pv_earned)} Cash
                     </span>
                   )}
                 </h4>
@@ -146,7 +146,7 @@ function AgentEarningsReport() {
             <div className="card bg-success-subtle border-0">
               <div className="card-body">
                 <p className="text-success-emphasis fw-semibold mb-1">Avg Earned ({periodLabel})</p>
-                <h4 className="fs-20 fw-bold text-success mb-0">{fmt(summary.avg_bv_this_month)} BV</h4>
+                <h4 className="fs-20 fw-bold text-success mb-0">{fmt(summary.avg_bv_this_month)} Online</h4>
               </div>
             </div>
           </div>
@@ -205,7 +205,7 @@ function AgentEarningsReport() {
                   </select>
                 </div>
                 <div className="col-md-2">
-                  <label className="form-label">Min Total Earnings (BV)</label>
+                  <label className="form-label">Min Total Earnings (Online)</label>
                   <input
                     type="number"
                     step="0.01"
@@ -232,10 +232,10 @@ function AgentEarningsReport() {
                       <th>Agent Name</th>
                       <th>Rank</th>
                       <th>Total Team</th>
-                      <th>Total BV Earned</th>
-                      <th>Total PV Earned</th>
-                      <th>{periodLabel} BV</th>
-                      <th>{periodLabel} PV</th>
+                      <th>Total Online Earned</th>
+                      <th>Total Cash Earned</th>
+                      <th>{periodLabel} Online</th>
+                      <th>{periodLabel} Cash</th>
                       <th>Total Bookings</th>
                       <th>Joined Date</th>
                     </tr>

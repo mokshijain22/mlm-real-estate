@@ -115,7 +115,7 @@ function CommissionsReport() {
           <div className="col-md-2 col-6">
             <div className="card bg-primary-subtle border-0">
               <div className="card-body">
-                <p className="text-primary-emphasis fw-semibold mb-1">Total BV Dist.</p>
+                <p className="text-primary-emphasis fw-semibold mb-1">Total Online Dist.</p>
                 <h4 className="fs-20 fw-bold text-primary mb-0">{fmt(summary.total_bv)}</h4>
               </div>
             </div>
@@ -123,7 +123,7 @@ function CommissionsReport() {
           <div className="col-md-2 col-6">
             <div className="card bg-info-subtle border-0">
               <div className="card-body">
-                <p className="text-info-emphasis fw-semibold mb-1">Total PV Dist.</p>
+                <p className="text-info-emphasis fw-semibold mb-1">Total Cash Dist.</p>
                 <h4 className="fs-20 fw-bold text-info mb-0">{fmt(summary.total_pv)}</h4>
               </div>
             </div>
@@ -210,8 +210,8 @@ function CommissionsReport() {
                   <label className="form-label">Points Type</label>
                   <select className="form-select" value={pointsType} onChange={(e) => resetToPage1(setPointsType)(e.target.value)}>
                     <option value="all">All</option>
-                    <option value="BV">BV</option>
-                    <option value="PV">PV</option>
+                    <option value="BV">Online</option>
+                    <option value="PV">Cash</option>
                   </select>
                 </div>
                 <div className="col-md-3">
@@ -233,7 +233,7 @@ function CommissionsReport() {
                       <th>Category</th>
                       <th>Booking # / Plot</th>
                       <th>EMI #</th>
-                      <th>BV / PV Amount</th>
+                      <th>Online / Cash Amount</th>
                       <th>Remark</th>
                     </tr>
                   </thead>
@@ -302,12 +302,12 @@ function CommissionsReport() {
                             {t.pointsType === "BV" ? (
                               <span className="text-success">
                                 <iconify-icon icon="solar:star-bold" className="fs-14 align-middle me-1"></iconify-icon>
-                                {fmt(t.amount)} BV
+                                {fmt(t.amount)} Online
                               </span>
                             ) : (
                               <span className="text-info">
                                 <iconify-icon icon="solar:star-ring-bold" className="fs-14 align-middle me-1"></iconify-icon>
-                                {fmt(t.amount)} PV
+                                {fmt(t.amount)} Cash
                               </span>
                             )}
                           </td>

@@ -19,11 +19,23 @@ function Projects() {
   const [meta, setMeta] = useState(null);
   const [page, setPage] = useState(1);
   const [error, setError] = useState(null);
+  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearch(searchInput);
+      setPage(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
   const load = () => {
+    const params = { page };
+    if (search.trim()) params.search = search.trim();
     api
-      .get("/admin/projects", { params: { page } })
+      .get("/admin/projects", { params })
       .then((res) => {
         setProjects(res.data.data);
         setMeta(res.data.meta);
@@ -34,7 +46,7 @@ function Projects() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page]);
+  }, [page, search]);
 
   const handleDelete = (id) => {
     if (!window.confirm("Are you sure you want to delete this project?")) return;
@@ -58,6 +70,15 @@ function Projects() {
             </Link>
           </div>
           <div className="card-body">
+            <div className="mb-3" style={{ maxWidth: "320px" }}>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Search by name or location..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+              />
+            </div>
             <div className="table-responsive">
               <table className="table table-centered table-nowrap mb-0">
                 <thead className="table-light">
@@ -74,7 +95,7 @@ function Projects() {
                   {projects.length === 0 && (
                     <tr>
                       <td colSpan="6" className="text-center">
-                        No projects found.
+                        {search ? `No projects found for "${search}".` : "No projects found."}
                       </td>
                     </tr>
                   )}

@@ -74,7 +74,7 @@ function Rank() {
                       <th>Rank</th>
                       <th>Min Group Sales</th>
                       <th>Min Team</th>
-                      <th>BV / PV</th>
+                      <th>Online / Cash</th>
                     </tr>
                   </thead>
                   <tbody>
