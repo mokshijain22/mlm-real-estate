@@ -4,12 +4,22 @@ const withdrawalService = require('../../services/withdrawalService');
 // GET /api/admin/withdrawals?status=&points_type=&agent_id=&date_from=&date_to=&page=
 async function index(req, res) {
   try {
-    const { status, points_type, agent_id, date_from, date_to } = req.query;
+    const { status, points_type, agent_id, date_from, date_to, search } = req.query;
 
     const query = {};
     if (status) query.status = status;
     if (points_type) query.pointsType = points_type;
     if (agent_id) query.agent = agent_id;
+
+    if (search && search.trim()) {
+      const User = require('../../models/User');
+      const re = new RegExp(search.trim(), 'i');
+      const matchedAgents = await User.find({ name: re }).select('_id');
+      query.$or = [
+        { paymentReference: re },
+        { agent: { $in: matchedAgents.map((a) => a._id) } },
+      ];
+    }
 
     if (date_from || date_to) {
       query.requestedAt = {};

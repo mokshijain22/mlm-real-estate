@@ -4,6 +4,16 @@ const Customer = require('../../models/Customer');
 async function index(req, res) {
   const filter = {};
   if (req.query.status) filter.status = req.query.status;
+  if (req.query.search && req.query.search.trim()) {
+    const re = new RegExp(req.query.search.trim(), 'i');
+    filter.$or = [
+      { name: re },
+      { customerCode: re },
+      { phone: re },
+      { email: re },
+      { city: re },
+    ];
+  }
 
   const page = parseInt(req.query.page) || 1;
   const limit = 15;

@@ -15,7 +15,7 @@ function Register() {
     name: "",
     email: "",
     phone: "",
-    pan_number: "",
+    pan_or_aadhaar: "",
     password: "",
     password_confirmation: "",
     terms: false,
@@ -246,18 +246,18 @@ function Register() {
               </div>
             </div>
 
-            <div className="new-login-field">
-              <label className="new-login-label">PAN Number</label>
+           <div className="new-login-field">
+              <label className="new-login-label">PAN or Aadhaar Number</label>
               <div className="new-login-input-wrap">
                 <iconify-icon icon="solar:document-text-linear" className="new-login-input-icon"></iconify-icon>
                 <input
                   type="text"
-                  name="pan_number"
+                  name="pan_or_aadhaar"
                   className="new-login-input text-uppercase"
-                  placeholder="ABCDE1234F"
-                  value={form.pan_number}
+                  placeholder="PAN (ABCDE1234F) or Aadhaar (12 digits)"
+                  value={form.pan_or_aadhaar}
                   onChange={handleChange}
-                  maxLength={10}
+                  maxLength={12}
                   required
                 />
               </div>

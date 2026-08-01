@@ -28,6 +28,10 @@ async function index(req, res) {
     const skip = (page - 1) * limit;
 
     const query = roleId ? { role: roleId } : { _id: null };
+    if (req.query.search && req.query.search.trim()) {
+      const re = new RegExp(req.query.search.trim(), 'i');
+      query.$or = [{ name: re }, { email: re }];
+    }
 
     const [subAdmins, total] = await Promise.all([
       User.find(query).select('-password').sort({ createdAt: -1 }).skip(skip).limit(limit),

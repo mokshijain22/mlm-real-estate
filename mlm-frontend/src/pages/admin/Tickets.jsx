@@ -16,18 +16,26 @@ function Tickets() {
   const [error, setError] = useState(null);
   const [status, setStatus] = useState("all");
   const [category, setCategory] = useState("all");
+  const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
 
   useEffect(() => {
+    const params = { status, category, page };
+    if (search.trim()) params.search = search.trim();
     api
-      .get("/admin/tickets", { params: { status, category, page } })
+      .get("/admin/tickets", { params })
       .then((res) => {
         setTickets(res.data.data);
         setMeta(res.data.meta);
         setStats(res.data.stats);
       })
       .catch((err) => setError(err.response?.data?.message || err.message));
-  }, [status, category, page]);
+  }, [status, category, search, page]);
+
+  useEffect(() => {
+    const t = setTimeout(() => setPage(1), 400);
+    return () => clearTimeout(t);
+  }, [search]);
 
   if (error) return <div className="alert alert-danger">{error}</div>;
 
@@ -72,6 +80,20 @@ function Tickets() {
       <div className="card border-0 shadow-sm mb-3">
         <div className="card-body">
           <div className="row g-2">
+            <div className="col-md-4">
+              <div className="input-group">
+                <span className="input-group-text bg-light border-end-0">
+                  <iconify-icon icon="solar:magnifer-linear"></iconify-icon>
+                </span>
+                <input
+                  type="text"
+                  className="form-control border-start-0"
+                  placeholder="Search by ticket # or subject..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+            </div>
             <div className="col-md-3">
               <select
                 className="form-select"

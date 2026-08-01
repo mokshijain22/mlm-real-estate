@@ -11,6 +11,16 @@ async function index(req, res) {
     const query = {};
     if (status !== 'all') query.status = status;
 
+    if (req.query.search && req.query.search.trim()) {
+      const re = new RegExp(req.query.search.trim(), 'i');
+      const matchedUsers = await User.find({ name: re }).select('_id');
+      query.$or = [
+        { panNumber: re },
+        { aadhaarNumber: re },
+        { user: { $in: matchedUsers.map((u) => u._id) } },
+      ];
+    }
+
     const page = parseInt(req.query.page) || 1;
     const limit = 20;
     const skip = (page - 1) * limit;

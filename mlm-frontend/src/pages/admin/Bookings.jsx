@@ -16,6 +16,7 @@ function Bookings() {
   const [agentId, setAgentId] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
 
   useEffect(() => {
@@ -26,6 +27,7 @@ function Bookings() {
     if (agentId) params.agent_id = agentId;
     if (dateFrom) params.date_from = dateFrom;
     if (dateTo) params.date_to = dateTo;
+    if (search.trim()) params.search = search.trim();
 
     api
       .get("/admin/bookings", { params })
@@ -37,7 +39,12 @@ function Bookings() {
         setPendingCount(res.data.pendingCount);
       })
       .catch((err) => setError(err.response?.data?.message || err.message));
-  }, [status, approvalStatus, projectId, agentId, dateFrom, dateTo, page]);
+  }, [status, approvalStatus, projectId, agentId, dateFrom, dateTo, search, page]);
+
+  useEffect(() => {
+    const t = setTimeout(() => setPage(1), 400);
+    return () => clearTimeout(t);
+  }, [search]);
 
   const resetToPage1 = (setter) => (val) => {
     setPage(1);
@@ -104,6 +111,23 @@ function Bookings() {
         </div>
 
         <div className="card-body">
+          <div className="row g-3 mb-3">
+            <div className="col-md-4">
+              <label className="form-label small text-muted">Search</label>
+              <div className="input-group">
+                <span className="input-group-text bg-light border-end-0">
+                  <iconify-icon icon="solar:magnifer-linear"></iconify-icon>
+                </span>
+                <input
+                  type="text"
+                  className="form-control border-start-0"
+                  placeholder="Booking #, customer, agent..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
           <div className="row g-3 mb-4">
             <div className="col-md-2">
               <label className="form-label small text-muted">Project</label>

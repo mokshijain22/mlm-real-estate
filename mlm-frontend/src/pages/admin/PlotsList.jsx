@@ -47,10 +47,13 @@ function PlotsList() {
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState(null);
   const fileInputRef = useRef(null);
+  const [search, setSearch] = useState("");
 
   const load = () => {
+    const params = { page };
+    if (search.trim()) params.search = search.trim();
     api
-      .get(`/admin/projects/${projectId}/plots`, { params: { page } })
+      .get(`/admin/projects/${projectId}/plots`, { params })
       .then((res) => {
         setProject(res.data.project);
         setPlots(res.data.data);
@@ -62,7 +65,12 @@ function PlotsList() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId, page]);
+  }, [projectId, search, page]);
+
+  useEffect(() => {
+    const t = setTimeout(() => setPage(1), 400);
+    return () => clearTimeout(t);
+  }, [search]);
 
   const handleDelete = (plotId) => {
     if (!window.confirm("Are you sure you want to delete this plot?")) return;
@@ -131,6 +139,18 @@ function PlotsList() {
             </div>
           </div>
           <div className="card-body">
+            <div className="input-group mb-3" style={{ maxWidth: 320 }}>
+              <span className="input-group-text bg-light border-end-0">
+                <iconify-icon icon="solar:magnifer-linear"></iconify-icon>
+              </span>
+              <input
+                type="text"
+                className="form-control border-start-0"
+                placeholder="Search by plot number..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
             <div className="table-responsive">
               <table className="table table-centered table-nowrap mb-0">
                 <thead className="table-light">

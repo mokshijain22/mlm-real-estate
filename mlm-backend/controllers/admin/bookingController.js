@@ -12,7 +12,7 @@ const auditService = require('../../services/auditService');
 
 async function index(req, res) {
   const filter = {};
-  const { status, approval_status, project_id, agent_id, date_from, date_to } = req.query;
+  const { status, approval_status, project_id, agent_id, date_from, date_to, search } = req.query;
 
   if (status) filter.status = status;
   if (approval_status) filter.approvalStatus = approval_status;
@@ -22,6 +22,18 @@ async function index(req, res) {
     filter.bookingDate = {};
     if (date_from) filter.bookingDate.$gte = new Date(date_from);
     if (date_to) filter.bookingDate.$lte = new Date(date_to);
+  }
+  if (search && search.trim()) {
+    const re = new RegExp(search.trim(), 'i');
+    const [matchedCustomers, matchedAgents] = await Promise.all([
+      Customer.find({ name: re }).select('_id'),
+      User.find({ name: re }).select('_id'),
+    ]);
+    filter.$or = [
+      { bookingNumber: re },
+      { customer: { $in: matchedCustomers.map((c) => c._id) } },
+      { agent: { $in: matchedAgents.map((a) => a._id) } },
+    ];
   }
 
   const page = parseInt(req.query.page) || 1;

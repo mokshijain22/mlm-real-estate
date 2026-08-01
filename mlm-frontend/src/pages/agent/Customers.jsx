@@ -22,6 +22,7 @@ function Customers() {
   const [form, setForm] = useState(emptyForm);
   const [fieldErrors, setFieldErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [search, setSearch] = useState("");
 
   const load = () => {
     api
@@ -60,6 +61,17 @@ function Customers() {
 
   if (error) return <div className="alert alert-danger border-0 shadow-sm">{error}</div>;
   if (!customers) return <div className="text-center py-5">Loading...</div>;
+
+  const filteredCustomers = customers.filter((c) => {
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      (c.customerCode || "").toLowerCase().includes(q) ||
+      (c.name || "").toLowerCase().includes(q) ||
+      (c.phone || "").toLowerCase().includes(q) ||
+      (c.city || "").toLowerCase().includes(q)
+    );
+  });
 
   return (
     <>
@@ -177,9 +189,25 @@ function Customers() {
       )}
 
       <div className="card border-0 shadow-sm">
+        <div className="card-body p-3 pb-0">
+          <div className="input-group" style={{ maxWidth: 320 }}>
+            <span className="input-group-text bg-light border-end-0">
+              <iconify-icon icon="solar:magnifer-linear"></iconify-icon>
+            </span>
+            <input
+              type="text"
+              className="form-control border-start-0"
+              placeholder="Search by code, name, phone, city..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+        </div>
         <div className="card-body p-0">
-          {customers.length === 0 ? (
-            <div className="text-center py-5 text-muted">No customers added yet.</div>
+          {filteredCustomers.length === 0 ? (
+            <div className="text-center py-5 text-muted">
+              {customers.length === 0 ? "No customers added yet." : "No customers match your search."}
+            </div>
           ) : (
             <div className="table-responsive">
               <table className="table table-hover align-middle mb-0">
@@ -194,7 +222,7 @@ function Customers() {
                   </tr>
                 </thead>
                 <tbody>
-                  {customers.map((c) => (
+                  {filteredCustomers.map((c) => (
                     <tr key={c._id}>
                       <td className="fw-semibold">{c.customerCode}</td>
                       <td>{c.name}</td>

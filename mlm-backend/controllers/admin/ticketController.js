@@ -4,11 +4,15 @@ const supportTicketService = require('../../services/supportTicketService');
 // GET /api/admin/tickets?status=&category=&page=
 async function index(req, res) {
   try {
-    const { status, category } = req.query;
+    const { status, category, search } = req.query;
 
     const query = {};
     if (status && status !== 'all') query.status = status;
     if (category && category !== 'all') query.category = category;
+    if (search && search.trim()) {
+      const re = new RegExp(search.trim(), 'i');
+      query.$or = [{ ticketNumber: re }, { subject: re }];
+    }
 
     const page = parseInt(req.query.page) || 1;
     const limit = 20;

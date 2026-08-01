@@ -7,6 +7,7 @@ function Team() {
   const [error, setError] = useState(null);
   const [view, setView] = useState("tree"); // "tree" | "list"
   const [scale, setScale] = useState(1);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     api
@@ -26,7 +27,16 @@ function Team() {
     if (depth > 0) flatList.push({ ...node, depth });
     (node.children || []).forEach((c) => flatten(c, depth + 1));
   };
-  if (treeData) flatten(treeData, 0);
+if (treeData) flatten(treeData, 0);
+
+  const filteredList = flatList.filter((n) => {
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      (n.name || "").toLowerCase().includes(q) ||
+      (n.rank_name || "").toLowerCase().includes(q)
+    );
+  });
 
   return (
     <>
@@ -78,11 +88,27 @@ function Team() {
             </div>
           </div>
         </div>
-      ) : (
+     ) : (
         <div className="card border-0 shadow-sm">
+          <div className="card-body p-3 pb-0">
+            <div className="input-group" style={{ maxWidth: 320 }}>
+              <span className="input-group-text bg-light border-end-0">
+                <iconify-icon icon="solar:magnifer-linear"></iconify-icon>
+              </span>
+              <input
+                type="text"
+                className="form-control border-start-0"
+                placeholder="Search by name or rank..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+          </div>
           <div className="card-body p-0">
-            {flatList.length === 0 ? (
-              <div className="text-center py-5 text-muted">No team members found yet.</div>
+            {filteredList.length === 0 ? (
+              <div className="text-center py-5 text-muted">
+                {flatList.length === 0 ? "No team members found yet." : "No members match your search."}
+              </div>
             ) : (
               <div className="table-responsive">
                 <table className="table table-hover align-middle mb-0">
@@ -94,7 +120,7 @@ function Team() {
                     </tr>
                   </thead>
                   <tbody>
-                    {flatList.map((n) => (
+                    {filteredList.map((n) => (
                       <tr key={n.id}>
                         <td>
                           <span style={{ display: "inline-block", width: (n.depth - 1) * 18 }} />

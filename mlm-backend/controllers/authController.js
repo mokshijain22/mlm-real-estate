@@ -36,7 +36,7 @@ async function generateReferralCode() {
 // POST /api/auth/register
 async function register(req, res) {
   try {
-    const { name, email, phone, pan_number, password, password_confirmation, referral_code, group, terms } =
+    const { name, email, phone, pan_or_aadhaar, password, password_confirmation, referral_code, group, terms } =
       req.body;
 
     // --- validation (mirrors Laravel $request->validate) ---
@@ -44,8 +44,10 @@ async function register(req, res) {
     if (!name || typeof name !== 'string') errors.name = 'Name is required.';
     if (!email) errors.email = 'Email is required.';
     if (!phone || !/^\d{10,15}$/.test(phone)) errors.phone = 'Valid phone (10-15 digits) is required.';
-    if (!pan_number || !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(String(pan_number).toUpperCase())) {
-      errors.pan_number = 'Valid PAN number is required.';
+    const isPan = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(String(pan_or_aadhaar || '').toUpperCase());
+    const isAadhaar = /^\d{12}$/.test(String(pan_or_aadhaar || ''));
+    if (!pan_or_aadhaar || (!isPan && !isAadhaar)) {
+      errors.pan_or_aadhaar = 'Enter a valid PAN (ABCDE1234F) or Aadhaar number (12 digits).';
     }
     if (!password || password.length < 8) errors.password = 'Password must be at least 8 characters.';
     if (password !== password_confirmation) errors.password = 'Passwords do not match.';
@@ -55,15 +57,17 @@ async function register(req, res) {
       return res.status(422).json({ errors });
     }
 
-    const [emailTaken, phoneTaken, panTaken] = await Promise.all([
+   const idQuery = isPan
+      ? { panNumber: String(pan_or_aadhaar).toUpperCase() }
+      : { aadhaarNumber: String(pan_or_aadhaar) };
+    const [emailTaken, phoneTaken, idTaken] = await Promise.all([
       User.findOne({ email }),
       User.findOne({ phone }),
-      KycVerification.findOne({ panNumber: String(pan_number).toUpperCase() }),
+      KycVerification.findOne(idQuery),
     ]);
     if (emailTaken) return res.status(422).json({ errors: { email: 'Email already registered.' } });
     if (phoneTaken) return res.status(422).json({ errors: { phone: 'Phone already registered.' } });
-    if (panTaken) return res.status(422).json({ errors: { pan_number: 'PAN already registered.' } });
-
+    if (idTaken) return res.status(422).json({ errors: { pan_or_aadhaar: (isPan ? 'PAN' : 'Aadhaar') + ' already registered.' } });
     // --- referral resolution ---
     let referrer = null;
     let mlmLevel = 1;
@@ -143,7 +147,8 @@ async function register(req, res) {
 
     await KycVerification.create({
       user: user._id,
-      panNumber: String(pan_number).toUpperCase(),
+      panNumber: isPan ? String(pan_or_aadhaar).toUpperCase() : null,
+      aadhaarNumber: !isPan ? String(pan_or_aadhaar) : null,
       status: 'pending',
     });
 

@@ -16,6 +16,7 @@ function Tickets() {
   const [form, setForm] = useState({ subject: "", message: "", category: "general" });
   const [fieldErrors, setFieldErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [search, setSearch] = useState("");
 
   const load = () => {
     api
@@ -52,6 +53,16 @@ function Tickets() {
 
   if (error) return <div className="alert alert-danger border-0 shadow-sm">{error}</div>;
   if (!tickets) return <div className="text-center py-5">Loading...</div>;
+
+  const filteredTickets = tickets.filter((t) => {
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      (t.ticketNumber || "").toLowerCase().includes(q) ||
+      (t.subject || "").toLowerCase().includes(q) ||
+      (categoryLabel[t.category] || t.category || "").toLowerCase().includes(q)
+    );
+  });
 
   return (
     <>
@@ -115,9 +126,25 @@ function Tickets() {
       )}
 
       <div className="card border-0 shadow-sm">
+        <div className="card-body p-3 pb-0">
+          <div className="input-group" style={{ maxWidth: 320 }}>
+            <span className="input-group-text bg-light border-end-0">
+              <iconify-icon icon="solar:magnifer-linear"></iconify-icon>
+            </span>
+            <input
+              type="text"
+              className="form-control border-start-0"
+              placeholder="Search by ticket no, subject, category..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+        </div>
         <div className="card-body p-0">
-          {tickets.length === 0 ? (
-            <div className="text-center py-5 text-muted">No tickets raised yet.</div>
+          {filteredTickets.length === 0 ? (
+            <div className="text-center py-5 text-muted">
+              {tickets.length === 0 ? "No tickets raised yet." : "No tickets match your search."}
+            </div>
           ) : (
             <div className="table-responsive">
               <table className="table table-hover align-middle mb-0">
@@ -132,7 +159,7 @@ function Tickets() {
                   </tr>
                 </thead>
                 <tbody>
-                  {tickets.map((t) => (
+                  {filteredTickets.map((t) => (
                     <tr key={t._id}>
                       <td className="fw-semibold">{t.ticketNumber}</td>
                       <td>{t.subject}</td>

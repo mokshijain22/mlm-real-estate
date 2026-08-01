@@ -23,13 +23,20 @@ async function index(req, res) {
   const project = await Project.findById(req.params.projectId);
   if (!project) return res.status(404).json({ message: 'Project not found.' });
 
+  const filter = { project: project._id };
+  if (req.query.status) filter.status = req.query.status;
+  if (req.query.search && req.query.search.trim()) {
+    const re = new RegExp(req.query.search.trim(), 'i');
+    filter.$or = [{ plotNumber: re }];
+  }
+
   const page = parseInt(req.query.page) || 1;
   const limit = 10;
   const skip = (page - 1) * limit;
 
   const [plots, total] = await Promise.all([
-    Plot.find({ project: project._id }).skip(skip).limit(limit),
-    Plot.countDocuments({ project: project._id }),
+    Plot.find(filter).skip(skip).limit(limit),
+    Plot.countDocuments(filter),
   ]);
 
   res.json({

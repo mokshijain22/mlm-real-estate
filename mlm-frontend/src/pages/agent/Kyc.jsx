@@ -2,6 +2,39 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../../api/axios.js";
 
+const INDIAN_BANKS = [
+  "State Bank of India",
+  "HDFC Bank",
+  "ICICI Bank",
+  "Axis Bank",
+  "Punjab National Bank",
+  "Bank of Baroda",
+  "Canara Bank",
+  "Union Bank of India",
+  "Kotak Mahindra Bank",
+  "IndusInd Bank",
+  "IDBI Bank",
+  "Yes Bank",
+  "Bank of India",
+  "Central Bank of India",
+  "Indian Bank",
+  "Indian Overseas Bank",
+  "UCO Bank",
+  "Bank of Maharashtra",
+  "Punjab & Sind Bank",
+  "IDFC First Bank",
+  "Federal Bank",
+  "South Indian Bank",
+  "RBL Bank",
+  "Karnataka Bank",
+  "Karur Vysya Bank",
+  "City Union Bank",
+  "Bandhan Bank",
+  "AU Small Finance Bank",
+  "Jammu & Kashmir Bank",
+  "DCB Bank",
+];
+
 const statusBadge = {
   pending: { color: "warning", icon: "solar:clock-circle-bold-duotone", label: "Pending Review" },
   approved: { color: "success", icon: "solar:check-circle-bold-duotone", label: "Approved" },
@@ -273,10 +306,17 @@ function Kyc() {
                   <input
                     type="text"
                     name="bank_name"
+                    list="bank-name-suggestions"
+                    autoComplete="off"
                     className={`form-control ${fieldErrors.bank_name ? "is-invalid" : ""}`}
                     value={form.bank_name}
                     onChange={handleChange}
                   />
+                  <datalist id="bank-name-suggestions">
+                    {INDIAN_BANKS.map((bank) => (
+                      <option key={bank} value={bank} />
+                    ))}
+                  </datalist>
                   {fieldErrors.bank_name && (
                     <div className="invalid-feedback">{fieldErrors.bank_name}</div>
                   )}

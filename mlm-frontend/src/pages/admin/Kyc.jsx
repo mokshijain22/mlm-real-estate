@@ -7,17 +7,25 @@ function Kyc() {
   const [meta, setMeta] = useState(null);
   const [error, setError] = useState(null);
   const [status, setStatus] = useState("pending");
+  const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
 
   useEffect(() => {
+    const params = { status, page };
+    if (search.trim()) params.search = search.trim();
     api
-      .get("/admin/kyc", { params: { status, page } })
+      .get("/admin/kyc", { params })
       .then((res) => {
         setKycs(res.data.data);
         setMeta(res.data.meta);
       })
       .catch((err) => setError(err.response?.data?.message || err.message));
-  }, [status, page]);
+  }, [status, search, page]);
+
+  useEffect(() => {
+    const t = setTimeout(() => setPage(1), 400);
+    return () => clearTimeout(t);
+  }, [search]);
 
   if (error) return <div className="alert alert-danger">{error}</div>;
 
@@ -33,6 +41,20 @@ function Kyc() {
       <div className="card border-0 shadow-sm mb-3">
         <div className="card-body">
           <div className="row g-2">
+            <div className="col-md-4">
+              <div className="input-group">
+                <span className="input-group-text bg-light border-end-0">
+                  <iconify-icon icon="solar:magnifer-linear"></iconify-icon>
+                </span>
+                <input
+                  type="text"
+                  className="form-control border-start-0"
+                  placeholder="Search by agent name, PAN, Aadhaar..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+            </div>
             <div className="col-md-3">
               <select
                 className="form-select"

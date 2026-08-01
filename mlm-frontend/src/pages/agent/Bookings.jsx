@@ -11,6 +11,7 @@ const statusColor = {
 function Bookings() {
   const [bookings, setBookings] = useState(null);
   const [error, setError] = useState(null);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     api
@@ -21,6 +22,17 @@ function Bookings() {
 
   if (error) return <div className="alert alert-danger border-0 shadow-sm">{error}</div>;
   if (!bookings) return <div className="text-center py-5">Loading...</div>;
+
+  const filteredBookings = bookings.filter((b) => {
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      (b.bookingNumber || "").toLowerCase().includes(q) ||
+      (b.customer?.name || "").toLowerCase().includes(q) ||
+      (b.project?.name || "").toLowerCase().includes(q) ||
+      (b.plot?.plotNumber || "").toLowerCase().includes(q)
+    );
+  });
 
   return (
     <>
@@ -36,9 +48,25 @@ function Bookings() {
       </div>
 
       <div className="card border-0 shadow-sm">
+        <div className="card-body p-3 pb-0">
+          <div className="input-group" style={{ maxWidth: 320 }}>
+            <span className="input-group-text bg-light border-end-0">
+              <iconify-icon icon="solar:magnifer-linear"></iconify-icon>
+            </span>
+            <input
+              type="text"
+              className="form-control border-start-0"
+              placeholder="Search by booking no, customer, project..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+        </div>
         <div className="card-body p-0">
-          {bookings.length === 0 ? (
-            <div className="text-center py-5 text-muted">No bookings yet.</div>
+          {filteredBookings.length === 0 ? (
+            <div className="text-center py-5 text-muted">
+              {bookings.length === 0 ? "No bookings yet." : "No bookings match your search."}
+            </div>
           ) : (
             <div className="table-responsive">
               <table className="table table-hover align-middle mb-0">
@@ -55,7 +83,7 @@ function Bookings() {
                   </tr>
                 </thead>
                 <tbody>
-                  {bookings.map((b) => (
+                  {filteredBookings.map((b) => (
                     <tr key={b._id}>
                       <td className="fw-semibold">{b.bookingNumber}</td>
                       <td>{b.customer?.name}</td>

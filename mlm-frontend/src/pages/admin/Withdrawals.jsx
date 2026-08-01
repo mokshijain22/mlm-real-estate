@@ -9,12 +9,14 @@ function Withdrawals() {
   const [error, setError] = useState(null);
   const [status, setStatus] = useState("pending");
   const [pointsType, setPointsType] = useState("");
+  const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
 
   useEffect(() => {
     const params = { page };
     if (status) params.status = status;
     if (pointsType) params.points_type = pointsType;
+    if (search.trim()) params.search = search.trim();
 
     api
       .get("/admin/withdrawals", { params })
@@ -24,7 +26,12 @@ function Withdrawals() {
         setStats(res.data.stats);
       })
       .catch((err) => setError(err.response?.data?.message || err.message));
-  }, [status, pointsType, page]);
+  }, [status, pointsType, search, page]);
+
+  useEffect(() => {
+    const t = setTimeout(() => setPage(1), 400);
+    return () => clearTimeout(t);
+  }, [search]);
 
   if (error) return <div className="alert alert-danger">{error}</div>;
 
@@ -77,6 +84,20 @@ function Withdrawals() {
       <div className="card border-0 shadow-sm mb-3">
         <div className="card-body">
           <div className="row g-2">
+            <div className="col-md-4">
+              <div className="input-group">
+                <span className="input-group-text bg-light border-end-0">
+                  <iconify-icon icon="solar:magnifer-linear"></iconify-icon>
+                </span>
+                <input
+                  type="text"
+                  className="form-control border-start-0"
+                  placeholder="Search by agent name or reference..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+            </div>
             <div className="col-md-3">
               <select
                 className="form-select"

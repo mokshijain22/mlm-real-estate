@@ -7,11 +7,14 @@ function SubAdmins() {
   const [meta, setMeta] = useState(null);
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
   const [actionLoading, setActionLoading] = useState(null);
 
   const load = () => {
+    const params = { page };
+    if (search.trim()) params.search = search.trim();
     api
-      .get("/admin/sub-admins", { params: { page } })
+      .get("/admin/sub-admins", { params })
       .then((res) => {
         setSubAdmins(res.data.data);
         setMeta(res.data.meta);
@@ -22,7 +25,12 @@ function SubAdmins() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page]);
+  }, [search, page]);
+
+  useEffect(() => {
+    const t = setTimeout(() => setPage(1), 400);
+    return () => clearTimeout(t);
+  }, [search]);
 
   const handleToggle = (admin) => {
     const action = admin.status === "active" ? "Deactivate" : "Activate";
@@ -47,6 +55,18 @@ function SubAdmins() {
         </Link>
       </div>
       <div className="card-body">
+        <div className="input-group mb-3" style={{ maxWidth: 320 }}>
+          <span className="input-group-text bg-light border-end-0">
+            <iconify-icon icon="solar:magnifer-linear"></iconify-icon>
+          </span>
+          <input
+            type="text"
+            className="form-control border-start-0"
+            placeholder="Search by name or email..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
         <div className="table-responsive">
           <table className="table table-centered table-nowrap mb-0">
             <thead className="table-light">

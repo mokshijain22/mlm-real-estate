@@ -5,6 +5,7 @@ import api from "../../api/axios.js";
 function Projects() {
   const [projects, setProjects] = useState(null);
   const [error, setError] = useState(null);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     api
@@ -16,18 +17,46 @@ function Projects() {
   if (error) return <div className="alert alert-danger border-0 shadow-sm">{error}</div>;
   if (!projects) return <div className="text-center py-5">Loading...</div>;
 
+  const filteredProjects = projects.filter((p) => {
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      (p.name || "").toLowerCase().includes(q) ||
+      (p.location || "").toLowerCase().includes(q)
+    );
+  });
+
   return (
     <>
       <h4 className="fw-bold mb-1">Projects</h4>
-      <p className="text-muted mb-4 fs-13">Browse available real estate projects.</p>
+      <p className="text-muted mb-3 fs-13">Browse available real estate projects.</p>
 
-      {projects.length === 0 ? (
+      <div className="card border-0 shadow-sm mb-4">
+        <div className="card-body p-3">
+          <div className="input-group" style={{ maxWidth: 320 }}>
+            <span className="input-group-text bg-light border-end-0">
+              <iconify-icon icon="solar:magnifer-linear"></iconify-icon>
+            </span>
+            <input
+              type="text"
+              className="form-control border-start-0"
+              placeholder="Search by project name or location..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+        </div>
+      </div>
+
+      {filteredProjects.length === 0 ? (
         <div className="card border-0 shadow-sm">
-          <div className="card-body text-center py-5 text-muted">No active projects available.</div>
+          <div className="card-body text-center py-5 text-muted">
+            {projects.length === 0 ? "No active projects available." : "No projects match your search."}
+          </div>
         </div>
       ) : (
         <div className="row">
-          {projects.map((p) => (
+          {filteredProjects.map((p) => (
             <div className="col-md-6 col-xl-4 mb-4" key={p._id}>
               <div className="card border-0 shadow-sm h-100">
                 <div className="card-body p-4 d-flex flex-column">
