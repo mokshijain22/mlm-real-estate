@@ -21,7 +21,7 @@ function Referrals() {
   if (!data) return <div className="text-center py-5">Loading...</div>;
 
   const { agent, directReferrals, totalTeam, activeMembers, pendingKyc, eligibleRanks, kycVerified } = data;
-  const referralLink = `${window.location.origin}/register?ref=${agent.referralCode}`;
+  const referralLink = `${window.location.origin}/register?referral_code=${agent.referralCode}`;
 
   const handleCopy = () => {
     copyToClipboard(referralLink);
@@ -61,7 +61,7 @@ function Referrals() {
                 You can place new joiners into your own rank or any rank below it.
               </p>
               {eligibleRanks.map((r) => {
-                const rankLink = `${window.location.origin}/register?ref=${agent.referralCode}&rank=${r._id}`;
+                const rankLink = `${referralLink}&group=${r.abbreviation}`;
                 return (
                   <div key={r._id} className="d-flex align-items-center gap-2 mb-2">
                     <span className="badge bg-secondary-subtle text-secondary" style={{ width: 70 }}>

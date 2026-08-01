@@ -102,9 +102,11 @@ async function register(req, res) {
     }
 
     // --- group/rank referral placement (server-enforced, matches Laravel logic) ---
+    
     let targetRankId = null;
     if (group && referrer) {
       const targetRank = await Rank.findOne({ abbreviation: group });
+      
       if (targetRank) {
         if (isSuperAdmin(referrer) || isSubAdmin(referrer)) {
           targetRankId = targetRank._id;
