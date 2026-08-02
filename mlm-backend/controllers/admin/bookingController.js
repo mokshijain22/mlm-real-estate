@@ -4,6 +4,7 @@ const Plot = require('../../models/Plot');
 const Project = require('../../models/Project');
 const User = require('../../models/User');
 const Role = require('../../models/Role');
+const { PAYMENT_MODES } = require('../../utils/paymentModes');
 
 const bookingService = require('../../services/bookingService');
 const commissionService = require('../../services/commissionService');
@@ -100,6 +101,29 @@ async function create(req, res) {
   res.json({ customers, projects, agents });
 }
 
+// POST /api/admin/bookings/commission-preview
+// Used by the Create Booking wizard's Commission step, before the booking is saved.
+async function commissionPreview(req, res) {
+  const { agent_id, price_per_sqft, emi_amount, emi_months, payment_mode } = req.body;
+
+  if (!agent_id || !emi_months || !payment_mode) {
+    return res.status(422).json({ message: 'agent_id, emi_months and payment_mode are required.' });
+  }
+
+  try {
+    const preview = await commissionService.previewCommissionForData({
+      agentId: agent_id,
+      pricePerSqft: Number(price_per_sqft) || 0,
+      emiAmount: Number(emi_amount) || 0,
+      emiMonths: Number(emi_months),
+      paymentMode: payment_mode,
+    });
+    res.json({ preview });
+  } catch (err) {
+    res.status(422).json({ message: err.message });
+  }
+}
+
 async function store(req, res) {
   const { customer_id, plot_id, agent_id, price_per_sqft, booking_amount, emi_months, payment_mode, notes } = req.body;
 
@@ -110,8 +134,7 @@ async function store(req, res) {
   if (price_per_sqft === undefined || Number(price_per_sqft) < 0) errors.price_per_sqft = 'Valid price per sqft is required.';
   if (booking_amount === undefined || Number(booking_amount) < 0) errors.booking_amount = 'Valid booking amount is required.';
   if (!emi_months || emi_months < 1 || emi_months > 360) errors.emi_months = 'EMI months must be between 1 and 360.';
-  if (!payment_mode || !['cash', 'online', 'cheque'].includes(payment_mode)) errors.payment_mode = 'Invalid payment mode.';
-  if (Object.keys(errors).length) return res.status(422).json({ errors });
+  if (!payment_mode || !PAYMENT_MODES.includes(payment_mode)) errors.payment_mode = 'Invalid payment mode.';  if (Object.keys(errors).length) return res.status(422).json({ errors });
 
   const plot = await Plot.findById(plot_id);
   if (!plot) return res.status(404).json({ message: 'Plot not found.' });
@@ -239,4 +262,4 @@ async function reject(req, res) {
   return res.json({ message: 'Booking rejected and plot released.', data: booking });
 }
 
-module.exports = { index, pending, create, store, show, cancel, approve, reject };
+module.exports = { index, pending, create, store, show, cancel, approve, reject, commissionPreview };

@@ -3,6 +3,7 @@ const Booking = require('../../models/Booking');
 const Plot = require('../../models/Plot');
 const commissionService = require('../../services/commissionService');
 const auditService = require('../../services/auditService');
+const { PAYMENT_MODES } = require('../../utils/paymentModes');
 
 /**
  * Release commission triggered by the Down Payment being paid. If this
@@ -70,8 +71,7 @@ async function markPaid(req, res) {
 
   const errors = {};
   if (!paid_date) errors.paid_date = 'Paid date is required.';
-  if (!payment_mode || !['cash', 'online'].includes(payment_mode)) errors.payment_mode = 'Invalid payment mode.';
-  if (Object.keys(errors).length) return res.status(422).json({ success: false, errors });
+  if (!payment_mode || !PAYMENT_MODES.includes(payment_mode)) errors.payment_mode = 'Invalid payment mode.';  if (Object.keys(errors).length) return res.status(422).json({ success: false, errors });
 
   const emi = await Emi.findById(req.params.id);
   if (!emi) return res.status(404).json({ success: false, message: 'EMI not found.' });

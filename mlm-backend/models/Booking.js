@@ -18,7 +18,7 @@ const bookingSchema = new mongoose.Schema(
     remainingAmount: { type: Number, required: true },
     emiMonths: { type: Number, required: true },
     emiAmount: { type: Number, required: true },
-    paymentMode: { type: String, enum: ['cash', 'online', 'cheque'], required: true },
+    paymentMode: { type: String, enum: ['cash', 'upi', 'net_banking', 'bank_transfer', 'cheque', 'card'], required: true },
     transactionId: { type: String, default: null }, // for online payments
     chequeNumber: { type: String, default: null }, // for cheque payments
     chequeBankName: { type: String, default: null },

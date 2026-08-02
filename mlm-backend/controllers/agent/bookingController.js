@@ -3,7 +3,7 @@ const Customer = require('../../models/Customer');
 const Plot = require('../../models/Plot');
 const bookingService = require('../../services/bookingService');
 const auditService = require('../../services/auditService');
-
+const { PAYMENT_MODES } = require('../../utils/paymentModes');
 // GET /api/agent/bookings
 async function index(req, res) {
   const bookings = await Booking.find({ agent: req.user._id })
@@ -37,8 +37,7 @@ async function store(req, res) {
   if (price_per_sqft === undefined || Number(price_per_sqft) < 0) errors.price_per_sqft = 'Valid price per sqft is required.';
   if (booking_amount === undefined || Number(booking_amount) < 0) errors.booking_amount = 'Valid booking amount is required.';
   if (!emi_months || emi_months < 1 || emi_months > 360) errors.emi_months = 'EMI months must be between 1 and 360.';
-  if (!payment_mode || !['cash', 'online'].includes(payment_mode)) errors.payment_mode = 'Invalid payment mode.';
-  if (Object.keys(errors).length) return res.status(422).json({ errors });
+  if (!payment_mode || !PAYMENT_MODES.includes(payment_mode)) errors.payment_mode = 'Invalid payment mode.';  if (Object.keys(errors).length) return res.status(422).json({ errors });
 
   // Verify customer ownership (mirrors Laravel's added_by check + firstOrFail)
   const customer = await Customer.findOne({ _id: customer_id, addedBy: req.user._id });

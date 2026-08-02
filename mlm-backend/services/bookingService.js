@@ -6,6 +6,7 @@ const Rank = require('../models/Rank');
 const User = require('../models/User');
 const { isSuperAdmin, isSubAdmin } = require('../utils/userHelpers');
 const { checkAndUpgradeRank } = require('./rankService');
+const commissionService = require('./commissionService');
 
 function addDays(date, days) {
   const d = new Date(date);
@@ -117,10 +118,39 @@ async function createBooking(data, actingUser) {
 
       if (booking.approvalStatus === 'approved') {
         await generateEmis(booking, session);
+
+        // If the token/booking-amount payment was collected right there in the
+        // wizard (bank/receipt/remarks provided), mark that milestone paid
+        // immediately instead of leaving it pending for a separate collection step.
+        if (Number(booking.bookingAmount) > 0 && data.token_collected) {
+          const tokenEmi = await Emi.findOne({ booking: booking._id, emiNumber: 0 }).session(session);
+          if (tokenEmi) {
+            tokenEmi.status = 'paid';
+            tokenEmi.paidDate = data.payment_date || new Date();
+            tokenEmi.paymentMode = data.payment_mode;
+            tokenEmi.paymentReference = data.payment_reference || null;
+            tokenEmi.bank = data.bank_id || null;
+            tokenEmi.receiptId = data.receipt_id || null;
+            tokenEmi.remarks = data.remarks || null;
+            await tokenEmi.save({ session });
+          }
+        }
       }
 
       createdBooking = booking;
     });
+
+    // Release the token's commission now — only if there's no Down Payment
+    // milestone waiting (same rule the manual "mark paid" flow follows).
+    if (createdBooking && data.token_collected && Number(createdBooking.bookingAmount) > 0) {
+      const tokenEmi = await Emi.findOne({ booking: createdBooking._id, emiNumber: 0, status: 'paid' });
+      if (tokenEmi && !tokenEmi.commissionProcessed) {
+        const hasDownPayment = await Emi.exists({ booking: createdBooking._id, emiNumber: -1 });
+        if (!hasDownPayment) {
+          await commissionService.processEmiCommission(tokenEmi);
+        }
+      }
+    }
 
     if (createdBooking && createdBooking.approvalStatus === 'approved') {
       const sellingAgent = await User.findById(data.agent_id);

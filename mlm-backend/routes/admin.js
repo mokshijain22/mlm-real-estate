@@ -16,8 +16,8 @@ const settingsController = require('../controllers/admin/settingsController');
 const customerController = require('../controllers/admin/customerController');
 const emiController = require('../controllers/admin/emiController');
 const bookingController = require('../controllers/admin/bookingController');
-const dashboardController = require('../controllers/admin/dashboardController');
-const profileController = require('../controllers/profileController');
+const bankController = require('../controllers/admin/bankController');
+const dashboardController = require('../controllers/admin/dashboardController');const profileController = require('../controllers/profileController');
 const { settingsUpload, profileUpload } = require('../middleware/upload');
 const { protect, restrictTo, requirePermission } = require('../middleware/auth');
 const { layoutUpload, mapImageUpload } = require('../middleware/upload');
@@ -89,11 +89,16 @@ router.use('/bookings', requirePermission('bookings'));
 router.get('/bookings', bookingController.index);
 router.get('/bookings/pending', bookingController.pending);
 router.get('/bookings/create', bookingController.create);
+router.post('/bookings/commission-preview', bookingController.commissionPreview);
 router.post('/bookings', bookingController.store);
 router.get('/bookings/:id', bookingController.show);
 router.patch('/bookings/:id/approve', bookingController.approve);
 router.patch('/bookings/:id/reject', bookingController.reject);
 router.patch('/bookings/:id/cancel', bookingController.cancel);
+
+// Banks (used by booking payment step)
+router.get('/banks', bankController.index);
+router.post('/banks', bankController.store);
 
 // Withdrawals
 router.use('/withdrawals', requirePermission('withdrawals'));

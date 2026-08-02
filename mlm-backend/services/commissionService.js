@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { isOnlineMode } = require('../utils/paymentModes');
 const Rank = require('../models/Rank');
 const User = require('../models/User');
 const settingService = require('./settingService');
@@ -28,11 +29,10 @@ async function processEmiCommission(emi) {
       const sellingAgent = booking.agent;
       sellingAgentForRankRefresh = sellingAgent;
       const mode = emi.paymentMode || booking.paymentMode;
-      const sqftPortion = Number(emi.sqftPortion);
+       const sqftPortion = Number(emi.sqftPortion);
 
-      const pointsType = mode.toUpperCase() === 'ONLINE' ? 'BV' : 'PV';
+      const pointsType = isOnlineMode(mode) ? 'BV' : 'PV';
       const multiplier = await settingService.get(`${pointsType.toLowerCase()}_per_sqft`, 1.0);
-
       // 1. Seller commission based on snapshot rank at booking time
       let bookingRank = booking.agentRank;
       if (!bookingRank) {
@@ -119,11 +119,10 @@ async function processCombinedDepositCommission(downPaymentEmi, depositEmi) {
       const sellingAgent = booking.agent;
       sellingAgentForRankRefresh = sellingAgent;
       const mode = downPaymentEmi.paymentMode || booking.paymentMode;
-      const combinedSqft = Number(downPaymentEmi.sqftPortion) + Number(depositEmi.sqftPortion);
+    const combinedSqft = Number(downPaymentEmi.sqftPortion) + Number(depositEmi.sqftPortion);
 
-      const pointsType = mode.toUpperCase() === 'ONLINE' ? 'BV' : 'PV';
+      const pointsType = isOnlineMode(mode) ? 'BV' : 'PV';
       const multiplier = await settingService.get(`${pointsType.toLowerCase()}_per_sqft`, 1.0);
-
       let bookingRank = booking.agentRank;
       if (!bookingRank) {
         bookingRank = await Rank.findOne().sort({ sortOrder: 1 }).session(session);
@@ -188,22 +187,25 @@ async function processCombinedDepositCommission(downPaymentEmi, depositEmi) {
 }
 
 /**
- * Preview commission distribution for a booking (no wallet writes).
+ * Preview commission distribution from raw inputs (no saved booking needed).
+ * Used both by the booking wizard's Commission step (before the booking exists)
+ * and by previewCommission() below (for an already-saved booking).
  */
-async function previewCommission(booking) {
-  await booking.populate('agent');
-  await booking.populate('agentRank');
+async function previewCommissionForData({ agentId, agentRankId, pricePerSqft, emiAmount, emiMonths, paymentMode }) {
+  const sellingAgent = await User.findById(agentId);
+  if (!sellingAgent) throw new Error('Agent not found.');
 
   const preview = [];
-  const sellingAgent = booking.agent;
-  const mode = booking.paymentMode;
-  const pricePerSqft = Number(booking.pricePerSqft) || 0;
-  const sqftPortion = pricePerSqft > 0 ? Number(booking.emiAmount) / pricePerSqft : 0;
+  const mode = paymentMode;
+  const sqftPortion = pricePerSqft > 0 ? Number(emiAmount) / pricePerSqft : 0;
 
-  const pointsType = mode.toUpperCase() === 'ONLINE' ? 'BV' : 'PV';
+  const pointsType = isOnlineMode(mode) ? 'BV' : 'PV';
   const multiplier = await settingService.get(`${pointsType.toLowerCase()}_per_sqft`, 1.0);
 
-  let bookingRank = booking.agentRank;
+  let bookingRank = agentRankId ? await Rank.findById(agentRankId) : null;
+  if (!bookingRank) {
+    bookingRank = sellingAgent.rank ? await Rank.findById(sellingAgent.rank) : null;
+  }
   if (!bookingRank) {
     bookingRank = await Rank.findOne().sort({ sortOrder: 1 });
   }
@@ -217,7 +219,7 @@ async function previewCommission(booking) {
     role: 'Selling Agent',
     points_per_sf: sellerPoints,
     commission_per_emi: sellerCommissionPerEmi,
-    total_commission: sellerCommissionPerEmi * booking.emiMonths,
+    total_commission: sellerCommissionPerEmi * emiMonths,
     note: `Seller rank at booking time: ${bookingRank?.name || 'N/A'}`,
   });
 
@@ -240,7 +242,7 @@ async function previewCommission(booking) {
         role: `Upline (${level})`,
         points_per_sf: difference,
         commission_per_emi: commissionPerEmi,
-        total_commission: commissionPerEmi * booking.emiMonths,
+        total_commission: commissionPerEmi * emiMonths,
       });
 
       previousRankPoints = uplinePoints;
@@ -250,4 +252,21 @@ async function previewCommission(booking) {
   return preview;
 }
 
-module.exports = { processEmiCommission, processCombinedDepositCommission, previewCommission };
+/**
+ * Preview commission distribution for an already-saved booking (no wallet writes).
+ */
+async function previewCommission(booking) {
+  await booking.populate('agent');
+  await booking.populate('agentRank');
+
+  return previewCommissionForData({
+    agentId: booking.agent._id,
+    agentRankId: booking.agentRank?._id || null,
+    pricePerSqft: Number(booking.pricePerSqft) || 0,
+    emiAmount: booking.emiAmount,
+    emiMonths: booking.emiMonths,
+    paymentMode: booking.paymentMode,
+  });
+}
+
+module.exports = { processEmiCommission, processCombinedDepositCommission, previewCommission, previewCommissionForData };

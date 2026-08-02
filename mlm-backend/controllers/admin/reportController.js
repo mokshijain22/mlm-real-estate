@@ -166,8 +166,7 @@ async function emiCollections(req, res) {
       Emi.countDocuments(baseQuery),
       sumAmount(Emi, { ...baseQuery, status: 'paid' }),
       sumAmount(Emi, { ...baseQuery, status: 'paid', paymentMode: 'cash' }),
-      sumAmount(Emi, { ...baseQuery, status: 'paid', paymentMode: 'online' }),
-      sumAmount(Emi, { ...baseQuery, status: 'pending' }),
+      sumAmount(Emi, { ...baseQuery, status: 'paid', paymentMode: { $in: ['upi', 'net_banking', 'bank_transfer', 'card'] } }),      sumAmount(Emi, { ...baseQuery, status: 'pending' }),
       sumAmount(Emi, { ...baseQuery, status: 'overdue' }),
     ]);
 
