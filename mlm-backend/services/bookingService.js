@@ -131,6 +131,7 @@ async function createBooking(data, actingUser) {
             },
             proposerName: data.proposer_name || null,
             commissionCapPerSqft: Number(data.commission_cap_per_sqft) || 0,
+            executiveGaveDiscount: !!data.executive_gave_discount,
             documents: {
               idProof: data.documents?.id_proof || null,
               panCard: data.documents?.pan_card || null,

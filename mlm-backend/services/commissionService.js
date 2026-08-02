@@ -27,6 +27,11 @@ async function processEmiCommission(emi) {
     await session.withTransaction(async () => {
       const booking = await Booking.findById(emi.booking).populate('agent').populate('agentRank').session(session);
       const sellingAgent = booking.agent;
+      if (!sellingAgent) {
+        emi.commissionProcessed = true;
+        await emi.save({ session });
+        return;
+      }
       sellingAgentForRankRefresh = sellingAgent;
       const mode = emi.paymentMode || booking.paymentMode;
        const sqftPortion = Number(emi.sqftPortion);
@@ -118,6 +123,13 @@ async function processCombinedDepositCommission(downPaymentEmi, depositEmi) {
     await session.withTransaction(async () => {
       const booking = await Booking.findById(downPaymentEmi.booking).populate('agent').populate('agentRank').session(session);
       const sellingAgent = booking.agent;
+      if (!sellingAgent) {
+        downPaymentEmi.commissionProcessed = true;
+        await downPaymentEmi.save({ session });
+        depositEmi.commissionProcessed = true;
+        await depositEmi.save({ session });
+        return;
+      }
       sellingAgentForRankRefresh = sellingAgent;
       const mode = downPaymentEmi.paymentMode || booking.paymentMode;
     const combinedSqft = Number(downPaymentEmi.sqftPortion) + Number(depositEmi.sqftPortion);
@@ -260,6 +272,8 @@ async function previewCommissionForData({ agentId, agentRankId, pricePerSqft, em
 async function previewCommission(booking) {
   await booking.populate('agent');
   await booking.populate('agentRank');
+
+  if (!booking.agent) return [];
 
   return previewCommissionForData({
     agentId: booking.agent._id,

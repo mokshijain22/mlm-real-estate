@@ -100,6 +100,7 @@ function BookingCreate() {
 
   // Step 3 — commission
   const [commissionCap, setCommissionCap] = useState(0);
+  const [execGaveDiscount, setExecGaveDiscount] = useState(false);
   const [commissionPreview, setCommissionPreview] = useState([]);
   const [commissionLoading, setCommissionLoading] = useState(false);
   const [commissionError, setCommissionError] = useState(null);
@@ -296,6 +297,8 @@ function BookingCreate() {
         token_collected: tokenCollected,
         notes: remarks || undefined,
         documents,
+        commission_cap_per_sqft: commissionCap || undefined,
+        executive_gave_discount: execGaveDiscount,
       };
 
       const res = await api.post("/admin/bookings", payload);
@@ -853,13 +856,18 @@ function BookingCreate() {
           {commissionLoading && <div className="text-muted small mb-3">Calculating…</div>}
           {commissionError && <div className="alert alert-danger">{commissionError}</div>}
 
-          {!commissionLoading && !commissionError && (
+          {!agentId && (
+            <div className="alert alert-light border small mb-3">
+              No executive assigned — this is a direct booking with no commission payout.
+            </div>
+          )}
+          {!commissionLoading && !commissionError && agentId && (
             <div className="table-responsive mb-4">
               <table className="table align-middle">
                 <thead>
                   <tr className="text-muted small text-uppercase">
                     <th>Level / Executive</th>
-                    <th>Points/sq.ft</th>
+                    <th>Cap ₹/sq.ft</th>
                     <th className="text-end">Earns</th>
                   </tr>
                 </thead>
@@ -889,7 +897,7 @@ function BookingCreate() {
                               <div className="text-muted small">default ₹0</div>
                             </>
                           ) : (
-                            row.points_per_sf
+                            <span className="text-muted">—</span>
                           )}
                         </td>
                         <td className="text-end fw-semibold">{money(cappedTotal)}</td>
@@ -905,6 +913,19 @@ function BookingCreate() {
               </table>
             </div>
           )}
+
+          <div className="form-check mb-4">
+            <input
+              className="form-check-input"
+              type="checkbox"
+              id="execDiscount"
+              checked={execGaveDiscount}
+              onChange={(e) => setExecGaveDiscount(e.target.checked)}
+            />
+            <label className="form-check-label" htmlFor="execDiscount">
+              Executive gave a discount from his own commission
+            </label>
+          </div>
 
           <div className="card bg-light border-0 mb-4">
             <div className="card-body">
@@ -939,6 +960,18 @@ function BookingCreate() {
                 <div className="col-md-2">
                   <div className="text-muted">Selling price</div>
                   <div className="fw-semibold">{money(sellingPrice)}</div>
+                </div>
+                <div className="col-md-2">
+                  <div className="text-muted">Rate</div>
+                  <div className="fw-semibold">
+                    {money(totalSqft > 0 ? sellingPrice / totalSqft : 0)}/sq.ft
+                  </div>
+                </div>
+                <div className="col-md-2">
+                  <div className="text-muted">Commission amount</div>
+                  <div className="fw-semibold">
+                    {money(commissionCap > 0 ? Math.min(totalCommission, commissionCap * totalSqft) : totalCommission)}
+                  </div>
                 </div>
                 <div className="col-md-2">
                   <div className="text-muted">Booking token</div>

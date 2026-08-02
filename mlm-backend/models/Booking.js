@@ -55,6 +55,7 @@ const bookingSchema = new mongoose.Schema(
 
     plcAmount: { type: Number, default: 0 },
     commissionCapPerSqft: { type: Number, default: 0 }, // 0 = uncapped; caps the seller's per-sqft commission
+    executiveGaveDiscount: { type: Boolean, default: false },
 
     paymentSchedule: {
       tokenDate: { type: Date, default: null },

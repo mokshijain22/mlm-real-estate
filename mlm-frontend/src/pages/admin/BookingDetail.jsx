@@ -51,6 +51,12 @@ function BookingDetail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
+  useEffect(() => {
+    if (booking && searchParams.get("print") === "1") {
+      setTimeout(() => window.print(), 300);
+    }
+  }, [booking, searchParams]);
+
   const handleApprove = (e) => {
     e.preventDefault();
     setActionLoading(true);
