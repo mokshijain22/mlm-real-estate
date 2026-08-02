@@ -6,7 +6,7 @@ const bookingSchema = new mongoose.Schema(
     customer: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer', required: true },
     plot: { type: mongoose.Schema.Types.ObjectId, ref: 'Plot', required: true },
     project: { type: mongoose.Schema.Types.ObjectId, ref: 'Project', required: true },
-    agent: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    agent: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     agentRank: { type: mongoose.Schema.Types.ObjectId, ref: 'Rank', default: null }, // rank snapshot at booking time
 
     totalArea: { type: Number, required: true },
@@ -15,6 +15,12 @@ const bookingSchema = new mongoose.Schema(
     bookingAmount: { type: Number, required: true },
     downPaymentAmount: { type: Number, default: 0 },
     downPaymentDueDate: { type: Date, default: null },
+    downPayment2Amount: { type: Number, default: 0 },
+    downPayment2DueDate: { type: Date, default: null },
+    registryAmount: { type: Number, default: 0 },
+    registryDueDate: { type: Date, default: null },
+    emiDueDates: [{ type: Date }],
+    paymentPlanKey: { type: String, default: 'standard' },
     remainingAmount: { type: Number, required: true },
     emiMonths: { type: Number, required: true },
     emiAmount: { type: Number, required: true },
@@ -24,6 +30,8 @@ const bookingSchema = new mongoose.Schema(
     chequeBankName: { type: String, default: null },
     paymentDate: { type: Date, default: null },
     paymentTime: { type: String, default: null }, // e.g. "14:30", mainly for cash
+    amountInWords: { type: String, default: null },
+    collectedBy: { type: String, default: null },
     status: { type: String, enum: ['active', 'completed', 'cancelled'], default: 'active' },
 
     // agent approval flow
@@ -46,6 +54,7 @@ const bookingSchema = new mongoose.Schema(
     },
 
     plcAmount: { type: Number, default: 0 },
+    commissionCapPerSqft: { type: Number, default: 0 }, // 0 = uncapped; caps the seller's per-sqft commission
 
     paymentSchedule: {
       tokenDate: { type: Date, default: null },
@@ -58,6 +67,14 @@ const bookingSchema = new mongoose.Schema(
     },
 
     proposerName: { type: String, default: null },
+
+    documents: {
+      idProof: { type: String, default: null },
+      panCard: { type: String, default: null },
+      nocCertificate: { type: String, default: null },
+      agreementCopy: { type: String, default: null },
+      sitePlan: { type: String, default: null },
+    },
 
     bookingDate: { type: Date, required: true },
     notes: { type: String, default: null },

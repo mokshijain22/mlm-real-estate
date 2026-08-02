@@ -23,13 +23,16 @@ async function createBooking(data, actingUser) {
       const plot = await Plot.findById(data.plot_id).session(session);
       if (!plot) throw new Error('Plot not found.');
 
-      const sellingAgent = await User.findById(data.agent_id).session(session);
-      if (!sellingAgent) throw new Error('Agent not found.');
+      const sellingAgent = data.agent_id ? await User.findById(data.agent_id).session(session) : null;
+      if (data.agent_id && !sellingAgent) throw new Error('Agent not found.');
 
-      let agentRankId = sellingAgent.rank;
-      if (!agentRankId) {
-        const lowestRank = await Rank.findOne().sort({ sortOrder: 1 }).session(session);
-        agentRankId = lowestRank ? lowestRank._id : null;
+      let agentRankId = null;
+      if (sellingAgent) {
+        agentRankId = sellingAgent.rank;
+        if (!agentRankId) {
+          const lowestRank = await Rank.findOne().sort({ sortOrder: 1 }).session(session);
+          agentRankId = lowestRank ? lowestRank._id : null;
+        }
       }
 
       if (plot.status !== 'available') {
@@ -43,8 +46,20 @@ async function createBooking(data, actingUser) {
       const totalAmount = baseAmount + plcAmount;
       const bookingAmount = Number(data.booking_amount);
       const downPaymentAmount = Number(data.down_payment_amount) || 0;
-      const downPaymentDueDate = downPaymentAmount > 0 ? addDays(new Date(), 30) : null;
-      const remainingAmount = totalAmount - bookingAmount - downPaymentAmount;
+      const downPaymentDueDate = data.down_payment_due_date
+        ? new Date(data.down_payment_due_date)
+        : downPaymentAmount > 0
+        ? addDays(new Date(), 30)
+        : null;
+      const downPayment2Amount = Number(data.down_payment2_amount) || 0;
+      const downPayment2DueDate = data.down_payment2_due_date ? new Date(data.down_payment2_due_date) : null;
+      const registryAmount = Number(data.registry_amount) || 0;
+      const registryDueDate = data.registry_due_date ? new Date(data.registry_due_date) : null;
+      const emiDueDates = Array.isArray(data.emi_due_dates)
+        ? data.emi_due_dates.map((d) => (d ? new Date(d) : null))
+        : [];
+      const remainingAmount =
+        totalAmount - bookingAmount - downPaymentAmount - downPayment2Amount - registryAmount;
       const emiMonths = parseInt(data.emi_months, 10);
       const emiAmount = emiMonths > 0 ? remainingAmount / emiMonths : 0;
 
@@ -60,7 +75,7 @@ async function createBooking(data, actingUser) {
             customer: data.customer_id,
             plot: data.plot_id,
             project: plot.project,
-            agent: data.agent_id,
+            agent: data.agent_id || null,
             agentRank: agentRankId,
 
             totalArea,
@@ -69,6 +84,12 @@ async function createBooking(data, actingUser) {
             bookingAmount,
             downPaymentAmount,
             downPaymentDueDate,
+            downPayment2Amount,
+            downPayment2DueDate,
+            registryAmount,
+            registryDueDate,
+            emiDueDates,
+            paymentPlanKey: data.payment_plan_key || 'standard',
             remainingAmount,
             emiMonths,
             emiAmount,
@@ -78,13 +99,15 @@ async function createBooking(data, actingUser) {
             chequeBankName: data.cheque_bank_name || null,
             paymentDate: data.payment_date || null,
             paymentTime: data.payment_time || null,
+            amountInWords: data.amount_in_words || null,
+            collectedBy: data.collected_by || null,
             status: 'active',
             approvalStatus: actingIsAdmin ? 'approved' : 'pending',
             approvedBy: actingIsAdmin ? actingUser._id : null,
             approvedAt: actingIsAdmin ? new Date() : null,
             bookingDate: new Date(),
             notes: data.notes || null,
-            createdBy: actingUser ? actingUser._id : data.agent_id,
+            createdBy: actingUser ? actingUser._id : data.agent_id || null,
 
             purchaseDetails: {
               fathersOrHusbandName: data.fathers_or_husband_name || null,
@@ -107,6 +130,14 @@ async function createBooking(data, actingUser) {
               specificCondition: data.specific_condition || null,
             },
             proposerName: data.proposer_name || null,
+            commissionCapPerSqft: Number(data.commission_cap_per_sqft) || 0,
+            documents: {
+              idProof: data.documents?.id_proof || null,
+              panCard: data.documents?.pan_card || null,
+              nocCertificate: data.documents?.noc_certificate || null,
+              agreementCopy: data.documents?.agreement_copy || null,
+              sitePlan: data.documents?.site_plan || null,
+            },
           },
         ],
         { session }
@@ -152,9 +183,9 @@ async function createBooking(data, actingUser) {
       }
     }
 
-    if (createdBooking && createdBooking.approvalStatus === 'approved') {
+    if (createdBooking && createdBooking.approvalStatus === 'approved' && data.agent_id) {
       const sellingAgent = await User.findById(data.agent_id);
-      await checkAndUpgradeRank(sellingAgent);
+      if (sellingAgent) await checkAndUpgradeRank(sellingAgent);
     }
 
     return createdBooking;
@@ -197,9 +228,24 @@ async function generateEmis(booking, session = null) {
     });
   }
 
+  if (Number(booking.downPayment2Amount) > 0) {
+    emis.push({
+      booking: booking._id,
+      agent: booking.agent,
+      emiNumber: -2,
+      amount: booking.downPayment2Amount,
+      sqftPortion: sqftFor(booking.downPayment2Amount),
+      dueDate: booking.downPayment2DueDate || addDays(new Date(booking.bookingDate), 60),
+      status: 'pending',
+      commissionProcessed: false,
+      createdBy: booking.createdBy,
+    });
+  }
+
   for (let i = 1; i <= booking.emiMonths; i++) {
-    const dueDate = new Date(booking.bookingDate);
-    dueDate.setMonth(dueDate.getMonth() + i);
+    const override = Array.isArray(booking.emiDueDates) ? booking.emiDueDates[i - 1] : null;
+    let dueDate = override ? new Date(override) : new Date(booking.bookingDate);
+    if (!override) dueDate.setMonth(dueDate.getMonth() + i);
 
     emis.push({
       booking: booking._id,
@@ -208,6 +254,23 @@ async function generateEmis(booking, session = null) {
       amount: booking.emiAmount,
       sqftPortion: sqftFor(booking.emiAmount),
       dueDate,
+      status: 'pending',
+      commissionProcessed: false,
+      createdBy: booking.createdBy,
+    });
+  }
+
+  if (Number(booking.registryAmount) > 0) {
+    const fallbackRegistryDate = new Date(booking.bookingDate);
+    fallbackRegistryDate.setMonth(fallbackRegistryDate.getMonth() + Number(booking.emiMonths || 0) + 1);
+
+    emis.push({
+      booking: booking._id,
+      agent: booking.agent,
+      emiNumber: 99,
+      amount: booking.registryAmount,
+      sqftPortion: sqftFor(booking.registryAmount),
+      dueDate: booking.registryDueDate || fallbackRegistryDate,
       status: 'pending',
       commissionProcessed: false,
       createdBy: booking.createdBy,

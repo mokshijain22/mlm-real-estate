@@ -40,7 +40,8 @@ async function processEmiCommission(emi) {
       }
 
       const sellerPoints = pointsType === 'BV' ? Number(bookingRank?.bvPoints || 0) : Number(bookingRank?.pvPoints || 0);
-      const sellerEarning = sqftPortion * sellerPoints * multiplier;
+      const cap = Number(booking.commissionCapPerSqft) || 0;
+      const sellerEarning = cap > 0 ? Math.min(sqftPortion * sellerPoints * multiplier, sqftPortion * cap) : sqftPortion * sellerPoints * multiplier;
 
       await walletService.credit(
         sellingAgent,
@@ -129,7 +130,8 @@ async function processCombinedDepositCommission(downPaymentEmi, depositEmi) {
       }
 
       const sellerPoints = pointsType === 'BV' ? Number(bookingRank?.bvPoints || 0) : Number(bookingRank?.pvPoints || 0);
-      const sellerEarning = combinedSqft * sellerPoints * multiplier;
+      const cap = Number(booking.commissionCapPerSqft) || 0;
+      const sellerEarning = cap > 0 ? Math.min(combinedSqft * sellerPoints * multiplier, combinedSqft * cap) : combinedSqft * sellerPoints * multiplier;
 
       await walletService.credit(
         sellingAgent,

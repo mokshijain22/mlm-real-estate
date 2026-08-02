@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, useSearchParams, Link } from "react-router-dom";
 import api from "../../api/axios.js";
 
 function fmtDate(d) {
@@ -14,6 +14,7 @@ function fmtMoney(n) {
 
 function BookingDetail() {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
 
   const [booking, setBooking] = useState(null);
   const [emis, setEmis] = useState([]);

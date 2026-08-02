@@ -20,7 +20,7 @@ const bankController = require('../controllers/admin/bankController');
 const dashboardController = require('../controllers/admin/dashboardController');const profileController = require('../controllers/profileController');
 const { settingsUpload, profileUpload } = require('../middleware/upload');
 const { protect, restrictTo, requirePermission } = require('../middleware/auth');
-const { layoutUpload, mapImageUpload } = require('../middleware/upload');
+const { layoutUpload, mapImageUpload, bookingDocsUpload } = require('../middleware/upload');
 
 // all admin routes require login + super_admin/sub_admin role
 router.use(protect, restrictTo('super_admin', 'sub_admin'));
@@ -90,6 +90,7 @@ router.get('/bookings', bookingController.index);
 router.get('/bookings/pending', bookingController.pending);
 router.get('/bookings/create', bookingController.create);
 router.post('/bookings/commission-preview', bookingController.commissionPreview);
+router.post('/bookings/upload-document', bookingDocsUpload.single('file'), bookingController.uploadDocument);
 router.post('/bookings', bookingController.store);
 router.get('/bookings/:id', bookingController.show);
 router.patch('/bookings/:id/approve', bookingController.approve);

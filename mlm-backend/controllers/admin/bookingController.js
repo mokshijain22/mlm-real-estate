@@ -89,6 +89,16 @@ async function pending(req, res) {
   res.json({ data: bookings, meta: { page, limit, total, lastPage: Math.ceil(total / limit) } });
 }
 
+// POST /api/admin/bookings/upload-document
+// Uploads a single booking document before the booking exists; the wizard
+// stores the returned relative path and sends it along with the final
+// create-booking payload.
+async function uploadDocument(req, res) {
+  if (!req.file) return res.status(422).json({ message: 'No file uploaded.' });
+  const relativePath = `/storage/booking-docs/${req.file.filename}`;
+  res.json({ message: 'File uploaded.', path: relativePath });
+}
+
 async function create(req, res) {
   const agentRole = await Role.findOne({ slug: 'agent' });
 
@@ -130,7 +140,6 @@ async function store(req, res) {
   const errors = {};
   if (!customer_id) errors.customer_id = 'Customer is required.';
   if (!plot_id) errors.plot_id = 'Plot is required.';
-  if (!agent_id) errors.agent_id = 'Agent is required.';
   if (price_per_sqft === undefined || Number(price_per_sqft) < 0) errors.price_per_sqft = 'Valid price per sqft is required.';
   if (booking_amount === undefined || Number(booking_amount) < 0) errors.booking_amount = 'Valid booking amount is required.';
   if (!emi_months || emi_months < 1 || emi_months > 360) errors.emi_months = 'EMI months must be between 1 and 360.';
@@ -262,4 +271,4 @@ async function reject(req, res) {
   return res.json({ message: 'Booking rejected and plot released.', data: booking });
 }
 
-module.exports = { index, pending, create, store, show, cancel, approve, reject, commissionPreview };
+module.exports = { index, pending, create, store, show, cancel, approve, reject, commissionPreview, uploadDocument };
