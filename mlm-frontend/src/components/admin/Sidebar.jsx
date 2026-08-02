@@ -140,6 +140,30 @@ function Sidebar() {
               </NavLink>
             </li>
           )}
+          <li className="nav-item">
+            <NavLink className="nav-link" to="/admin/site-visits">
+              <span className="nav-icon">
+                <iconify-icon icon="solar:map-point-wave-bold-duotone"></iconify-icon>
+              </span>
+              <span className="nav-text"> Site Visits </span>
+            </NavLink>
+          </li>
+          <li className="nav-item">
+            <NavLink className="nav-link" to="/admin/installment-schedules">
+              <span className="nav-icon">
+                <iconify-icon icon="solar:calendar-bold-duotone"></iconify-icon>
+              </span>
+              <span className="nav-text"> Installment Schedules </span>
+            </NavLink>
+          </li>
+          <li className="nav-item">
+            <NavLink className="nav-link" to="/admin/installment-dues">
+              <span className="nav-icon">
+                <iconify-icon icon="solar:clock-circle-bold-duotone"></iconify-icon>
+              </span>
+              <span className="nav-text"> Installment Dues </span>
+            </NavLink>
+          </li>
           {can("emis") && (
             <li className="nav-item">
               <NavLink className="nav-link" to="/admin/emis">

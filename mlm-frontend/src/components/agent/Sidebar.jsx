@@ -76,6 +76,14 @@ function Sidebar({ isKycVerified }) {
                   <span className="nav-text"> My Bookings </span>
                 </NavLink>
               </li>
+              <li className="nav-item">
+                <NavLink className="nav-link" to="/agent/site-visits">
+                  <span className="nav-icon">
+                    <iconify-icon icon="solar:map-point-wave-bold-duotone"></iconify-icon>
+                  </span>
+                  <span className="nav-text"> Site Visits </span>
+                </NavLink>
+              </li>
 
               <li className="menu-title mt-2">My Team</li>
               <li className="nav-item">

@@ -3,6 +3,7 @@ import AgentLayout from "./layouts/AgentLayout.jsx";
 import Dashboard from "./pages/agent/Dashboard.jsx";
 import Kyc from "./pages/agent/Kyc.jsx";
 import Bookings from "./pages/agent/Bookings.jsx";
+import AgentSiteVisits from "./pages/agent/SiteVisits.jsx";
 import BookingCreate from "./pages/agent/BookingCreate.jsx";
 import BookingDetail from "./pages/agent/BookingDetail.jsx";
 import Wallet from "./pages/agent/Wallet.jsx";
@@ -35,6 +36,9 @@ import AdminTickets from "./pages/admin/Tickets.jsx";
 import AdminTicketDetail from "./pages/admin/TicketDetail.jsx";
 import AdminCustomers from "./pages/admin/Customers.jsx";
 import AdminBookings from "./pages/admin/Bookings.jsx";
+import AdminSiteVisits from "./pages/admin/SiteVisits.jsx";
+import AdminInstallmentDues from "./pages/admin/InstallmentDues.jsx";
+import AdminInstallmentSchedules from "./pages/admin/InstallmentSchedules.jsx";
 import AdminBookingDetail from "./pages/admin/BookingDetail.jsx";
 import AdminBookingCreate from "./pages/admin/BookingCreate.jsx";
 import AdminBookingsPending from "./pages/admin/BookingsPending.jsx";import EmiManagement from "./pages/admin/EmiManagement.jsx";
@@ -79,6 +83,7 @@ function App() {
         <Route path="/agent/dashboard" element={<Dashboard />} />
         <Route path="/agent/kyc" element={<Kyc />} />
         <Route path="/agent/bookings" element={<Bookings />} />
+        <Route path="/agent/site-visits" element={<AgentSiteVisits />} />
         <Route path="/agent/bookings/new" element={<BookingCreate />} />
         <Route path="/agent/bookings/:id" element={<BookingDetail />} />
         <Route path="/agent/wallet" element={<Wallet />} />
@@ -114,6 +119,9 @@ function App() {
         <Route path="/admin/referrals" element={<PermissionRoute permission="referrals"><AdminReferrals /></PermissionRoute>} />
 
         <Route path="/admin/bookings" element={<PermissionRoute permission="bookings"><AdminBookings /></PermissionRoute>} />
+        <Route path="/admin/site-visits" element={<AdminSiteVisits />} />
+        <Route path="/admin/installment-dues" element={<AdminInstallmentDues />} />
+        <Route path="/admin/installment-schedules" element={<AdminInstallmentSchedules />} />
         <Route path="/admin/bookings/create" element={<PermissionRoute permission="bookings"><AdminBookingCreate /></PermissionRoute>} />
         <Route path="/admin/bookings/pending" element={<PermissionRoute permission="bookings"><AdminBookingsPending /></PermissionRoute>} />
         <Route path="/admin/bookings/:id" element={<PermissionRoute permission="bookings"><AdminBookingDetail /></PermissionRoute>} />

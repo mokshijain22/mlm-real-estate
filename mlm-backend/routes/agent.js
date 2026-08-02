@@ -12,7 +12,8 @@ const rankController = require('../controllers/agent/rankController');
 const referralController = require('../controllers/agent/referralController');
 const ticketController = require('../controllers/agent/ticketController');
 const walletController = require('../controllers/agent/walletController');
-const { kycUpload } = require('../middleware/upload');
+const siteVisitController = require('../controllers/agent/siteVisitController');
+const { kycUpload, siteVisitUpload } = require('../middleware/upload');
 
 router.use(protect, restrictTo('agent'));
 router.get('/profile', profileController.show);
@@ -33,6 +34,9 @@ router.get('/customers/:id', customerController.show);
 router.get('/projects', projectController.index);
 router.get('/projects/:id', projectController.show);
 router.get('/projects/:id/map', projectController.map);
+
+router.get('/site-visits', siteVisitController.index);
+router.post('/site-visits', siteVisitUpload.single('photo'), siteVisitController.store);
 
 router.get('/kyc', kycController.index);
 router.post(

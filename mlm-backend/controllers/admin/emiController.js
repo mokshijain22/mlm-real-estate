@@ -193,4 +193,107 @@ async function overdue(req, res) {
   res.json({ data: emis, meta: { page, limit, total, lastPage: Math.ceil(total / limit) } });
 }
 
-module.exports = { index, bookingEmis, markPaid, overdue };
+const STEP_LABELS = {
+  0: 'Booking token',
+  '-1': 'Down payment 1',
+  '-2': 'Down payment 2',
+  99: 'Registry / final settlement',
+};
+function stepLabel(emiNumber) {
+  if (STEP_LABELS[emiNumber] !== undefined) return STEP_LABELS[emiNumber];
+  if (emiNumber > 0) return `EMI ${emiNumber}`;
+  return `Step ${emiNumber}`;
+}
+
+// GET /api/admin/emi-dues
+// Dashboard of open (pending/overdue) installment lines across all bookings,
+// bucketed into Past due / Due today / Due in 7 days, plus an "All open" view.
+async function dues(req, res) {
+  await Emi.updateMany({ status: 'pending', dueDate: { $lt: new Date() } }, { status: 'overdue' });
+
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const endOfToday = new Date(startOfToday.getTime() + 24 * 60 * 60 * 1000);
+  const in7Days = new Date(startOfToday.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+  const baseFilter = { status: { $in: ['pending', 'overdue'] } };
+  if (req.query.project_id) {
+    const bookingIds = await Booking.find({ project: req.query.project_id }).distinct('_id');
+    baseFilter.booking = { $in: bookingIds };
+  }
+
+  const bucket = req.query.bucket || 'all'; // all | past_due | due_today | due_in_7
+  const filter = { ...baseFilter };
+  if (bucket === 'past_due') filter.dueDate = { $lt: startOfToday };
+  else if (bucket === 'due_today') filter.dueDate = { $gte: startOfToday, $lt: endOfToday };
+  else if (bucket === 'due_in_7') filter.dueDate = { $gte: endOfToday, $lt: in7Days };
+
+  if (req.query.search && req.query.search.trim()) {
+    const re = new RegExp(req.query.search.trim(), 'i');
+    const [matchedCustomers, matchedPlots] = await Promise.all([
+      require('../../models/Customer').find({ name: re }).distinct('_id'),
+      Plot.find({ plotNumber: re }).distinct('_id'),
+    ]);
+    const bookingIds = await Booking.find({
+      $or: [{ customer: { $in: matchedCustomers } }, { plot: { $in: matchedPlots } }],
+    }).distinct('_id');
+    filter.booking = filter.booking ? { $in: bookingIds.filter((id) => filter.booking.$in?.some((b) => b.equals(id))) } : { $in: bookingIds };
+  }
+
+  const page = parseInt(req.query.page) || 1;
+  const limit = 25;
+  const skip = (page - 1) * limit;
+
+  const [lines, total, counts, sums] = await Promise.all([
+    Emi.find(filter)
+      .populate({ path: 'booking', populate: [{ path: 'customer' }, { path: 'plot' }, { path: 'project' }] })
+      .sort({ dueDate: 1 })
+      .skip(skip)
+      .limit(limit),
+    Emi.countDocuments(filter),
+    Promise.all([
+      Emi.countDocuments(baseFilter),
+      Emi.countDocuments({ ...baseFilter, dueDate: { $lt: startOfToday } }),
+      Emi.countDocuments({ ...baseFilter, dueDate: { $gte: startOfToday, $lt: endOfToday } }),
+      Emi.countDocuments({ ...baseFilter, dueDate: { $gte: endOfToday, $lt: in7Days } }),
+    ]),
+    Promise.all([
+      Emi.aggregate([{ $match: { ...baseFilter, dueDate: { $lt: startOfToday } } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
+      Emi.aggregate([{ $match: { ...baseFilter, dueDate: { $gte: startOfToday, $lt: endOfToday } } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
+      Emi.aggregate([{ $match: { ...baseFilter, dueDate: { $gte: endOfToday, $lt: in7Days } } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
+      Emi.aggregate([{ $match: filter }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
+    ]),
+  ]);
+
+  const [allOpenCount, pastDueCount, dueTodayCount, dueIn7Count] = counts;
+  const [pastDueSum, dueTodaySum, dueIn7Sum, pageSum] = sums;
+
+  res.json({
+    data: lines.map((e) => ({
+      _id: e._id,
+      step: stepLabel(e.emiNumber),
+      dueDate: e.dueDate,
+      remaining: e.amount,
+      status: e.status,
+      client: e.booking?.customer?.name || null,
+      clientPhone: e.booking?.customer?.phone || null,
+      project: e.booking?.project?.name || null,
+      plot: e.booking?.plot?.plotNumber || null,
+      bookingId: e.booking?._id || null,
+      bookingNumber: e.booking?.bookingNumber || null,
+    })),
+    meta: { page, limit, total, lastPage: Math.ceil(total / limit) },
+    summary: {
+      allOpen: allOpenCount,
+      pastDue: pastDueCount,
+      dueToday: dueTodayCount,
+      dueIn7: dueIn7Count,
+      pastDueAmount: pastDueSum[0]?.total || 0,
+      dueTodayAmount: dueTodaySum[0]?.total || 0,
+      dueIn7Amount: dueIn7Sum[0]?.total || 0,
+      pageRemaining: pageSum[0]?.total || 0,
+    },
+  });
+}
+
+module.exports = { index, bookingEmis, markPaid, overdue, dues };

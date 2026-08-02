@@ -16,6 +16,8 @@ const settingsController = require('../controllers/admin/settingsController');
 const customerController = require('../controllers/admin/customerController');
 const emiController = require('../controllers/admin/emiController');
 const bookingController = require('../controllers/admin/bookingController');
+const siteVisitController = require('../controllers/admin/siteVisitController');
+const paymentPlanController = require('../controllers/admin/paymentPlanController');
 const bankController = require('../controllers/admin/bankController');
 const dashboardController = require('../controllers/admin/dashboardController');const profileController = require('../controllers/profileController');
 const { settingsUpload, profileUpload } = require('../middleware/upload');
@@ -42,7 +44,10 @@ router.put('/projects/:id', layoutUpload.single('layout_svg'), projectController
 router.delete('/projects/:id', projectController.destroy);
 router.get('/projects/:id/builder', projectController.builder);
 router.post('/projects/:id/layout', projectController.saveLayout);
-router.post('/projects/:id/map-image', mapImageUpload.single('map_image'), projectController.uploadMapImage);router.post('/projects/:id/map-image', layoutUpload.single('layout_svg') && require('../middleware/upload').mapImageUpload.single('map_image'), projectController.uploadMapImage);router.get('/projects/:id/map', projectController.map);
+router.get('/projects/:projectId/payment-plans', paymentPlanController.index);
+router.put('/projects/:projectId/payment-plans', paymentPlanController.replace);
+router.post('/projects/:id/map-image', mapImageUpload.single('map_image'), projectController.uploadMapImage);
+router.get('/projects/:id/map', projectController.map);
 
 // Plots (nested under project)
 router.get('/projects/:projectId/plots', plotController.index);
@@ -83,6 +88,7 @@ router.get('/emis', emiController.index);
 router.get('/emis/overdue', emiController.overdue);
 router.get('/bookings/:id/emis', emiController.bookingEmis);
 router.post('/emis/:id/mark-paid', emiController.markPaid);
+router.get('/emi-dues', emiController.dues);
 
 // Bookings
 router.use('/bookings', requirePermission('bookings'));
@@ -96,6 +102,8 @@ router.get('/bookings/:id', bookingController.show);
 router.patch('/bookings/:id/approve', bookingController.approve);
 router.patch('/bookings/:id/reject', bookingController.reject);
 router.patch('/bookings/:id/cancel', bookingController.cancel);
+
+router.get('/site-visits', siteVisitController.index);
 
 // Banks (used by booking payment step)
 router.get('/banks', bankController.index);

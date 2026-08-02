@@ -50,5 +50,6 @@ module.exports = {
   settingsUpload: makeUploader('settings'),
   profileUpload: makeUploader('profiles'),
   mapImageUpload: makeUploader('map-images'),
+  siteVisitUpload: makeUploader('site-visits'),
   bookingDocsUpload: makeUploader('booking-docs'),
 };
