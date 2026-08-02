@@ -47,6 +47,7 @@ import SubAdminCreate from "./pages/admin/SubAdminCreate.jsx";
 import SubAdminEdit from "./pages/admin/SubAdminEdit.jsx";
 import AuditLogs from "./pages/admin/AuditLogs.jsx";
 import Settings from "./pages/admin/Settings.jsx";
+import BankManagement from "./pages/admin/BankManagement.jsx";
 import AdminProfile from "./pages/admin/Profile.jsx";
 import ReportsOverview from "./pages/admin/ReportsOverview.jsx";
 import EmiCollectionsReport from "./pages/admin/EmiCollectionsReport.jsx";
@@ -133,7 +134,7 @@ function App() {
         <Route path="/admin/sub-admins/:id/edit" element={<PermissionRoute superAdminOnly><SubAdminEdit /></PermissionRoute>} />
         <Route path="/admin/audit-logs" element={<PermissionRoute superAdminOnly><AuditLogs /></PermissionRoute>} />
         <Route path="/admin/settings" element={<PermissionRoute superAdminOnly><Settings /></PermissionRoute>} />
-
+        <Route path="/admin/banks" element={<PermissionRoute superAdminOnly><BankManagement /></PermissionRoute>} />
         <Route path="/admin/profile" element={<AdminProfile />} />
 
         <Route path="/admin/reports" element={<PermissionRoute permission="reports"><ReportsOverview /></PermissionRoute>} />

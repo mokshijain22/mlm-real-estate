@@ -108,7 +108,8 @@ router.get('/site-visits', siteVisitController.index);
 // Banks (used by booking payment step)
 router.get('/banks', bankController.index);
 router.post('/banks', bankController.store);
-
+router.put('/banks/:id', bankController.update);
+router.delete('/banks/:id', bankController.remove);
 // Withdrawals
 router.use('/withdrawals', requirePermission('withdrawals'));
 router.get('/withdrawals', withdrawalController.index);

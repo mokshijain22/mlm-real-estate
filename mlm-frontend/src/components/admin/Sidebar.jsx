@@ -242,7 +242,7 @@ function Sidebar() {
               </NavLink>
             </li>
           )}
-          {isSuperAdmin && (
+         {isSuperAdmin && (
             <li className="nav-item">
               <NavLink className="nav-link" to="/admin/ranks">
                 <span className="nav-icon">
@@ -252,6 +252,17 @@ function Sidebar() {
               </NavLink>
             </li>
           )}
+          {isSuperAdmin && (
+            <li className="nav-item">
+              <NavLink className="nav-link" to="/admin/banks">
+                <span className="nav-icon">
+                  <iconify-icon icon="solar:card-bold-duotone"></iconify-icon>
+                </span>
+                <span className="nav-text"> Bank Management </span>
+              </NavLink>
+            </li>
+          )}
+
 
           {/* Settings */}
           {isSuperAdmin && (
