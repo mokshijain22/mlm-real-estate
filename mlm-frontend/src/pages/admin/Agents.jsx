@@ -2,6 +2,16 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../../api/axios.js";
 
+function initials(name) {
+  return (name || "?").trim().charAt(0).toUpperCase();
+}
+
+function avatarColor(name) {
+  const colors = ["#2563eb", "#0891b2", "#7c3aed", "#db2777", "#059669", "#d97706"];
+  const idx = (name || "").charCodeAt(0) % colors.length;
+  return colors[idx] || colors[0];
+}
+
 function Agents() {
   const [agents, setAgents] = useState(null);
   const [meta, setMeta] = useState(null);
@@ -37,6 +47,13 @@ function Agents() {
     return () => clearTimeout(t);
   }, [search]);
 
+  const resetFilters = () => {
+    setSearch("");
+    setStatus("");
+    setKycStatus("");
+    setPage(1);
+  };
+
   const handleAction = (id, action) => {
     setActionLoading(id + action);
     api
@@ -48,19 +65,28 @@ function Agents() {
 
   if (error) return <div className="alert alert-danger">{error}</div>;
 
+  const startSno = meta ? (meta.page - 1) * meta.limit + 1 : 1;
+
   return (
     <>
-      <div className="row align-items-center mb-4">
-        <div className="col-sm-8">
-          <h3 className="fw-bold mb-1">Agent Management</h3>
-          <p className="text-muted mb-0">View, approve, and manage all agents.</p>
+      <div className="card border-0 shadow-sm mb-3">
+        <div className="card-body d-flex align-items-center justify-content-between flex-wrap gap-3">
+          <div>
+            <h3 className="fw-bold mb-1">Executives</h3>
+            <p className="text-muted mb-0">View, approve, and manage all executives.</p>
+          </div>
+          <Link to="/admin/agents/create" className="btn btn-warning fw-semibold">
+            <iconify-icon icon="solar:add-circle-bold" className="me-1 align-middle"></iconify-icon>
+            Add Executive
+          </Link>
         </div>
       </div>
 
       <div className="card border-0 shadow-sm mb-3">
         <div className="card-body">
-          <div className="row g-2">
-            <div className="col-md-4">
+          <div className="row g-3 align-items-end">
+            <div className="col-md-6">
+              <label className="form-label fs-11 fw-bold text-muted text-uppercase mb-1">Search</label>
               <div className="input-group">
                 <span className="input-group-text bg-light border-end-0">
                   <iconify-icon icon="solar:magnifer-linear"></iconify-icon>
@@ -68,13 +94,14 @@ function Agents() {
                 <input
                   type="text"
                   className="form-control border-start-0"
-                  placeholder="Search by name, email, phone..."
+                  placeholder="Search name / username / email / phone"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
               </div>
             </div>
             <div className="col-md-3">
+              <label className="form-label fs-11 fw-bold text-muted text-uppercase mb-1">Status</label>
               <select
                 className="form-select"
                 value={status}
@@ -83,13 +110,13 @@ function Agents() {
                   setStatus(e.target.value);
                 }}
               >
-                <option value="">All Status</option>
+                <option value="">All</option>
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
                 <option value="blocked">Blocked</option>
               </select>
             </div>
-            <div className="col-md-3">
+            <div className="col-md-2">
               <select
                 className="form-select"
                 value={kycStatus}
@@ -103,6 +130,11 @@ function Agents() {
                 <option value="0">KYC Not Verified</option>
               </select>
             </div>
+            <div className="col-md-1">
+              <button className="btn btn-light w-100" onClick={resetFilters}>
+                Reset
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -112,45 +144,61 @@ function Agents() {
           <table className="table table-hover table-nowrap align-middle mb-0">
             <thead className="bg-light bg-opacity-50">
               <tr>
-                <th className="ps-3 text-muted small">Name</th>
+                <th className="ps-3 text-muted small">S.No</th>
+                <th className="text-muted small">Image</th>
+                <th className="text-muted small">Name</th>
+                <th className="text-muted small">Username</th>
                 <th className="text-muted small">Email</th>
                 <th className="text-muted small">Phone</th>
-                <th className="text-muted small">Referred By</th>
-                <th className="text-muted small">KYC</th>
+                <th className="text-muted small">Designation</th>
+                <th className="text-muted small">Level</th>
                 <th className="text-muted small">Status</th>
-                <th className="text-muted small">Joined</th>
+                <th className="text-muted small">Created</th>
                 <th className="text-muted small text-end pe-3">Actions</th>
               </tr>
             </thead>
             <tbody>
               {!agents ? (
                 <tr>
-                  <td colSpan="8" className="text-center py-5">
+                  <td colSpan="11" className="text-center py-5">
                     Loading...
                   </td>
                 </tr>
               ) : agents.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="text-center py-5 text-muted">
-                    No agents found.
+                  <td colSpan="11" className="text-center py-5 text-muted">
+                    No executives found.
                   </td>
                 </tr>
               ) : (
-                agents.map((agent) => (
+                agents.map((agent, i) => (
                   <tr key={agent._id}>
-                    <td className="ps-3 fw-medium">
-                      <Link to={`/admin/agents/${agent._id}`}>{agent.name}</Link>
-                    </td>
-                    <td>{agent.email}</td>
-                    <td>{agent.phone || "-"}</td>
-                    <td>{agent.referredBy?.name || "-"}</td>
+                    <td className="ps-3 text-muted">{startSno + i}</td>
                     <td>
-                      {agent.isKycVerified ? (
-                        <span className="badge bg-success-subtle text-success">Verified</span>
+                      {agent.profilePhoto ? (
+                        <img
+                          src={agent.profilePhoto}
+                          alt={agent.name}
+                          className="rounded-circle"
+                          style={{ width: 36, height: 36, objectFit: "cover" }}
+                        />
                       ) : (
-                        <span className="badge bg-warning-subtle text-warning">Pending</span>
+                        <div
+                          className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
+                          style={{ width: 36, height: 36, background: avatarColor(agent.name) }}
+                        >
+                          {initials(agent.name)}
+                        </div>
                       )}
                     </td>
+                    <td className="fw-medium">
+                      <Link to={`/admin/agents/${agent._id}`}>{agent.name}</Link>
+                    </td>
+                    <td className="text-muted">{agent.referralCode || "-"}</td>
+                    <td>{agent.email}</td>
+                    <td>{agent.phone || "-"}</td>
+                    <td>{agent.position || "-"}</td>
+                    <td>Level {agent.mlmLevel ?? 1}</td>
                     <td>
                       <span
                         className={`badge ${

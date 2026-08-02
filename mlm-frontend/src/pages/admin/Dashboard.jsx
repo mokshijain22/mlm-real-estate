@@ -6,10 +6,16 @@ import DonutChart from "../../components/admin/charts/DonutChart.jsx";
 import OverviewAreaChart from "../../components/admin/charts/OverviewAreaChart.jsx";
 
 function Dashboard() {
+  const adminUser = JSON.parse(localStorage.getItem("user") || "{}");
+  const isSuperAdmin = adminUser.role === "super_admin";
+  const perms = adminUser.permissions || [];
+  const can = (key) => isSuperAdmin || perms.includes(key);
+
   const [stats, setStats] = useState(null);
   const [recentBookings, setRecentBookings] = useState([]);
   const [recentWithdrawals, setRecentWithdrawals] = useState([]);
   const [monthlyOverview, setMonthlyOverview] = useState(null);
+  const [overdueDues, setOverdueDues] = useState([]);
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -20,6 +26,7 @@ function Dashboard() {
         setRecentBookings(res.data.recentBookings || []);
         setRecentWithdrawals(res.data.recentWithdrawals || []);
         setMonthlyOverview(res.data.monthlyOverview || null);
+        setOverdueDues(res.data.overdueDues || []);
       })
       .catch((err) => setError(err.response?.data?.message || err.message));
   }, []);
@@ -55,19 +62,19 @@ function Dashboard() {
   const pct = (v) => (plotsTotal > 0 ? Math.round(((v || 0) / plotsTotal) * 100) : 0);
 
   const todoItems = [
-    { label: "Verify pending KYC documents", count: stats.pending_kyc ?? 0, to: "/admin/kyc" },
-    { label: "Follow up on pending bookings", count: stats.pending_bookings ?? 0, to: "/admin/bookings/pending" },
-    { label: "Process withdrawal requests", count: stats.pending_withdrawals ?? 0, to: "/admin/withdrawals?status=pending" },
-  ];
+    { label: "Verify pending KYC documents", count: stats.pending_kyc ?? 0, to: "/admin/kyc", perm: "kyc" },
+    { label: "Follow up on pending bookings", count: stats.pending_bookings ?? 0, to: "/admin/bookings/pending", perm: "bookings" },
+    { label: "Process withdrawal requests", count: stats.pending_withdrawals ?? 0, to: "/admin/withdrawals?status=pending", perm: "withdrawals" },
+  ].filter((item) => can(item.perm));
 
   const quickActions = [
-    { label: "Add New Project", icon: "solar:buildings-2-bold-duotone", to: "/admin/projects/create", grad: "dash-grad-blue" },
-    { label: "Manage Plots", icon: "solar:map-point-bold-duotone", to: "/admin/projects", grad: "dash-grad-green" },
-    { label: "New Booking", icon: "solar:bill-list-bold-duotone", to: "/admin/bookings/create", grad: "dash-grad-purple" },
-    { label: "Pending Bookings", icon: "solar:clock-circle-bold-duotone", to: "/admin/bookings/pending", grad: "dash-grad-amber" },
-    { label: "Manage Agents", icon: "solar:users-group-two-rounded-bold-duotone", to: "/admin/agents", grad: "dash-grad-teal" },
-    { label: "View Reports", icon: "solar:chart-2-bold-duotone", to: "/admin/reports", grad: "dash-grad-red" },
-  ];
+    { label: "Add New Project", icon: "solar:buildings-2-bold-duotone", to: "/admin/projects/create", grad: "dash-grad-blue", perm: "projects" },
+    { label: "Manage Plots", icon: "solar:map-point-bold-duotone", to: "/admin/projects", grad: "dash-grad-green", perm: "projects" },
+    { label: "New Booking", icon: "solar:bill-list-bold-duotone", to: "/admin/bookings/create", grad: "dash-grad-purple", perm: "bookings" },
+    { label: "Pending Bookings", icon: "solar:clock-circle-bold-duotone", to: "/admin/bookings/pending", grad: "dash-grad-amber", perm: "bookings" },
+    { label: "Manage Executives", icon: "solar:users-group-two-rounded-bold-duotone", to: "/admin/agents", grad: "dash-grad-teal", perm: "agents" },
+    { label: "View Reports", icon: "solar:chart-2-bold-duotone", to: "/admin/reports", grad: "dash-grad-red", perm: "reports" },
+  ].filter((qa) => can(qa.perm));
 
   return (
     <>
@@ -80,12 +87,15 @@ function Dashboard() {
       </div>
 
       {/* This Month at a Glance */}
+      {(can("reports") || can("withdrawals")) && (
+      <>
       <div className="dash-welcome-banner dash-animate">
         <h5 className="dash-welcome-title mb-0">
           This Month at a Glance <span className="fs-13 fw-normal opacity-75">(Click a card to view reports)</span>
         </h5>
       </div>
       <div className="row mb-4">
+        {can("reports") && (
         <div className="col-md-3 col-6 mb-3">
           <Link to="/admin/reports/emi-collections" className="dash-stat-card dash-animate d-block">
             <div className="dash-stat-body">
@@ -101,6 +111,8 @@ function Dashboard() {
             </div>
           </Link>
         </div>
+        )}
+        {can("reports") && (
         <div className="col-md-3 col-6 mb-3">
           <Link to="/admin/reports/commissions" className="dash-stat-card dash-animate d-block">
             <div className="dash-stat-body">
@@ -116,6 +128,8 @@ function Dashboard() {
             </div>
           </Link>
         </div>
+        )}
+        {can("withdrawals") && (
         <div className="col-md-3 col-6 mb-3">
           <Link to="/admin/withdrawals?status=pending" className="dash-stat-card dash-animate d-block">
             <div className="dash-stat-body">
@@ -131,6 +145,8 @@ function Dashboard() {
             </div>
           </Link>
         </div>
+        )}
+        {can("reports") && (
         <div className="col-md-3 col-6 mb-3">
           <Link to="/admin/reports/project-sales" className="dash-stat-card dash-animate d-block">
             <div className="dash-stat-body">
@@ -146,10 +162,14 @@ function Dashboard() {
             </div>
           </Link>
         </div>
+        )}
       </div>
+      </>
+      )}
 
       {/* Property / platform statistics */}
       <div className="row">
+        {can("projects") && (
         <div className="col-md-6 col-xl-3 mb-3">
           <div className="dash-stat-card dash-animate">
             <div className="dash-stat-body">
@@ -163,7 +183,9 @@ function Dashboard() {
             </div>
           </div>
         </div>
+        )}
 
+        {can("projects") && (
         <div className="col-md-6 col-xl-3 mb-3">
           <div className="dash-stat-card dash-animate">
             <div className="dash-stat-body">
@@ -177,7 +199,9 @@ function Dashboard() {
             </div>
           </div>
         </div>
+        )}
 
+        {can("projects") && (
         <div className="col-md-6 col-xl-3 mb-3">
           <div className="dash-stat-card dash-animate">
             <div className="dash-stat-body">
@@ -191,7 +215,9 @@ function Dashboard() {
             </div>
           </div>
         </div>
+        )}
 
+        {can("projects") && (
         <div className="col-md-6 col-xl-3 mb-3">
           <div className="dash-stat-card dash-animate">
             <div className="dash-stat-body">
@@ -205,7 +231,9 @@ function Dashboard() {
             </div>
           </div>
         </div>
+        )}
 
+        {can("customers") && (
         <div className="col-md-6 col-xl-3 mb-3">
           <div className="dash-stat-card dash-animate">
             <div className="dash-stat-body">
@@ -219,7 +247,9 @@ function Dashboard() {
             </div>
           </div>
         </div>
+        )}
 
+        {can("reports") && (
         <div className="col-md-6 col-xl-3 mb-3">
           <div className="dash-hero-card dash-grad-green dash-animate">
             <div className="dash-stat-body">
@@ -233,7 +263,9 @@ function Dashboard() {
             </div>
           </div>
         </div>
+        )}
 
+        {can("reports") && (
         <div className="col-md-6 col-xl-3 mb-3">
           <div className="dash-hero-card dash-grad-blue dash-animate">
             <div className="dash-stat-body">
@@ -247,7 +279,9 @@ function Dashboard() {
             </div>
           </div>
         </div>
+        )}
 
+        {can("withdrawals") && (
         <div className="col-md-6 col-xl-3 mb-3">
           <div className="dash-hero-card dash-grad-red dash-animate">
             <div className="dash-stat-body">
@@ -261,7 +295,9 @@ function Dashboard() {
             </div>
           </div>
         </div>
+        )}
 
+        {can("bookings") && (
         <div className="col-md-6 col-xl-3 mb-3">
           <div className="dash-hero-card dash-grad-amber dash-animate">
             <div className="dash-stat-body">
@@ -275,7 +311,9 @@ function Dashboard() {
             </div>
           </div>
         </div>
+        )}
 
+        {can("reports") && (
         <div className="col-md-6 col-xl-4 mb-3">
           <div className="dash-hero-card dash-grad-green dash-animate" style={{ minHeight: "100%" }}>
             <div className="dash-stat-body">
@@ -289,7 +327,9 @@ function Dashboard() {
             </div>
           </div>
         </div>
+        )}
 
+        {can("reports") && (
         <div className="col-md-6 col-xl-4 mb-3">
           <div className="dash-hero-card dash-grad-blue dash-animate" style={{ minHeight: "100%" }}>
             <div className="dash-stat-body">
@@ -303,7 +343,9 @@ function Dashboard() {
             </div>
           </div>
         </div>
+        )}
 
+        {can("tickets") && (
         <div className="col-md-6 col-xl-4 mb-3">
           <Link to="/admin/tickets?status=open" className="dash-hero-card dash-grad-amber dash-animate d-block" style={{ minHeight: "100%" }}>
             <div className="dash-stat-body">
@@ -317,10 +359,106 @@ function Dashboard() {
             </div>
           </Link>
         </div>
+        )}
       </div>
+
+      {/* Collections Alert: overdue / not paid installment lines (visible only to roles with EMI access) */}
+      {can("emis") && (
+      <div className="row">
+        <div className="col-12 mb-3">
+          <div className="card dash-animate">
+            <div className="card-body">
+              <div className="d-flex align-items-start justify-content-between flex-wrap gap-3 mb-3">
+                <div className="d-flex align-items-start gap-3">
+                  <div
+                    className="d-flex align-items-center justify-content-center rounded-circle bg-danger-subtle text-danger flex-shrink-0"
+                    style={{ width: 44, height: 44 }}
+                  >
+                    <iconify-icon icon="solar:danger-triangle-bold-duotone" style={{ fontSize: 22 }}></iconify-icon>
+                  </div>
+                  <div>
+                    <p className="text-danger fw-bold fs-11 text-uppercase mb-1">Collections Alert</p>
+                    <h5 className="mb-1 fw-bold">Overdue — not paid</h5>
+                    <p className="text-muted fs-13 mb-0">
+                      Installment lines past due date with balance still outstanding
+                    </p>
+                  </div>
+                </div>
+                <Link to="/admin/emis?status=overdue" className="btn btn-outline-danger btn-sm fw-semibold">
+                  View all dues <iconify-icon icon="solar:arrow-right-linear"></iconify-icon>
+                </Link>
+              </div>
+
+              <div className="row g-3 mb-3">
+                <div className="col-md-3 col-6">
+                  <div className="p-3 rounded bg-danger-subtle bg-opacity-25 h-100">
+                    <p className="fs-11 fw-bold text-uppercase text-muted mb-1">Lines</p>
+                    <h4 className="mb-0 fw-bold">{stats.overdue_lines ?? 0}</h4>
+                  </div>
+                </div>
+                <div className="col-md-3 col-6">
+                  <div className="p-3 rounded bg-danger-subtle bg-opacity-25 h-100">
+                    <p className="fs-11 fw-bold text-uppercase text-muted mb-1">Total Outstanding</p>
+                    <h4 className="mb-0 fw-bold text-danger">{inr(stats.overdue_outstanding)}</h4>
+                  </div>
+                </div>
+              </div>
+
+              <div className="table-responsive">
+                <table className="table table-hover mb-0 align-middle">
+                  <thead>
+                    <tr>
+                      <th>Customer</th>
+                      <th>Project / Plot</th>
+                      <th>Step</th>
+                      <th>Due Date</th>
+                      <th>Amount Due</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {overdueDues.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="text-center text-muted py-4">
+                          No overdue installment lines. 🎉
+                        </td>
+                      </tr>
+                    ) : (
+                      overdueDues.map((d) => (
+                        <tr key={d.id}>
+                          <td>
+                            <p className="fw-semibold mb-0">{d.customer}</p>
+                            {d.phone && <p className="text-muted fs-12 mb-0">{d.phone}</p>}
+                          </td>
+                          <td>
+                            <p className="mb-0">{d.project}</p>
+                            <p className="text-muted fs-12 mb-0">Plot {d.plot}</p>
+                          </td>
+                          <td>{d.step}</td>
+                          <td>{fmtDate(d.dueDate)}</td>
+                          <td className="fw-semibold">{inrShort(d.amount)}</td>
+                          <td className="text-end">
+                            {d.bookingId && (
+                              <Link to={`/admin/bookings/${d.bookingId}`} className="btn btn-outline-secondary btn-sm">
+                                View
+                              </Link>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      )}
 
       {/* Charts row: Plots status donut + Monthly overview */}
       <div className="row">
+        {can("projects") && (
         <div className="col-lg-4 mb-3">
           <div className="card dash-animate h-100">
             <div className="card-header">
@@ -356,7 +494,9 @@ function Dashboard() {
             </div>
           </div>
         </div>
+        )}
 
+        {can("reports") && (
         <div className="col-lg-8 mb-3">
           <div className="card dash-animate h-100">
             <div className="card-header d-flex align-items-center justify-content-between">
@@ -387,10 +527,12 @@ function Dashboard() {
             </div>
           </div>
         </div>
+        )}
       </div>
 
       {/* Quick Actions + To Do */}
       <div className="row">
+        {quickActions.length > 0 && (
         <div className="col-lg-8 mb-3">
           <div className="card dash-animate h-100">
             <div className="card-header">
@@ -412,7 +554,9 @@ function Dashboard() {
             </div>
           </div>
         </div>
+        )}
 
+        {todoItems.length > 0 && (
         <div className="col-lg-4 mb-3">
           <div className="card dash-animate h-100">
             <div className="card-header">
@@ -439,10 +583,12 @@ function Dashboard() {
             </div>
           </div>
         </div>
+        )}
       </div>
 
       {/* Recent Bookings + Recent Withdrawals */}
       <div className="row">
+        {can("bookings") && (
         <div className="col-lg-6 mb-3">
           <div className="card dash-animate h-100">
             <div className="card-header d-flex align-items-center justify-content-between">
@@ -489,7 +635,9 @@ function Dashboard() {
             </div>
           </div>
         </div>
+        )}
 
+        {can("withdrawals") && (
         <div className="col-lg-6 mb-3">
           <div className="card dash-animate h-100">
             <div className="card-header d-flex align-items-center justify-content-between">
@@ -532,6 +680,7 @@ function Dashboard() {
             </div>
           </div>
         </div>
+        )}
       </div>
     </>
   );

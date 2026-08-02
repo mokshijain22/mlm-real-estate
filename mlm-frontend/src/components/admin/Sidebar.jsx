@@ -77,7 +77,7 @@ function Sidebar() {
                 <span className="nav-icon">
                   <iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon>
                 </span>
-                <span className="nav-text"> Agents </span>
+                <span className="nav-text"> Executives </span>
               </NavLink>
             </li>
           )}
@@ -184,7 +184,7 @@ function Sidebar() {
                   <span className="nav-icon">
                     <iconify-icon icon="solar:user-speak-bold-duotone"></iconify-icon>
                   </span>
-                  <span className="nav-text"> Agent Earnings </span>
+                  <span className="nav-text"> Executive Earnings </span>
                 </NavLink>
               </li>
               <li className="nav-item">

@@ -110,7 +110,7 @@ function AgentDetail() {
       <div className="row align-items-center mb-4">
         <div className="col-sm-8">
           <Link to="/admin/agents" className="text-muted small mb-1 d-inline-block">
-            <iconify-icon icon="solar:arrow-left-linear" className="align-middle"></iconify-icon> Back to Agents
+            <iconify-icon icon="solar:arrow-left-linear" className="align-middle"></iconify-icon> Back to Executives
           </Link>
           <h3 className="fw-bold mb-1">{agent.name}</h3>
           <div className="d-flex align-items-center gap-2">
@@ -135,11 +135,11 @@ function AgentDetail() {
         <div className="col-sm-4 text-sm-end mt-3 mt-sm-0">
           {agent.status === "active" ? (
             <button className="btn btn-danger" disabled={actionLoading} onClick={() => handleAction("deactivate")}>
-              Deactivate Agent
+              Deactivate Executive
             </button>
           ) : (
             <button className="btn btn-success" disabled={actionLoading} onClick={() => handleAction("activate")}>
-              Activate Agent
+              Activate Executive
             </button>
           )}
         </div>
@@ -168,7 +168,7 @@ function AgentDetail() {
           <div className="col-lg-6">
             <div className="card border-0 shadow-sm">
               <div className="card-header bg-white border-bottom py-3">
-                <h4 className="card-title mb-0">Agent Details</h4>
+                <h4 className="card-title mb-0">Executive Details</h4>
               </div>
               <div className="card-body">
                 <table className="table table-borderless mb-0">
@@ -199,7 +199,7 @@ function AgentDetail() {
                     </tr>
                     <tr>
                       <td className="text-muted">System Role</td>
-                      <td className="fw-medium">{agent.role?.name || "Agent"}</td>
+                      <td className="fw-medium">{agent.role?.name || "Executive"}</td>
                     </tr>
                     <tr>
                       <td className="text-muted">Country</td>

@@ -21,6 +21,7 @@ import Login from "./pages/auth/Login.jsx";
 import ProtectedRoute from "./components/auth/ProtectedRoute.jsx";
 import Register from "./pages/auth/Register.jsx";
 import AdminLayout from "./layouts/AdminLayout.jsx";
+import PermissionRoute from "./components/auth/PermissionRoute.jsx";
 import AdminDashboard from "./pages/admin/Dashboard.jsx";
 import Agents from "./pages/admin/Agents.jsx";
 import AgentDetail from "./pages/admin/AgentDetail.jsx";
@@ -102,45 +103,57 @@ function App() {
         }
       >
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
-        <Route path="/admin/agents" element={<Agents />} />
-        <Route path="/admin/agents/:id" element={<AgentDetail />} />
-        <Route path="/admin/kyc" element={<AdminKyc />} />
-        <Route path="/admin/kyc/:id" element={<AdminKycDetail />} />
-        <Route path="/admin/ranks" element={<Ranks />} />
-        <Route path="/admin/referrals" element={<AdminReferrals />} />
-        <Route path="/admin/bookings" element={<AdminBookings />} />
-        <Route path="/admin/bookings/create" element={<AdminBookingCreate />} />
-        <Route path="/admin/bookings/pending" element={<AdminBookingsPending />} />
-        <Route path="/admin/bookings/:id" element={<AdminBookingDetail />} />
-        <Route path="/admin/emis" element={<EmiManagement />} />
-        <Route path="/admin/sub-admins" element={<SubAdmins />} />
-        <Route path="/admin/sub-admins/create" element={<SubAdminCreate />} />
-        <Route path="/admin/sub-admins/:id/edit" element={<SubAdminEdit />} />
-        <Route path="/admin/audit-logs" element={<AuditLogs />} />
-        <Route path="/admin/settings" element={<Settings />} />
+
+        <Route path="/admin/agents" element={<PermissionRoute permission="agents"><Agents /></PermissionRoute>} />
+        <Route path="/admin/agents/:id" element={<PermissionRoute permission="agents"><AgentDetail /></PermissionRoute>} />
+
+        <Route path="/admin/kyc" element={<PermissionRoute permission="kyc"><AdminKyc /></PermissionRoute>} />
+        <Route path="/admin/kyc/:id" element={<PermissionRoute permission="kyc"><AdminKycDetail /></PermissionRoute>} />
+
+        <Route path="/admin/ranks" element={<PermissionRoute superAdminOnly><Ranks /></PermissionRoute>} />
+        <Route path="/admin/referrals" element={<PermissionRoute permission="referrals"><AdminReferrals /></PermissionRoute>} />
+
+        <Route path="/admin/bookings" element={<PermissionRoute permission="bookings"><AdminBookings /></PermissionRoute>} />
+        <Route path="/admin/bookings/create" element={<PermissionRoute permission="bookings"><AdminBookingCreate /></PermissionRoute>} />
+        <Route path="/admin/bookings/pending" element={<PermissionRoute permission="bookings"><AdminBookingsPending /></PermissionRoute>} />
+        <Route path="/admin/bookings/:id" element={<PermissionRoute permission="bookings"><AdminBookingDetail /></PermissionRoute>} />
+
+        <Route path="/admin/emis" element={<PermissionRoute permission="emis"><EmiManagement /></PermissionRoute>} />
+
+        <Route path="/admin/sub-admins" element={<PermissionRoute superAdminOnly><SubAdmins /></PermissionRoute>} />
+        <Route path="/admin/sub-admins/create" element={<PermissionRoute superAdminOnly><SubAdminCreate /></PermissionRoute>} />
+        <Route path="/admin/sub-admins/:id/edit" element={<PermissionRoute superAdminOnly><SubAdminEdit /></PermissionRoute>} />
+        <Route path="/admin/audit-logs" element={<PermissionRoute superAdminOnly><AuditLogs /></PermissionRoute>} />
+        <Route path="/admin/settings" element={<PermissionRoute superAdminOnly><Settings /></PermissionRoute>} />
+
         <Route path="/admin/profile" element={<AdminProfile />} />
-        <Route path="/admin/reports" element={<ReportsOverview />} />
-        <Route path="/admin/reports/emi-collections" element={<EmiCollectionsReport />} />
-        <Route path="/admin/reports/commissions" element={<CommissionsReport />} />
-        <Route path="/admin/reports/agent-earnings" element={<AgentEarningsReport />} />
-        <Route path="/admin/reports/project-sales" element={<ProjectSalesReport />} />
-        <Route path="/admin/reports/payouts" element={<PayoutsReport />} />
-        <Route path="/admin/projects" element={<AdminProjects />} />
-        <Route path="/admin/projects/create" element={<ProjectCreate />} />
-        <Route path="/admin/projects/:id/edit" element={<ProjectEdit />} />
-        <Route path="/admin/projects/:id" element={<ProjectShow />} />
-        <Route path="/admin/projects/:projectId/plots" element={<PlotsList />} />
-        <Route path="/admin/projects/:projectId/plots/create" element={<PlotCreate />} />
-        <Route path="/admin/projects/:projectId/plots/:plotId/edit" element={<PlotEdit />} />
-        <Route path="/admin/projects/:projectId/plots/:plotId" element={<PlotShow />} />
-        <Route path="/admin/projects/:id/map" element={<ProjectMap />} />
-        <Route path="/admin/projects/:id/builder" element={<ProjectBuilder />} />
-        <Route path="/admin/projects/:id/plot-mapper" element={<PlotMapper />} />
-        <Route path="/admin/withdrawals" element={<Withdrawals />} />
-        <Route path="/admin/withdrawals/:id" element={<WithdrawalDetail />} />
-        <Route path="/admin/tickets" element={<AdminTickets />} />
-        <Route path="/admin/tickets/:id" element={<AdminTicketDetail />} />
-        <Route path="/admin/customers" element={<AdminCustomers />} />
+
+        <Route path="/admin/reports" element={<PermissionRoute permission="reports"><ReportsOverview /></PermissionRoute>} />
+        <Route path="/admin/reports/emi-collections" element={<PermissionRoute permission="reports"><EmiCollectionsReport /></PermissionRoute>} />
+        <Route path="/admin/reports/commissions" element={<PermissionRoute permission="reports"><CommissionsReport /></PermissionRoute>} />
+        <Route path="/admin/reports/agent-earnings" element={<PermissionRoute permission="reports"><AgentEarningsReport /></PermissionRoute>} />
+        <Route path="/admin/reports/project-sales" element={<PermissionRoute permission="reports"><ProjectSalesReport /></PermissionRoute>} />
+        <Route path="/admin/reports/payouts" element={<PermissionRoute permission="reports"><PayoutsReport /></PermissionRoute>} />
+
+        <Route path="/admin/projects" element={<PermissionRoute permission="projects"><AdminProjects /></PermissionRoute>} />
+        <Route path="/admin/projects/create" element={<PermissionRoute permission="projects"><ProjectCreate /></PermissionRoute>} />
+        <Route path="/admin/projects/:id/edit" element={<PermissionRoute permission="projects"><ProjectEdit /></PermissionRoute>} />
+        <Route path="/admin/projects/:id" element={<PermissionRoute permission="projects"><ProjectShow /></PermissionRoute>} />
+        <Route path="/admin/projects/:projectId/plots" element={<PermissionRoute permission="projects"><PlotsList /></PermissionRoute>} />
+        <Route path="/admin/projects/:projectId/plots/create" element={<PermissionRoute permission="projects"><PlotCreate /></PermissionRoute>} />
+        <Route path="/admin/projects/:projectId/plots/:plotId/edit" element={<PermissionRoute permission="projects"><PlotEdit /></PermissionRoute>} />
+        <Route path="/admin/projects/:projectId/plots/:plotId" element={<PermissionRoute permission="projects"><PlotShow /></PermissionRoute>} />
+        <Route path="/admin/projects/:id/map" element={<PermissionRoute permission="projects"><ProjectMap /></PermissionRoute>} />
+        <Route path="/admin/projects/:id/builder" element={<PermissionRoute permission="projects"><ProjectBuilder /></PermissionRoute>} />
+        <Route path="/admin/projects/:id/plot-mapper" element={<PermissionRoute permission="projects"><PlotMapper /></PermissionRoute>} />
+
+        <Route path="/admin/withdrawals" element={<PermissionRoute permission="withdrawals"><Withdrawals /></PermissionRoute>} />
+        <Route path="/admin/withdrawals/:id" element={<PermissionRoute permission="withdrawals"><WithdrawalDetail /></PermissionRoute>} />
+
+        <Route path="/admin/tickets" element={<PermissionRoute permission="tickets"><AdminTickets /></PermissionRoute>} />
+        <Route path="/admin/tickets/:id" element={<PermissionRoute permission="tickets"><AdminTicketDetail /></PermissionRoute>} />
+
+        <Route path="/admin/customers" element={<PermissionRoute permission="customers"><AdminCustomers /></PermissionRoute>} />
       </Route>
 
       <Route path="*" element={<Navigate to="/login" replace />} />

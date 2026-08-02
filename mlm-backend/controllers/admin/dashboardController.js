@@ -43,6 +43,8 @@ async function index(req, res) {
       recentWithdrawalsRaw,
       emiByMonth,
       commissionByMonth,
+      overdueAgg,
+      overdueDuesRaw,
     ] = await Promise.all([
       Project.countDocuments({ status: 'active' }),
       Plot.countDocuments({}),
@@ -99,6 +101,23 @@ async function index(req, res) {
         { $match: { type: 'credit', category: 'emi_commission', createdAt: { $gte: monthWindowStart, $lt: startOfNextMonth } } },
         { $group: { _id: { y: { $year: '$createdAt' }, m: { $month: '$createdAt' } }, total: { $sum: '$amount' } } },
       ]),
+      Emi.aggregate([
+        { $match: { status: { $in: ['pending', 'overdue'] }, dueDate: { $lt: now } } },
+        { $group: { _id: null, count: { $sum: 1 }, total: { $sum: '$amount' } } },
+      ]),
+      Emi.find({ status: { $in: ['pending', 'overdue'] }, dueDate: { $lt: now } })
+        .sort({ dueDate: 1 })
+        .limit(20)
+        .populate({
+          path: 'booking',
+          select: 'customer project plot bookingNumber',
+          populate: [
+            { path: 'customer', select: 'name phone' },
+            { path: 'project', select: 'name' },
+            { path: 'plot', select: 'plotNumber' },
+          ],
+        })
+        .select('booking emiNumber amount dueDate status'),
     ]);
 
     const sumOf = (agg) => (agg[0] ? agg[0].total : 0);
@@ -121,7 +140,21 @@ async function index(req, res) {
       new_bookings_this_month: newBookingsThisMonth,
       total_bv_paid_out: sumOf(bvPaidOutAgg),
       total_pv_paid_out: sumOf(pvPaidOutAgg),
+      overdue_lines: overdueAgg[0]?.count || 0,
+      overdue_outstanding: overdueAgg[0]?.total || 0,
     };
+
+    const overdueDues = overdueDuesRaw.map((e) => ({
+      id: e._id,
+      customer: e.booking?.customer?.name || '—',
+      phone: e.booking?.customer?.phone || '',
+      project: e.booking?.project?.name || '—',
+      plot: e.booking?.plot?.plotNumber || '—',
+      step: `EMI ${e.emiNumber}`,
+      dueDate: e.dueDate,
+      amount: e.amount,
+      bookingId: e.booking?._id || null,
+    }));
 
     const recentBookings = recentBookingsRaw.map((b) => ({
       id: b._id,
@@ -164,6 +197,7 @@ async function index(req, res) {
       recentBookings,
       recentWithdrawals,
       monthlyOverview,
+      overdueDues,
     });
   } catch (err) {
     return res.status(500).json({ message: 'Failed to fetch dashboard.', error: err.message });

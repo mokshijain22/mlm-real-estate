@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import api from "../../api/axios.js";
 
 function statusBadge(status) {
@@ -9,9 +9,13 @@ function statusBadge(status) {
 }
 
 function statusLabel(status) {
-  if (status === "active") return "Active";
+  if (status === "active") return "Ongoing";
   if (status === "completed") return "Completed";
   return "Inactive";
+}
+
+function isTower(projectType) {
+  return projectType === "Apartment";
 }
 
 function Projects() {
@@ -21,7 +25,6 @@ function Projects() {
   const [error, setError] = useState(null);
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
-  const navigate = useNavigate();
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -62,128 +65,174 @@ function Projects() {
   return (
     <div className="row">
       <div className="col-12">
-        <div className="card">
-          <div className="card-header d-flex justify-content-between align-items-center">
-            <h4 className="header-title">Project Management</h4>
-            <Link to="/admin/projects/create" className="btn btn-primary btn-sm">
-              Add Project
+        <div className="card border-0 shadow-sm mb-3">
+          <div className="card-body d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div>
+              <h3 className="fw-bold mb-1">Projects</h3>
+              <p className="text-muted mb-0 fs-13">
+                Set default ₹/sq ft, manage inventory units, and payment schedules per project.
+              </p>
+            </div>
+            <Link to="/admin/projects/create" className="btn btn-warning fw-semibold">
+              <iconify-icon icon="solar:add-circle-bold" className="me-1 align-middle"></iconify-icon>
+              Add project
             </Link>
           </div>
-          <div className="card-body">
-            <div className="mb-3" style={{ maxWidth: "320px" }}>
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Search by name or location..."
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-              />
+        </div>
+
+        <div className="mb-3" style={{ maxWidth: "320px" }}>
+          <input
+            type="text"
+            className="form-control"
+            placeholder="Search by name or location..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+          />
+        </div>
+
+        {projects.length === 0 ? (
+          <div className="card border-0 shadow-sm">
+            <div className="card-body text-center py-5 text-muted">
+              {search ? `No projects found for "${search}".` : "No projects found."}
             </div>
-            <div className="table-responsive">
-              <table className="table table-centered table-nowrap mb-0">
-                <thead className="table-light">
-                  <tr>
-                    <th>Name</th>
-                    <th>Location</th>
-                    <th>Total Area (sqft)</th>
-                    <th>Plots Count</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {projects.length === 0 && (
-                    <tr>
-                      <td colSpan="6" className="text-center">
-                        {search ? `No projects found for "${search}".` : "No projects found."}
-                      </td>
-                    </tr>
-                  )}
-                  {projects.map((project) => (
-                    <tr key={project._id}>
-                      <td>
-                        <h5 className="font-14 my-1">
-                          <Link to={`/admin/projects/${project._id}`} className="text-body">
+          </div>
+        ) : (
+          <div className="row">
+            {projects.map((project) => {
+              const tower = isTower(project.projectType);
+              const unitLabel = tower ? "Total Flats" : "Total Plots";
+              const actionLabel = tower ? "View flats" : "View plots";
+              const facilities = project.facilities || [];
+              const landmark = (project.nearbyLandmarks || [])[0];
+
+              return (
+                <div className="col-md-6 col-xl-4 mb-4" key={project._id}>
+                  <div className="card border-0 shadow-sm h-100">
+                    <div className="card-body p-4 d-flex flex-column">
+                      <div className="d-flex align-items-start justify-content-between mb-1">
+                        <h5 className="fw-bold mb-0">
+                          <Link to={`/admin/projects/${project._id}`} className="text-body text-decoration-none">
                             {project.name}
                           </Link>
                         </h5>
-                      </td>
-                      <td>{project.location || "N/A"}</td>
-                      <td>
-                        {Number(project.totalArea).toLocaleString("en-IN", {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
-                      </td>
-                      <td>{project.plotsCount}</td>
-                      <td>
-                        <span className={`badge ${statusBadge(project.status)}`}>{statusLabel(project.status)}</span>
-                      </td>
-                      <td>
-                        <div className="d-flex gap-2">
-                          <Link to={`/admin/projects/${project._id}`} className="btn btn-light btn-sm" title="View">
-                            <iconify-icon icon="solar:eye-broken" className="align-middle fs-18"></iconify-icon>
-                          </Link>
-                          <Link
-                            to={`/admin/projects/${project._id}/edit`}
-                            className="btn btn-soft-primary btn-sm"
-                            title="Edit"
-                          >
-                            <iconify-icon icon="solar:pen-2-broken" className="align-middle fs-18"></iconify-icon>
-                          </Link>
-                          <Link
-                            to={`/admin/projects/${project._id}/plots`}
-                            className="btn btn-soft-info btn-sm"
-                            title="Manage Plots"
-                          >
-                            <iconify-icon icon="solar:layers-minimalistic-broken" className="align-middle fs-18"></iconify-icon>
-                          </Link>
-                          <Link
-                            to={`/admin/projects/${project._id}/map`}
-                            className="btn btn-soft-success btn-sm"
-                            title="View Plot Map"
-                          >
-                            <iconify-icon icon="solar:map-arrow-right-bold-duotone" className="align-middle fs-18"></iconify-icon>
-                          </Link>
-                          <button
-                            type="button"
-                            className="btn btn-soft-danger btn-sm"
-                            title="Delete"
-                            onClick={() => handleDelete(project._id)}
-                          >
-                            <iconify-icon icon="solar:trash-bin-trash-broken" className="align-middle fs-18"></iconify-icon>
-                          </button>
+                        <div className="d-flex gap-1 flex-shrink-0">
+                          <span className={`badge ${statusBadge(project.status)}`}>
+                            {statusLabel(project.status)}
+                          </span>
+                          {tower && (
+                            <span className="badge bg-secondary-subtle text-secondary">Tower</span>
+                          )}
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      </div>
+                      <p className="fs-13 text-muted mb-3">{project.location || "—"}</p>
 
-            {meta && (
-              <div className="mt-3 d-flex justify-content-center gap-2">
-                <button
-                  className="btn btn-light btn-sm"
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => p - 1)}
-                >
-                  Previous
-                </button>
-                <span className="align-self-center">
-                  Page {meta.page} of {meta.lastPage || 1}
-                </span>
-                <button
-                  className="btn btn-light btn-sm"
-                  disabled={page >= meta.lastPage}
-                  onClick={() => setPage((p) => p + 1)}
-                >
-                  Next
-                </button>
-              </div>
-            )}
+                      <div className="row g-2 mb-3">
+                        <div className="col-6">
+                          <div className="bg-light rounded p-2">
+                            <small className="text-muted d-block text-uppercase fs-11">{unitLabel}</small>
+                            <span className="fw-bold fs-16">{project.totalPlots ?? project.plotsCount ?? 0}</span>
+                          </div>
+                        </div>
+                        <div className="col-6">
+                          <div className="bg-light rounded p-2">
+                            <small className="text-muted d-block text-uppercase fs-11">Default Rate</small>
+                            <span className="fw-bold fs-16">
+                              ₹{Number(project.defaultRate || 0).toLocaleString("en-IN")}
+                              <small className="text-muted fw-normal">/sqft</small>
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {facilities.length > 0 && (
+                        <div className="d-flex flex-wrap gap-1 mb-3">
+                          {facilities.slice(0, 3).map((f) => (
+                            <span key={f} className="badge bg-primary-subtle text-primary fw-normal">
+                              {f}
+                            </span>
+                          ))}
+                          {facilities.length > 3 && (
+                            <span className="badge bg-light text-muted fw-normal">
+                              +{facilities.length - 3} more
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {landmark && (
+                        <p className="fs-12 text-muted mb-3 text-uppercase">
+                          Near {landmark.name}{" "}
+                          <span className="badge bg-light text-dark fw-normal ms-1">
+                            {landmark.distanceKm} km
+                          </span>
+                        </p>
+                      )}
+
+                      <div className="mt-auto d-flex gap-2">
+                        <Link
+                          to={`/admin/projects/${project._id}/plots`}
+                          className="btn btn-sm btn-outline-dark fw-semibold flex-fill"
+                        >
+                          {actionLabel}
+                        </Link>
+                        <Link
+                          to={`/admin/projects/${project._id}/edit`}
+                          className="btn btn-sm btn-light fw-semibold flex-fill"
+                        >
+                          Edit
+                        </Link>
+                      </div>
+                      <div className="d-flex gap-2 mt-2">
+                        <Link
+                          to={`/admin/projects/${project._id}/map`}
+                          className="btn btn-sm btn-soft-success flex-fill"
+                          title="View Plot Map"
+                        >
+                          <iconify-icon icon="solar:map-arrow-right-bold-duotone" className="align-middle"></iconify-icon>
+                        </Link>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-soft-danger flex-fill"
+                          title="Delete"
+                          onClick={() => handleDelete(project._id)}
+                        >
+                          <iconify-icon icon="solar:trash-bin-trash-broken" className="align-middle"></iconify-icon>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        </div>
+        )}
+
+        {meta && (
+          <div className="d-flex align-items-center justify-content-between mt-2 mb-4">
+            <p className="text-muted fs-13 mb-0">
+              Showing {projects.length} of {meta.total} projects
+            </p>
+            <div className="d-flex gap-2">
+              <button
+                className="btn btn-light btn-sm"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => p - 1)}
+              >
+                Previous
+              </button>
+              <span className="align-self-center fs-13">
+                Page {meta.page} of {meta.lastPage || 1}
+              </span>
+              <button
+                className="btn btn-light btn-sm"
+                disabled={page >= meta.lastPage}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
