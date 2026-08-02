@@ -145,7 +145,7 @@ function BookingCreate() {
   useEffect(() => {
     api
       .get("/admin/banks")
-      .then((res) => setBanks(res.data.data || []))
+      .then((res) => setBanks((res.data.data || []).filter((b) => b.isActive !== false)))
       .catch(() => {});
   }, []);
 
