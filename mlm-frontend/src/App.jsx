@@ -180,6 +180,7 @@ function App() {
         <Route path="/admin/tickets/:id" element={<PermissionRoute permission="tickets"><AdminTicketDetail /></PermissionRoute>} />
 
         <Route path="/admin/customers" element={<PermissionRoute permission="customers"><AdminCustomers /></PermissionRoute>} />
+        <Route path="/admin/leads" element={<PermissionRoute permission="leads"><Leads /></PermissionRoute>} />
       </Route>
 
       <Route path="*" element={<Navigate to="/login" replace />} />

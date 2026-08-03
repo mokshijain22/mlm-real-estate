@@ -673,60 +673,88 @@ async function payoutsExport(req, res) {
 }
 
 // ============ DATE RANGE REPORT ============
+// Builds a flat list of PAID transactions (booking token + every paid EMI
+// line) in the range — mirrors the reference app's "Date range report"
+// which shows one row per payment received, not per booking.
+async function buildDateRangeTransactions(filters) {
+  const { date_from, date_to, project_id, sort_by = 'paidOn', order = 'desc' } = filters;
+
+  const emiDateFilter = dateRangeFilter('paidDate', date_from, date_to);
+  const emiQuery = { status: 'paid', ...emiDateFilter };
+  if (project_id) {
+    const bookingIds = await Booking.find({ project: project_id }).distinct('_id');
+    emiQuery.booking = { $in: bookingIds };
+  }
+
+  const emis = await Emi.find(emiQuery)
+    .populate('bank', 'name')
+    .populate({
+      path: 'booking',
+      populate: [
+        { path: 'project', select: 'name' },
+        { path: 'plot', select: 'plotNumber totalArea' },
+        { path: 'customer', select: 'name' },
+      ],
+    });
+
+  const transactions = emis
+    .filter((e) => e.booking)
+    .map((e) => ({
+      paidOn: e.paidDate,
+      reference: e.receiptId || e.paymentReference || '-',
+      client: e.booking.customer?.name || 'N/A',
+      project: e.booking.project?.name || 'N/A',
+      plot: e.booking.plot?.plotNumber || 'N/A',
+      area: e.booking.plot?.totalArea || 0,
+      purpose:
+        e.emiNumber === 0 ? 'booking' : e.emiNumber === -1 ? 'down payment' : e.emiNumber === -2 ? 'down payment 2' : e.emiNumber === 99 ? 'registry' : 'installment',
+      method: e.paymentMode || 'N/A',
+      bank: e.bank?.name || '-',
+      amount: e.amount || 0,
+      note: e.remarks || '-',
+    }));
+
+  const dir = order === 'asc' ? 1 : -1;
+  transactions.sort((a, b) => {
+    if (sort_by === 'amount') return (a.amount - b.amount) * dir;
+    return (new Date(a.paidOn) - new Date(b.paidOn)) * dir;
+  });
+
+  return transactions;
+}
+
+function summarizeTransactions(transactions) {
+  const cashReceived = transactions.filter((t) => t.method === 'cash').reduce((s, t) => s + t.amount, 0);
+  const bankTransferReceived = transactions
+    .filter((t) => ['upi', 'net_banking', 'bank_transfer', 'card'].includes(t.method))
+    .reduce((s, t) => s + t.amount, 0);
+  const chequeReceived = transactions.filter((t) => t.method === 'cheque').reduce((s, t) => s + t.amount, 0);
+  const totalCollected = transactions.reduce((s, t) => s + t.amount, 0);
+
+  return {
+    transactions_count: transactions.length,
+    total_collected: totalCollected,
+    cash_received: cashReceived,
+    bank_transfer_received: bankTransferReceived,
+    cheque_received: chequeReceived,
+  };
+}
+
 // GET /api/admin/reports/date-range
 async function dateRangeReport(req, res) {
   try {
-    const { date_from, date_to, project_id } = req.query;
+    const { date_from, date_to } = req.query;
     if (!date_from || !date_to) {
       return res.status(400).json({ message: 'date_from and date_to are required' });
     }
-    const dateFilter = dateRangeFilter('createdAt', date_from, date_to);
-    const bookingMatch = { ...dateFilter };
-    if (project_id) bookingMatch.project = project_id;
 
-    const bookings = await Booking.find(bookingMatch)
-      .populate('customer', 'name')
-      .populate('plot', 'plotNumber')
-      .populate('project', 'name')
-      .populate('agent', 'name')
-      .sort({ createdAt: -1 });
-
-    const totalBookings = bookings.length;
-    const totalBookingValue = bookings.reduce((s, b) => s + (b.totalAmount || 0), 0);
-    const totalCollectedAtBooking = bookings.reduce((s, b) => s + (b.bookingAmount || 0), 0);
-
-    const emiDateFilter = dateRangeFilter('paidDate', date_from, date_to);
-    const emiQuery = { status: 'paid', ...emiDateFilter };
-    if (project_id) {
-      const bookingIds = await Booking.find({ project: project_id }).distinct('_id');
-      emiQuery.booking = { $in: bookingIds };
-    }
-    const emis = await Emi.find(emiQuery).populate({
-      path: 'booking',
-      populate: [{ path: 'project', select: 'name' }, { path: 'plot', select: 'plotNumber' }, { path: 'customer', select: 'name' }],
-    }).sort({ paidDate: -1 });
-    const totalEmiCollected = emis.reduce((s, e) => s + (e.amount || 0), 0);
-
-    const commissionDateFilter = dateRangeFilter('createdAt', date_from, date_to);
-    const commissionQuery = { type: 'credit', category: { $in: ['emi_commission', 'rank_difference'] }, ...commissionDateFilter };
-    const [totalCommissionBV, totalCommissionPV] = await Promise.all([
-      sumAmount(WalletTransaction, { ...commissionQuery, pointsType: 'BV' }),
-      sumAmount(WalletTransaction, { ...commissionQuery, pointsType: 'PV' }),
-    ]);
+    const transactions = await buildDateRangeTransactions(req.query);
+    const summary = summarizeTransactions(transactions);
 
     return res.json({
       range: { from: date_from, to: date_to },
-      summary: {
-        total_bookings: totalBookings,
-        total_booking_value: totalBookingValue,
-        total_collected_at_booking: totalCollectedAtBooking,
-        total_emi_collected: totalEmiCollected,
-        total_collected: totalCollectedAtBooking + totalEmiCollected,
-        total_commission_bv: totalCommissionBV,
-        total_commission_pv: totalCommissionPV,
-      },
-      bookings,
-      emi_payments: emis,
+      summary,
+      transactions,
     });
   } catch (err) {
     return res.status(500).json({ message: 'Failed to fetch date range report.', error: err.message });
@@ -736,28 +764,21 @@ async function dateRangeReport(req, res) {
 // GET /api/admin/reports/date-range/export
 async function dateRangeReportExport(req, res) {
   try {
-    const { date_from, date_to, project_id } = req.query;
-    const bookingMatch = { ...dateRangeFilter('createdAt', date_from, date_to) };
-    if (project_id) bookingMatch.project = project_id;
+    const transactions = await buildDateRangeTransactions(req.query);
 
-    const bookings = await Booking.find(bookingMatch)
-      .populate('customer', 'name')
-      .populate('plot', 'plotNumber')
-      .populate('project', 'name')
-      .populate('agent', 'name')
-      .sort({ createdAt: -1 });
-
-    const headers = ['Booking #', 'Date', 'Customer', 'Project', 'Plot', 'Agent', 'Total Amount', 'Booking Amount', 'Status'];
-    const rows = bookings.map((b) => [
-      b.bookingNumber,
-      b.createdAt.toISOString().slice(0, 10),
-      b.customer?.name || 'N/A',
-      b.project?.name || 'N/A',
-      b.plot?.plotNumber || 'N/A',
-      b.agent?.name || 'N/A',
-      b.totalAmount,
-      b.bookingAmount,
-      b.status,
+    const headers = ['Paid On', 'Reference', 'Client', 'Project', 'Plot', 'Area', 'Purpose', 'Method', 'Bank', 'Amount', 'Note'];
+    const rows = transactions.map((t) => [
+      t.paidOn ? t.paidOn.toISOString().slice(0, 10) : '-',
+      t.reference,
+      t.client,
+      t.project,
+      t.plot,
+      t.area,
+      t.purpose,
+      t.method,
+      t.bank,
+      t.amount,
+      t.note,
     ]);
 
     return sendCsv(res, `date_range_report_${timestamp()}.csv`, toCsv(headers, rows));
