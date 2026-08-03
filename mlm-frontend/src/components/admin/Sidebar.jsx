@@ -177,58 +177,96 @@ function Sidebar() {
 
           {/* Finance */}
           {can("reports") && (
-            <>
-              <li className="menu-title mt-2">Finance</li>
-              <li className="nav-item">
-                <NavLink className="nav-link" to="/admin/reports">
-                  <span className="nav-icon">
-                    <iconify-icon icon="solar:chart-square-bold-duotone"></iconify-icon>
-                  </span>
-                  <span className="nav-text"> Reports Overview </span>
-                </NavLink>
-              </li>
-              <li className="nav-item">
-                <NavLink className="nav-link" to="/admin/reports/emi-collections">
-                  <span className="nav-icon">
-                    <iconify-icon icon="solar:wallet-2-bold-duotone"></iconify-icon>
-                  </span>
-                  <span className="nav-text"> EMI Collections </span>
-                </NavLink>
-              </li>
-              <li className="nav-item">
-                <NavLink className="nav-link" to="/admin/reports/commissions">
-                  <span className="nav-icon">
-                    <iconify-icon icon="solar:graph-up-bold-duotone"></iconify-icon>
-                  </span>
-                  <span className="nav-text"> Commissions </span>
-                </NavLink>
-              </li>
-              <li className="nav-item">
-                <NavLink className="nav-link" to="/admin/reports/agent-earnings">
-                  <span className="nav-icon">
-                    <iconify-icon icon="solar:user-speak-bold-duotone"></iconify-icon>
-                  </span>
-                  <span className="nav-text"> Executive Earnings </span>
-                </NavLink>
-              </li>
-              <li className="nav-item">
-                <NavLink className="nav-link" to="/admin/reports/project-sales">
-                  <span className="nav-icon">
-                    <iconify-icon icon="solar:city-bold-duotone"></iconify-icon>
-                  </span>
-                  <span className="nav-text"> Project Sales </span>
-                </NavLink>
-              </li>
-              <li className="nav-item">
-                <NavLink className="nav-link" to="/admin/reports/payouts">
-                  <span className="nav-icon">
-                    <iconify-icon icon="solar:cash-out-bold-duotone"></iconify-icon>
-                  </span>
-                  <span className="nav-text"> Payouts </span>
-                </NavLink>
-              </li>
-            </>
-          )}
+  <>
+    <li className="menu-title mt-2">Finance</li>
+
+    <li className="nav-item">
+      <a
+        className="nav-link menu-arrow"
+        href="#sidebarReports"
+        data-bs-toggle="collapse"
+        role="button"
+        aria-expanded="false"
+        aria-controls="sidebarReports"
+      >
+        <span className="nav-icon">
+          <iconify-icon icon="solar:chart-square-bold-duotone"></iconify-icon>
+        </span>
+        <span className="nav-text">Reports</span>
+      </a>
+
+      <div className="collapse" id="sidebarReports">
+        <ul className="nav-second-level">
+          <li className="nav-item">
+            <NavLink className="nav-link" to="/admin/reports">
+              <span className="nav-text">Overview</span>
+            </NavLink>
+          </li>
+
+          <li className="nav-item">
+            <NavLink className="nav-link" to="/admin/reports/date-range">
+              <span className="nav-text">Date Range Report</span>
+            </NavLink>
+          </li>
+
+          <li className="nav-item">
+            <NavLink className="nav-link" to="/admin/reports/month-end">
+              <span className="nav-text">Month-End Report</span>
+            </NavLink>
+          </li>
+
+          <li className="nav-item">
+            <NavLink className="nav-link" to="/admin/reports/single-unit">
+              <span className="nav-text">Single Unit Report</span>
+            </NavLink>
+          </li>
+
+          <li className="nav-item">
+            <NavLink className="nav-link" to="/admin/reports/emi-collections">
+              <span className="nav-text">EMI Collections</span>
+            </NavLink>
+          </li>
+
+          <li className="nav-item">
+            <NavLink className="nav-link" to="/admin/reports/commissions">
+              <span className="nav-text">Commissions</span>
+            </NavLink>
+          </li>
+
+          <li className="nav-item">
+            <NavLink className="nav-link" to="/admin/reports/agent-earnings">
+              <span className="nav-text">Executive Earnings</span>
+            </NavLink>
+          </li>
+
+          <li className="nav-item">
+            <NavLink className="nav-link" to="/admin/reports/executive-tds">
+              <span className="nav-text">Executive TDS Report</span>
+            </NavLink>
+          </li>
+
+          <li className="nav-item">
+            <NavLink className="nav-link" to="/admin/reports/project-sales">
+              <span className="nav-text">Project Sales</span>
+            </NavLink>
+          </li>
+
+          <li className="nav-item">
+            <NavLink className="nav-link" to="/admin/reports/cancelled-bookings">
+              <span className="nav-text">Cancelled Bookings</span>
+            </NavLink>
+          </li>
+
+          <li className="nav-item">
+            <NavLink className="nav-link" to="/admin/reports/payouts">
+              <span className="nav-text">Payouts</span>
+            </NavLink>
+          </li>
+        </ul>
+      </div>
+    </li>
+  </>
+)}
           {can("withdrawals") && (
             <li className="nav-item">
               <NavLink className="nav-link" to="/admin/withdrawals">

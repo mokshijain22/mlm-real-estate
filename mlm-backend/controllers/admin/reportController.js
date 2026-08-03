@@ -672,6 +672,369 @@ async function payoutsExport(req, res) {
   }
 }
 
+// ============ DATE RANGE REPORT ============
+// GET /api/admin/reports/date-range
+async function dateRangeReport(req, res) {
+  try {
+    const { date_from, date_to, project_id } = req.query;
+    if (!date_from || !date_to) {
+      return res.status(400).json({ message: 'date_from and date_to are required' });
+    }
+    const dateFilter = dateRangeFilter('createdAt', date_from, date_to);
+    const bookingMatch = { ...dateFilter };
+    if (project_id) bookingMatch.project = project_id;
+
+    const bookings = await Booking.find(bookingMatch)
+      .populate('customer', 'name')
+      .populate('plot', 'plotNumber')
+      .populate('project', 'name')
+      .populate('agent', 'name')
+      .sort({ createdAt: -1 });
+
+    const totalBookings = bookings.length;
+    const totalBookingValue = bookings.reduce((s, b) => s + (b.totalAmount || 0), 0);
+    const totalCollectedAtBooking = bookings.reduce((s, b) => s + (b.bookingAmount || 0), 0);
+
+    const emiDateFilter = dateRangeFilter('paidDate', date_from, date_to);
+    const emiQuery = { status: 'paid', ...emiDateFilter };
+    if (project_id) {
+      const bookingIds = await Booking.find({ project: project_id }).distinct('_id');
+      emiQuery.booking = { $in: bookingIds };
+    }
+    const emis = await Emi.find(emiQuery).populate({
+      path: 'booking',
+      populate: [{ path: 'project', select: 'name' }, { path: 'plot', select: 'plotNumber' }, { path: 'customer', select: 'name' }],
+    }).sort({ paidDate: -1 });
+    const totalEmiCollected = emis.reduce((s, e) => s + (e.amount || 0), 0);
+
+    const commissionDateFilter = dateRangeFilter('createdAt', date_from, date_to);
+    const commissionQuery = { type: 'credit', category: { $in: ['emi_commission', 'rank_difference'] }, ...commissionDateFilter };
+    const [totalCommissionBV, totalCommissionPV] = await Promise.all([
+      sumAmount(WalletTransaction, { ...commissionQuery, pointsType: 'BV' }),
+      sumAmount(WalletTransaction, { ...commissionQuery, pointsType: 'PV' }),
+    ]);
+
+    return res.json({
+      range: { from: date_from, to: date_to },
+      summary: {
+        total_bookings: totalBookings,
+        total_booking_value: totalBookingValue,
+        total_collected_at_booking: totalCollectedAtBooking,
+        total_emi_collected: totalEmiCollected,
+        total_collected: totalCollectedAtBooking + totalEmiCollected,
+        total_commission_bv: totalCommissionBV,
+        total_commission_pv: totalCommissionPV,
+      },
+      bookings,
+      emi_payments: emis,
+    });
+  } catch (err) {
+    return res.status(500).json({ message: 'Failed to fetch date range report.', error: err.message });
+  }
+}
+
+// GET /api/admin/reports/date-range/export
+async function dateRangeReportExport(req, res) {
+  try {
+    const { date_from, date_to, project_id } = req.query;
+    const bookingMatch = { ...dateRangeFilter('createdAt', date_from, date_to) };
+    if (project_id) bookingMatch.project = project_id;
+
+    const bookings = await Booking.find(bookingMatch)
+      .populate('customer', 'name')
+      .populate('plot', 'plotNumber')
+      .populate('project', 'name')
+      .populate('agent', 'name')
+      .sort({ createdAt: -1 });
+
+    const headers = ['Booking #', 'Date', 'Customer', 'Project', 'Plot', 'Agent', 'Total Amount', 'Booking Amount', 'Status'];
+    const rows = bookings.map((b) => [
+      b.bookingNumber,
+      b.createdAt.toISOString().slice(0, 10),
+      b.customer?.name || 'N/A',
+      b.project?.name || 'N/A',
+      b.plot?.plotNumber || 'N/A',
+      b.agent?.name || 'N/A',
+      b.totalAmount,
+      b.bookingAmount,
+      b.status,
+    ]);
+
+    return sendCsv(res, `date_range_report_${timestamp()}.csv`, toCsv(headers, rows));
+  } catch (err) {
+    return res.status(500).json({ message: 'Failed to export date range report.', error: err.message });
+  }
+}
+
+// ============ MONTH-END REPORT ============
+// GET /api/admin/reports/month-end?month=YYYY-MM
+async function monthEndReport(req, res) {
+  try {
+    const { month } = req.query;
+    if (!month || !/^\d{4}-\d{2}$/.test(month)) {
+      return res.status(400).json({ message: 'month is required in YYYY-MM format' });
+    }
+    const [year, mon] = month.split('-').map(Number);
+    const start = new Date(year, mon - 1, 1);
+    const end = new Date(year, mon, 1);
+
+    const [
+      newBookings,
+      newBookingValue,
+      emiDueThisMonth,
+      emiPaidThisMonth,
+      emiOverdueAtMonthEnd,
+      commissionBV,
+      commissionPV,
+      withdrawalsPaid,
+      plotsSoldThisMonth,
+      cancelledThisMonth,
+    ] = await Promise.all([
+      Booking.countDocuments({ createdAt: { $gte: start, $lt: end } }),
+      sumAmount(Booking, { createdAt: { $gte: start, $lt: end } }, 'totalAmount'),
+      Emi.countDocuments({ dueDate: { $gte: start, $lt: end } }),
+      sumAmount(Emi, { status: 'paid', paidDate: { $gte: start, $lt: end } }),
+      Emi.countDocuments({ status: 'overdue', dueDate: { $lt: end } }),
+      sumAmount(WalletTransaction, { type: 'credit', category: { $in: ['emi_commission', 'rank_difference'] }, pointsType: 'BV', createdAt: { $gte: start, $lt: end } }),
+      sumAmount(WalletTransaction, { type: 'credit', category: { $in: ['emi_commission', 'rank_difference'] }, pointsType: 'PV', createdAt: { $gte: start, $lt: end } }),
+      sumAmount(WithdrawalRequest, { status: 'approved', reviewedAt: { $gte: start, $lt: end } }),
+      Plot.countDocuments({ status: 'sold', updatedAt: { $gte: start, $lt: end } }),
+      Booking.countDocuments({ status: 'cancelled', updatedAt: { $gte: start, $lt: end } }),
+    ]);
+
+    return res.json({
+      month,
+      new_bookings: newBookings,
+      new_booking_value: newBookingValue,
+      emi_due_this_month: emiDueThisMonth,
+      emi_collected_this_month: emiPaidThisMonth,
+      emi_overdue_at_month_end: emiOverdueAtMonthEnd,
+      commission_bv: commissionBV,
+      commission_pv: commissionPV,
+      withdrawals_paid: withdrawalsPaid,
+      plots_sold: plotsSoldThisMonth,
+      bookings_cancelled: cancelledThisMonth,
+    });
+  } catch (err) {
+    return res.status(500).json({ message: 'Failed to fetch month-end report.', error: err.message });
+  }
+}
+
+// ============ SINGLE UNIT REPORT ============
+// GET /api/admin/reports/single-unit/search?query=
+async function singleUnitSearch(req, res) {
+  try {
+    const { query } = req.query;
+    if (!query || !query.trim()) return res.json([]);
+    const re = new RegExp(query.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    const plots = await Plot.find({ plotNumber: re }).populate('project', 'name').limit(15);
+    return res.json(plots);
+  } catch (err) {
+    return res.status(500).json({ message: 'Failed to search plots.', error: err.message });
+  }
+}
+
+// GET /api/admin/reports/single-unit?plot_id=
+async function singleUnitReport(req, res) {
+  try {
+    const { plot_id } = req.query;
+    if (!plot_id) return res.status(400).json({ message: 'plot_id is required' });
+
+    const plot = await Plot.findById(plot_id).populate('project', 'name');
+    if (!plot) return res.status(404).json({ message: 'Plot not found' });
+
+    const bookings = await Booking.find({ plot: plot_id })
+      .populate('customer', 'name email phone')
+      .populate('agent', 'name')
+      .sort({ createdAt: -1 });
+
+    const bookingIds = bookings.map((b) => b._id);
+    const emis = await Emi.find({ booking: { $in: bookingIds } }).sort({ emiNumber: 1 });
+    const commissionTxns = await WalletTransaction.find({ booking: { $in: bookingIds }, category: 'emi_commission' })
+      .populate('agent', 'name')
+      .sort({ createdAt: -1 });
+
+    return res.json({
+      plot,
+      bookings,
+      emis,
+      commission_transactions: commissionTxns,
+    });
+  } catch (err) {
+    return res.status(500).json({ message: 'Failed to fetch single unit report.', error: err.message });
+  }
+}
+
+// ============ CANCELLED BOOKINGS REPORT ============
+async function buildCancelledBookingsQuery(filters) {
+  const { date_from, date_to, project_id, type = 'all' } = filters;
+  const query = { ...dateRangeFilter('updatedAt', date_from, date_to) };
+  if (project_id) query.project = project_id;
+
+  if (type === 'cancelled') query.status = 'cancelled';
+  else if (type === 'rejected') query.approvalStatus = 'rejected';
+  else query.$or = [{ status: 'cancelled' }, { approvalStatus: 'rejected' }];
+
+  return query;
+}
+
+// GET /api/admin/reports/cancelled-bookings
+async function cancelledBookings(req, res) {
+  try {
+    const query = await buildCancelledBookingsQuery(req.query);
+
+    const [totalCount, totalValue] = await Promise.all([
+      Booking.countDocuments(query),
+      sumAmount(Booking, query, 'totalAmount'),
+    ]);
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const [bookings, total] = await Promise.all([
+      Booking.find(query)
+        .populate('customer', 'name')
+        .populate('plot', 'plotNumber')
+        .populate('project', 'name')
+        .populate('agent', 'name')
+        .sort({ updatedAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      Booking.countDocuments(query),
+    ]);
+
+    return res.json({
+      data: bookings,
+      meta: { page, limit, total, lastPage: Math.ceil(total / limit) },
+      summary: { total_cancelled: totalCount, total_value: totalValue },
+    });
+  } catch (err) {
+    return res.status(500).json({ message: 'Failed to fetch cancelled bookings report.', error: err.message });
+  }
+}
+
+// GET /api/admin/reports/cancelled-bookings/export
+async function cancelledBookingsExport(req, res) {
+  try {
+    const query = await buildCancelledBookingsQuery(req.query);
+    const bookings = await Booking.find(query)
+      .populate('customer', 'name')
+      .populate('plot', 'plotNumber')
+      .populate('project', 'name')
+      .populate('agent', 'name')
+      .sort({ updatedAt: -1 });
+
+    const headers = ['Booking #', 'Customer', 'Project', 'Plot', 'Agent', 'Total Amount', 'Status', 'Approval Status', 'Rejection/Cancellation Reason', 'Updated At'];
+    const rows = bookings.map((b) => [
+      b.bookingNumber,
+      b.customer?.name || 'N/A',
+      b.project?.name || 'N/A',
+      b.plot?.plotNumber || 'N/A',
+      b.agent?.name || 'N/A',
+      b.totalAmount,
+      b.status,
+      b.approvalStatus,
+      b.rejectionReason || b.approvalReason || '-',
+      b.updatedAt.toISOString().slice(0, 10),
+    ]);
+
+    return sendCsv(res, `cancelled_bookings_${timestamp()}.csv`, toCsv(headers, rows));
+  } catch (err) {
+    return res.status(500).json({ message: 'Failed to export cancelled bookings report.', error: err.message });
+  }
+}
+
+// ============ EXECUTIVE TDS REPORT ============
+async function buildExecutiveTdsQuery(filters) {
+  const { date_from, date_to, agent_id } = filters;
+  const query = { status: 'approved', ...dateRangeFilter('reviewedAt', date_from, date_to) };
+  if (agent_id) query.agent = agent_id;
+  return query;
+}
+
+// GET /api/admin/reports/executive-tds
+async function executiveTds(req, res) {
+  try {
+    const query = await buildExecutiveTdsQuery(req.query);
+
+    const grouped = await WithdrawalRequest.aggregate([
+      { $match: query },
+      {
+        $group: {
+          _id: '$agent',
+          totalGross: { $sum: '$amount' },
+          totalTds: { $sum: '$tdsAmount' },
+          totalNet: { $sum: '$netAmount' },
+          withdrawalCount: { $sum: 1 },
+        },
+      },
+      { $sort: { totalTds: -1 } },
+    ]);
+
+    const agentIds = grouped.map((g) => g._id);
+    const agents = await User.find({ _id: { $in: agentIds } }).select('name email');
+    const agentMap = Object.fromEntries(agents.map((a) => [String(a._id), a]));
+
+    const data = grouped.map((g) => ({
+      agent: agentMap[String(g._id)] || { name: 'N/A' },
+      total_gross: g.totalGross,
+      total_tds: g.totalTds,
+      total_net: g.totalNet,
+      withdrawal_count: g.withdrawalCount,
+    }));
+
+    const summary = data.reduce(
+      (acc, d) => ({
+        total_gross: acc.total_gross + d.total_gross,
+        total_tds: acc.total_tds + d.total_tds,
+        total_net: acc.total_net + d.total_net,
+        total_agents: acc.total_agents + 1,
+      }),
+      { total_gross: 0, total_tds: 0, total_net: 0, total_agents: 0 }
+    );
+
+    return res.json({ data, summary });
+  } catch (err) {
+    return res.status(500).json({ message: 'Failed to fetch executive TDS report.', error: err.message });
+  }
+}
+
+// GET /api/admin/reports/executive-tds/export
+async function executiveTdsExport(req, res) {
+  try {
+    const query = await buildExecutiveTdsQuery(req.query);
+
+    const grouped = await WithdrawalRequest.aggregate([
+      { $match: query },
+      {
+        $group: {
+          _id: '$agent',
+          totalGross: { $sum: '$amount' },
+          totalTds: { $sum: '$tdsAmount' },
+          totalNet: { $sum: '$netAmount' },
+          withdrawalCount: { $sum: 1 },
+        },
+      },
+      { $sort: { totalTds: -1 } },
+    ]);
+
+    const agentIds = grouped.map((g) => g._id);
+    const agents = await User.find({ _id: { $in: agentIds } }).select('name email');
+    const agentMap = Object.fromEntries(agents.map((a) => [String(a._id), a]));
+
+    const headers = ['Executive', 'Email', 'Withdrawals', 'Gross Amount', 'TDS Deducted', 'Net Paid'];
+    const rows = grouped.map((g) => {
+      const agent = agentMap[String(g._id)] || {};
+      return [agent.name || 'N/A', agent.email || 'N/A', g.withdrawalCount, g.totalGross, g.totalTds, g.totalNet];
+    });
+
+    return sendCsv(res, `executive_tds_${timestamp()}.csv`, toCsv(headers, rows));
+  } catch (err) {
+    return res.status(500).json({ message: 'Failed to export executive TDS report.', error: err.message });
+  }
+}
+
 module.exports = {
   overview,
   emiCollections,
@@ -684,4 +1047,13 @@ module.exports = {
   projectSalesExport,
   payouts,
   payoutsExport,
+  dateRangeReport,
+  dateRangeReportExport,
+  monthEndReport,
+  singleUnitSearch,
+  singleUnitReport,
+  cancelledBookings,
+  cancelledBookingsExport,
+  executiveTds,
+  executiveTdsExport,
 };

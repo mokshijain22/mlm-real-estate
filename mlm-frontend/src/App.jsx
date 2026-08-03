@@ -58,6 +58,11 @@ import CommissionsReport from "./pages/admin/CommissionsReport.jsx";
 import AgentEarningsReport from "./pages/admin/AgentEarningsReport.jsx";
 import ProjectSalesReport from "./pages/admin/ProjectSalesReport.jsx";
 import PayoutsReport from "./pages/admin/PayoutsReport.jsx";
+import DateRangeReport from "./pages/admin/DateRangeReport.jsx";
+import MonthEndReport from "./pages/admin/MonthEndReport.jsx";
+import SingleUnitReport from "./pages/admin/SingleUnitReport.jsx";
+import CancelledBookingsReport from "./pages/admin/CancelledBookingsReport.jsx";
+import ExecutiveTdsReport from "./pages/admin/ExecutiveTdsReport.jsx";
 import AdminProjects from "./pages/admin/Projects.jsx";
 import ProjectCreate from "./pages/admin/ProjectCreate.jsx";
 import ProjectEdit from "./pages/admin/ProjectEdit.jsx";
@@ -149,6 +154,11 @@ function App() {
         <Route path="/admin/reports/agent-earnings" element={<PermissionRoute permission="reports"><AgentEarningsReport /></PermissionRoute>} />
         <Route path="/admin/reports/project-sales" element={<PermissionRoute permission="reports"><ProjectSalesReport /></PermissionRoute>} />
         <Route path="/admin/reports/payouts" element={<PermissionRoute permission="reports"><PayoutsReport /></PermissionRoute>} />
+        <Route path="/admin/reports/date-range" element={<PermissionRoute permission="reports"><DateRangeReport /></PermissionRoute>} />
+        <Route path="/admin/reports/month-end" element={<PermissionRoute permission="reports"><MonthEndReport /></PermissionRoute>} />
+        <Route path="/admin/reports/single-unit" element={<PermissionRoute permission="reports"><SingleUnitReport /></PermissionRoute>} />
+        <Route path="/admin/reports/cancelled-bookings" element={<PermissionRoute permission="reports"><CancelledBookingsReport /></PermissionRoute>} />
+        <Route path="/admin/reports/executive-tds" element={<PermissionRoute permission="reports"><ExecutiveTdsReport /></PermissionRoute>} />
 
         <Route path="/admin/projects" element={<PermissionRoute permission="projects"><AdminProjects /></PermissionRoute>} />
         <Route path="/admin/projects/create" element={<PermissionRoute permission="projects"><ProjectCreate /></PermissionRoute>} />

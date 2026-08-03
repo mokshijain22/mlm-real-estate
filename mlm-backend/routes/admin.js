@@ -181,6 +181,15 @@ router.get('/reports/project-sales', requirePermission('reports_project_sales'),
 router.get('/reports/project-sales/export', requirePermission('reports_project_sales'), reportController.projectSalesExport);
 router.get('/reports/payouts', requirePermission('reports_payouts'), reportController.payouts);
 router.get('/reports/payouts/export', requirePermission('reports_payouts'), reportController.payoutsExport);
+router.get('/reports/date-range', requirePermission('reports_date_range'), reportController.dateRangeReport);
+router.get('/reports/date-range/export', requirePermission('reports_date_range'), reportController.dateRangeReportExport);
+router.get('/reports/month-end', requirePermission('reports_month_end'), reportController.monthEndReport);
+router.get('/reports/single-unit/search', requirePermission('reports_single_unit'), reportController.singleUnitSearch);
+router.get('/reports/single-unit', requirePermission('reports_single_unit'), reportController.singleUnitReport);
+router.get('/reports/cancelled-bookings', requirePermission('reports_cancelled_bookings'), reportController.cancelledBookings);
+router.get('/reports/cancelled-bookings/export', requirePermission('reports_cancelled_bookings'), reportController.cancelledBookingsExport);
+router.get('/reports/executive-tds', requirePermission('reports_executive_tds'), reportController.executiveTds);
+router.get('/reports/executive-tds/export', requirePermission('reports_executive_tds'), reportController.executiveTdsExport);
 
 // Settings
 router.use('/settings', restrictTo('super_admin'));

@@ -16,6 +16,11 @@ const PERMISSION_OPTIONS = [
   { key: "reports_agent_earnings", label: "Reports — Agent Earnings" },
   { key: "reports_project_sales", label: "Reports — Project Sales" },
   { key: "reports_payouts", label: "Reports — Payouts" },
+  { key: "reports_date_range", label: "Reports — Date Range" },
+  { key: "reports_month_end", label: "Reports — Month End" },
+  { key: "reports_single_unit", label: "Reports — Single Unit" },
+  { key: "reports_cancelled_bookings", label: "Reports — Cancelled Bookings" },
+  { key: "reports_executive_tds", label: "Reports — Executive TDS" },
   { key: "withdrawals", label: "Withdrawals" },
   { key: "tickets", label: "Support Tickets" },
 ];

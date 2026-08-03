@@ -6,6 +6,7 @@ const VALID_PERMISSIONS = [
   'kyc', 'agents', 'referrals', 'projects', 'customers',
   'bookings', 'emis', 'reports', 'withdrawals', 'tickets',
   'reports_emi', 'reports_commissions', 'reports_agent_earnings', 'reports_project_sales', 'reports_payouts',
+  'reports_date_range', 'reports_month_end', 'reports_single_unit', 'reports_cancelled_bookings', 'reports_executive_tds',
 ];
 
 function sanitizePermissions(input) {
