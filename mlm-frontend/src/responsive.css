@@ -7,8 +7,13 @@ body,
 }
 
 img,
-svg,
-canvas {
+svg {
+  max-width: 100%;
+}
+
+input,
+select,
+textarea {
   max-width: 100%;
 }
 
@@ -58,6 +63,7 @@ canvas {
   }
 
   .page-title-box,
+  .page-content .d-flex.justify-content-between,
   .page-content .card-header.d-flex,
   .page-content .card-body.d-flex,
   .page-content .card-footer.d-flex {
@@ -66,6 +72,7 @@ canvas {
   }
 
   .page-title-box > .d-flex,
+  .page-content .d-flex.justify-content-between > .d-flex,
   .page-content .card-header.d-flex > .d-flex,
   .page-content .card-body.d-flex > .d-flex,
   .page-content .card-footer.d-flex > .d-flex {
@@ -109,6 +116,42 @@ canvas {
     white-space: nowrap;
   }
 
+  .page-content .modal-dialog {
+    width: auto;
+    max-width: calc(100% - 1rem);
+    margin: .5rem auto;
+  }
+
+  .page-content .modal-content {
+    max-height: calc(100dvh - 1rem);
+    overflow-y: auto;
+  }
+
+  .page-content .pagination {
+    flex-wrap: wrap;
+    gap: .25rem;
+  }
+
+  .page-content .dropdown-menu {
+    max-width: calc(100vw - 1.5rem);
+  }
+
+  .project-builder-sidebar {
+    height: auto !important;
+    max-height: 18rem;
+    margin-bottom: 1rem;
+  }
+
+  .project-builder-map {
+    height: 60svh !important;
+    min-height: 20rem;
+  }
+
+  .project-builder-hints {
+    flex-wrap: wrap;
+    gap: .35rem 1rem !important;
+  }
+
   .org-tree-scroll {
     padding: 1rem !important;
   }
@@ -148,5 +191,24 @@ canvas {
 
   .page-content .modal-dialog {
     margin: .5rem;
+  }
+
+  .page-content .d-flex.justify-content-between > .d-flex,
+  .page-title-box > .d-flex {
+    width: 100%;
+  }
+
+  .page-content .d-flex.justify-content-between > .btn,
+  .page-content .d-flex.justify-content-between > a.btn {
+    width: 100%;
+  }
+
+  .page-content .table-responsive > .table {
+    min-width: 540px;
+  }
+
+  .project-builder-map {
+    height: 52svh !important;
+    min-height: 18rem;
   }
 }

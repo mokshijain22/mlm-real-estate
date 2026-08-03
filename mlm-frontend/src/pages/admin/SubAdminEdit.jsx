@@ -8,6 +8,7 @@ const PERMISSION_OPTIONS = [
   { key: "referrals", label: "Referral Links" },
   { key: "projects", label: "Projects" },
   { key: "customers", label: "Customers" },
+  { key: "leads", label: "Lead Engine" },
   { key: "bookings", label: "Bookings" },
   { key: "emis", label: "Installments (EMI)" },
   { key: "reports", label: "Reports (Overview)" },

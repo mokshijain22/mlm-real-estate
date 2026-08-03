@@ -17,6 +17,7 @@ const customerController = require('../controllers/admin/customerController');
 const emiController = require('../controllers/admin/emiController');
 const bookingController = require('../controllers/admin/bookingController');
 const siteVisitController = require('../controllers/admin/siteVisitController');
+const leadController = require('../controllers/admin/leadController');
 const paymentPlanController = require('../controllers/admin/paymentPlanController');
 const pricingRuleController = require('../controllers/admin/pricingRuleController');
 const bankController = require('../controllers/admin/bankController');
@@ -113,6 +114,12 @@ router.patch('/bookings/:id/reject', bookingController.reject);
 router.patch('/bookings/:id/cancel', bookingController.cancel);
 
 router.get('/site-visits', siteVisitController.index);
+
+router.get('/leads', requirePermission('leads'), leadController.index);
+router.get('/leads/:id', requirePermission('leads'), leadController.show);
+router.post('/leads', requirePermission('leads'), leadController.store);
+router.put('/leads/:id', requirePermission('leads'), leadController.update);
+router.delete('/leads/:id', requirePermission('leads'), leadController.remove);
 
 // Banks (used by booking payment step)
 router.get('/banks', bankController.index);

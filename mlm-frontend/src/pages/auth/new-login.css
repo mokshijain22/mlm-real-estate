@@ -362,3 +362,41 @@
     padding: 24px 16px;
   }
 }
+
+@media (max-width: 575.98px) {
+  .new-login-page,
+  .new-login-right {
+    min-height: 100svh;
+  }
+
+  .new-login-right {
+    align-items: flex-start;
+    padding: 24px 18px;
+  }
+
+  .new-login-card-header {
+    gap: 1rem;
+    margin-bottom: 20px;
+  }
+
+  .new-login-card-title {
+    font-size: 24px;
+  }
+
+  .new-login-card-icon {
+    font-size: 32px;
+    flex: 0 0 auto;
+  }
+
+  .new-login-row {
+    align-items: flex-start;
+    gap: .75rem;
+    flex-wrap: wrap;
+  }
+
+  .new-register-card {
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
+  }
+}

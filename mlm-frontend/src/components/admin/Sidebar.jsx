@@ -124,6 +124,16 @@ function Sidebar() {
               </NavLink>
             </li>
           )}
+          {can("leads") && (
+            <li className="nav-item">
+              <NavLink className="nav-link" to="/admin/leads">
+                <span className="nav-icon">
+                  <iconify-icon icon="solar:magnet-bold-duotone"></iconify-icon>
+                </span>
+                <span className="nav-text"> Lead Engine </span>
+              </NavLink>
+            </li>
+          )}
 
           {/* Sales & Finance */}
           <li className="menu-title mt-2">Sales &amp; Finance</li>

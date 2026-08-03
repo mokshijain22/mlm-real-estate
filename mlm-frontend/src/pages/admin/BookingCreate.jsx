@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import api from "../../api/axios.js";
 
 const STEPS = [
@@ -24,8 +24,14 @@ function BookingCreate() {
   const [projects, setProjects] = useState([]);
   const [agents, setAgents] = useState([]);
 
+  const [searchParams] = useSearchParams();
+
   // Step 1 — customer mode
-  const [customerMode] = useState("walk-in"); // "from-lead" disabled until Lead Engine exists
+  const [customerMode, setCustomerMode] = useState("walk-in");
+  const [leadId, setLeadId] = useState(null);
+  const [leadSearchInput, setLeadSearchInput] = useState("");
+  const [leadSuggestions, setLeadSuggestions] = useState([]);
+  const [selectedLead, setSelectedLead] = useState(null);
 
   // Step 1 — walk-in customer fields
   const [bookingDate, setBookingDate] = useState(() => new Date().toISOString().slice(0, 10));
@@ -108,6 +114,43 @@ function BookingCreate() {
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState(null);
   const [createdBookingId, setCreatedBookingId] = useState(null);
+
+  useEffect(() => {
+    const leadIdFromUrl = searchParams.get("lead_id");
+    if (leadIdFromUrl) {
+      api
+        .get(`/admin/leads/${leadIdFromUrl}`)
+        .then((res) => applyLead(res.data.data))
+        .catch(() => {});
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function applyLead(lead) {
+    setSelectedLead(lead);
+    setLeadId(lead._id);
+    setCustomerMode("from-lead");
+    setName(lead.name || "");
+    setEmail(lead.email || "");
+    setPhone(lead.mobile || "");
+    if (lead.project?._id) setProjectId(lead.project._id);
+    if (lead.assignedAgent?._id) setAgentId(lead.assignedAgent._id);
+    setLeadSearchInput(`${lead.name} — ${lead.mobile}`);
+    setLeadSuggestions([]);
+  }
+
+  function handleLeadSearch(val) {
+    setLeadSearchInput(val);
+    setSelectedLead(null);
+    setLeadId(null);
+    if (!val.trim()) {
+      setLeadSuggestions([]);
+      return;
+    }
+    api
+      .get("/admin/leads", { params: { search: val, status: "all", limit: 8 } })
+      .then((res) => setLeadSuggestions((res.data.data || []).filter((l) => l.status !== "converted")))
+      .catch(() => {});
+  }
 
   useEffect(() => {
     api
@@ -275,6 +318,7 @@ function BookingCreate() {
 
       const payload = {
         customer_id: customerId,
+        lead_id: leadId || undefined,
         plot_id: plotId,
         agent_id: agentId || undefined,
         price_per_sqft: selectedPlot?.pricePerSqft || 0,
@@ -358,16 +402,23 @@ function BookingCreate() {
         <div className="card-body">
           <ul className="nav nav-pills mb-4 gap-2">
             <li className="nav-item">
-              <button type="button" className={`nav-link ${customerMode === "walk-in" ? "active" : ""}`}>
+              <button
+                type="button"
+                className={`nav-link ${customerMode === "walk-in" ? "active" : ""}`}
+                onClick={() => {
+                  setCustomerMode("walk-in");
+                  setLeadId(null);
+                  setSelectedLead(null);
+                }}
+              >
                 Walk-in customer
               </button>
             </li>
             <li className="nav-item">
               <button
                 type="button"
-                className="nav-link disabled text-muted"
-                title="Lead Engine module not set up yet"
-                disabled
+                className={`nav-link ${customerMode === "from-lead" ? "active" : ""}`}
+                onClick={() => setCustomerMode("from-lead")}
               >
                 From lead
               </button>
@@ -378,6 +429,39 @@ function BookingCreate() {
             Enter customer details, then select project and an available plot. Payment and documents are on the
             next page.
           </p>
+
+          {customerMode === "from-lead" && (
+            <div className="mb-4 position-relative">
+              <label className="form-label">Search Lead by Name / Mobile</label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Search leads..."
+                value={leadSearchInput}
+                onChange={(e) => handleLeadSearch(e.target.value)}
+              />
+              {leadSuggestions.length > 0 && (
+                <div className="list-group position-absolute w-100" style={{ zIndex: 10 }}>
+                  {leadSuggestions.map((l) => (
+                    <button
+                      key={l._id}
+                      type="button"
+                      className="list-group-item list-group-item-action"
+                      onClick={() => applyLead(l)}
+                    >
+                      {l.name} — {l.mobile} {l.plotNumber ? `(Plot ${l.plotNumber})` : ""}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {selectedLead && (
+                <div className="text-success small mt-1">
+                  <iconify-icon icon="solar:check-circle-bold" className="align-middle me-1"></iconify-icon>
+                  Lead selected — customer details prefilled below.
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="row g-3 mb-4">
             <div className="col-md-4">

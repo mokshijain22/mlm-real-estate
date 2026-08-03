@@ -155,6 +155,18 @@ async function store(req, res) {
     const booking = await bookingService.createBooking(req.body, req.user);
     await booking.populate('customer');
 
+    if (req.body.lead_id) {
+      try {
+        const Lead = require('../../models/Lead');
+        await Lead.findByIdAndUpdate(req.body.lead_id, {
+          status: 'converted',
+          convertedBooking: booking._id,
+        });
+      } catch (leadErr) {
+        console.error('Failed to mark lead as converted:', leadErr.message);
+      }
+    }
+
     await auditService.log(
       req,
       'booking.created',

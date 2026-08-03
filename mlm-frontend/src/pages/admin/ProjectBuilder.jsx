@@ -225,7 +225,7 @@ function ProjectBuilder() {
       </div>
 
       <div
-        className="row"
+        className="project-builder row"
         style={
           fullscreen
             ? { position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", zIndex: 9999, background: "white", margin: 0, padding: 10, overflow: "auto" }
@@ -233,7 +233,7 @@ function ProjectBuilder() {
         }
       >
         <div className="col-lg-3">
-          <div className="card shadow-sm border-0" style={{ height: 700, overflowY: "auto" }}>
+          <div className="project-builder-sidebar card shadow-sm border-0" style={{ height: 700, overflowY: "auto" }}>
             <div className="card-header bg-white border-bottom-0 pt-3">
               <h5 className="card-title mb-0">Unassigned Plots</h5>
               <p className="text-muted small mb-0">Select a plot below, then draw it on the map.</p>
@@ -276,6 +276,7 @@ function ProjectBuilder() {
           <div className="card shadow-sm border-0">
             <div className="card-body p-2">
               <div
+                className="project-builder-map"
                 ref={mapElRef}
                 style={{
                   height: fullscreen ? "calc(100vh - 40px)" : 550,
@@ -285,7 +286,7 @@ function ProjectBuilder() {
                   cursor: "crosshair",
                 }}
               ></div>
-              <div className="mt-2 d-flex gap-4 small text-muted px-2">
+              <div className="project-builder-hints mt-2 d-flex gap-4 small text-muted px-2">
                 <span>
                   <kbd>Click</kbd> to start drawing
                 </span>

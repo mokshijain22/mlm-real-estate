@@ -52,6 +52,7 @@ import PricingRules from "./pages/admin/PricingRules.jsx";
 import AccountLedger from "./pages/admin/AccountLedger.jsx";
 import FinanceTds from "./pages/admin/FinanceTds.jsx";
 import AdminProfile from "./pages/admin/Profile.jsx";
+import Leads from "./pages/admin/Leads.jsx";
 import ReportsOverview from "./pages/admin/ReportsOverview.jsx";
 import EmiCollectionsReport from "./pages/admin/EmiCollectionsReport.jsx";
 import CommissionsReport from "./pages/admin/CommissionsReport.jsx";
