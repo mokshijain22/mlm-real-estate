@@ -21,6 +21,7 @@ const paymentPlanController = require('../controllers/admin/paymentPlanControlle
 const pricingRuleController = require('../controllers/admin/pricingRuleController');
 const bankController = require('../controllers/admin/bankController');
 const accountLedgerController = require('../controllers/admin/accountLedgerController');
+const financeTdsController = require('../controllers/admin/financeTdsController');
 const dashboardController = require('../controllers/admin/dashboardController');
 const profileController = require('../controllers/profileController');
 const { settingsUpload, profileUpload } = require('../middleware/upload');
@@ -121,6 +122,9 @@ router.delete('/banks/:id', bankController.remove);
 router.get('/account-ledger/overview', accountLedgerController.overview);
 router.get('/account-ledger/collections', accountLedgerController.collections);
 router.get('/account-ledger/dp-emis', accountLedgerController.dpEmis);
+router.get('/account-ledger/receivables', accountLedgerController.receivables);
+router.get('/account-ledger/commission', accountLedgerController.commission);
+router.get('/finance-tds/overview', financeTdsController.overview);
 // Withdrawals
 router.use('/withdrawals', requirePermission('withdrawals'));
 router.get('/withdrawals', withdrawalController.index);

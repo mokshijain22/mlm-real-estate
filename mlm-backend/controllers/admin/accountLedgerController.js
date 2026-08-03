@@ -268,4 +268,81 @@ async function dpEmis(req, res) {
   });
 }
 
-module.exports = { overview, collections, dpEmis };
+// GET /api/admin/account-ledger/receivables?period=&project_id=
+// Per-booking outstanding balance snapshot (all-time, not period-boxed).
+async function receivables(req, res) {
+  const { project_id } = req.query;
+  const bookingProjectFilter = project_id ? { project: project_id } : {};
+
+  const bookings = await Booking.find({ ...bookingProjectFilter, approvalStatus: 'approved', status: { $ne: 'cancelled' } })
+    .select('bookingNumber customer project totalAmount bookingAmount')
+    .populate('customer', 'name')
+    .populate('project', 'name');
+
+  const bookingIds = bookings.map((b) => b._id);
+  const emiPaidAgg = await Emi.aggregate([
+    { $match: { booking: { $in: bookingIds }, status: 'paid' } },
+    { $group: { _id: '$booking', total: { $sum: '$amount' } } },
+  ]);
+  const emiPaidMap = {};
+  for (const row of emiPaidAgg) emiPaidMap[row._id.toString()] = row.total;
+
+  const rows = bookings
+    .map((b) => {
+      const paid = (b.bookingAmount || 0) + (emiPaidMap[b._id.toString()] || 0);
+      const outstanding = Math.max((b.totalAmount || 0) - paid, 0);
+      return {
+        reference: b.bookingNumber,
+        customer: b.customer?.name || '-',
+        project: b.project?.name || '-',
+        totalAmount: b.totalAmount || 0,
+        paid,
+        outstanding,
+      };
+    })
+    .filter((r) => r.outstanding > 0)
+    .sort((a, b) => b.outstanding - a.outstanding);
+
+  const totalOutstanding = rows.reduce((s, r) => s + r.outstanding, 0);
+  res.json({ data: rows, meta: { count: rows.length, totalOutstanding } });
+}
+
+// GET /api/admin/account-ledger/commission?period=&project_id=
+async function commission(req, res) {
+  const { period = 'this_month', project_id } = req.query;
+  const range = periodRange(period);
+  const bookingIds = await projectBookingIds(project_id);
+  const wtProjectFilter = bookingIds ? { booking: { $in: bookingIds } } : {};
+
+  const match = {
+    ...wtProjectFilter,
+    type: 'credit',
+    category: { $in: ['emi_commission', 'rank_difference'] },
+    ...(range ? { createdAt: { $gte: range.start, $lt: range.end } } : {}),
+  };
+
+  const txns = await WalletTransaction.find(match)
+    .select('agent amount pointsType category createdAt remark booking')
+    .populate('agent', 'name')
+    .populate({ path: 'booking', select: 'bookingNumber project', populate: { path: 'project', select: 'name' } })
+    .sort({ createdAt: -1 })
+    .limit(200);
+
+  const rows = txns.map((t) => ({
+    date: t.createdAt,
+    agent: t.agent?.name || '-',
+    reference: t.booking?.bookingNumber || '-',
+    project: t.booking?.project?.name || '-',
+    category: t.category,
+    pointsType: t.pointsType,
+    amount: t.amount || 0,
+    remark: t.remark,
+  }));
+
+  const totalBV = rows.filter((r) => r.pointsType === 'BV').reduce((s, r) => s + r.amount, 0);
+  const totalPV = rows.filter((r) => r.pointsType === 'PV').reduce((s, r) => s + r.amount, 0);
+
+  res.json({ data: rows, meta: { count: rows.length, totalBV, totalPV, total: totalBV + totalPV } });
+}
+
+module.exports = { overview, collections, dpEmis, receivables, commission };

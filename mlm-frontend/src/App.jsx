@@ -50,6 +50,7 @@ import Settings from "./pages/admin/Settings.jsx";
 import BankManagement from "./pages/admin/BankManagement.jsx";
 import PricingRules from "./pages/admin/PricingRules.jsx";
 import AccountLedger from "./pages/admin/AccountLedger.jsx";
+import FinanceTds from "./pages/admin/FinanceTds.jsx";
 import AdminProfile from "./pages/admin/Profile.jsx";
 import ReportsOverview from "./pages/admin/ReportsOverview.jsx";
 import EmiCollectionsReport from "./pages/admin/EmiCollectionsReport.jsx";
@@ -139,6 +140,7 @@ function App() {
         <Route path="/admin/banks" element={<PermissionRoute superAdminOnly><BankManagement /></PermissionRoute>} />
         <Route path="/admin/pricing-rules" element={<PermissionRoute superAdminOnly><PricingRules /></PermissionRoute>} />
         <Route path="/admin/account-ledger" element={<PermissionRoute superAdminOnly><AccountLedger /></PermissionRoute>} />
+        <Route path="/admin/finance-tds" element={<PermissionRoute superAdminOnly><FinanceTds /></PermissionRoute>} />
         <Route path="/admin/profile" element={<AdminProfile />} />
 
         <Route path="/admin/reports" element={<PermissionRoute permission="reports"><ReportsOverview /></PermissionRoute>} />

@@ -282,6 +282,16 @@ function Sidebar() {
               </NavLink>
             </li>
           )}
+          {isSuperAdmin && (
+            <li className="nav-item">
+              <NavLink className="nav-link" to="/admin/finance-tds">
+                <span className="nav-icon">
+                  <iconify-icon icon="solar:bank-bold-duotone"></iconify-icon>
+                </span>
+                <span className="nav-text"> Finance & TDS </span>
+              </NavLink>
+            </li>
+          )}
 
 
           {/* Settings */}

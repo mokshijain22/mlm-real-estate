@@ -44,6 +44,12 @@ function AccountLedger() {
   const [dpEmiRows, setDpEmiRows] = useState(null);
   const [dpEmiMeta, setDpEmiMeta] = useState(null);
 
+  const [receivableRows, setReceivableRows] = useState(null);
+  const [receivableMeta, setReceivableMeta] = useState(null);
+
+  const [commissionRows, setCommissionRows] = useState(null);
+  const [commissionMeta, setCommissionMeta] = useState(null);
+
   useEffect(() => {
     api
       .get("/admin/projects")
@@ -89,6 +95,32 @@ function AccountLedger() {
       .catch((err) => setError(err.response?.data?.message || err.message));
   };
 
+  const loadReceivables = () => {
+    setReceivableRows(null);
+    api
+      .get("/admin/account-ledger/receivables", {
+        params: { project_id: projectId || undefined },
+      })
+      .then((res) => {
+        setReceivableRows(res.data.data);
+        setReceivableMeta(res.data.meta);
+      })
+      .catch((err) => setError(err.response?.data?.message || err.message));
+  };
+
+  const loadCommission = () => {
+    setCommissionRows(null);
+    api
+      .get("/admin/account-ledger/commission", {
+        params: { period, project_id: projectId || undefined },
+      })
+      .then((res) => {
+        setCommissionRows(res.data.data);
+        setCommissionMeta(res.data.meta);
+      })
+      .catch((err) => setError(err.response?.data?.message || err.message));
+  };
+
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -97,6 +129,8 @@ function AccountLedger() {
   useEffect(() => {
     if (tab === "collections") loadCollections();
     if (tab === "dp_emis") loadDpEmis();
+    if (tab === "receivables") loadReceivables();
+    if (tab === "commission") loadCommission();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, period, projectId]);
 
@@ -403,9 +437,105 @@ function AccountLedger() {
         </div>
       )}
 
-      {tab !== "overview" && tab !== "collections" && tab !== "dp_emis" && (
+      {tab === "receivables" && (
         <div className="card border-0 shadow-sm">
-          <div className="card-body text-center text-muted py-5">This tab is coming soon.</div>
+          <div className="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h5 className="card-title mb-0">
+              <iconify-icon icon="solar:bill-list-bold-duotone" className="align-middle me-1"></iconify-icon>
+              Receivables
+            </h5>
+            {receivableMeta && (
+              <span className="text-muted small">
+                {receivableMeta.count} bookings · {moneyFull(receivableMeta.totalOutstanding)} outstanding
+              </span>
+            )}
+          </div>
+          <div className="card-body">
+            {!receivableRows ? (
+              <div className="text-center py-4">Loading...</div>
+            ) : receivableRows.length === 0 ? (
+              <div className="text-center text-muted py-4">No outstanding receivables.</div>
+            ) : (
+              <div className="table-responsive">
+                <table className="table table-centered table-nowrap mb-0">
+                  <thead className="table-light">
+                    <tr>
+                      <th>Reference</th>
+                      <th>Customer</th>
+                      <th>Project</th>
+                      <th className="text-end">Total amount</th>
+                      <th className="text-end">Paid</th>
+                      <th className="text-end">Outstanding</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {receivableRows.map((r, i) => (
+                      <tr key={i}>
+                        <td>{r.reference}</td>
+                        <td>{r.customer}</td>
+                        <td>{r.project}</td>
+                        <td className="text-end">{moneyFull(r.totalAmount)}</td>
+                        <td className="text-end">{moneyFull(r.paid)}</td>
+                        <td className="text-end fw-bold text-danger">{moneyFull(r.outstanding)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {tab === "commission" && (
+        <div className="card border-0 shadow-sm">
+          <div className="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h5 className="card-title mb-0">
+              <iconify-icon icon="solar:percentage-square-bold-duotone" className="align-middle me-1"></iconify-icon>
+              Commission
+            </h5>
+            {commissionMeta && (
+              <span className="text-muted small">
+                {commissionMeta.count} entries · BV {moneyFull(commissionMeta.totalBV)} · PV {moneyFull(commissionMeta.totalPV)}
+              </span>
+            )}
+          </div>
+          <div className="card-body">
+            {!commissionRows ? (
+              <div className="text-center py-4">Loading...</div>
+            ) : commissionRows.length === 0 ? (
+              <div className="text-center text-muted py-4">No commission entries in this period.</div>
+            ) : (
+              <div className="table-responsive">
+                <table className="table table-centered table-nowrap mb-0">
+                  <thead className="table-light">
+                    <tr>
+                      <th>Date</th>
+                      <th>Agent</th>
+                      <th>Reference</th>
+                      <th>Project</th>
+                      <th>Category</th>
+                      <th>Points</th>
+                      <th className="text-end">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {commissionRows.map((r, i) => (
+                      <tr key={i}>
+                        <td>{fmtDate(r.date)}</td>
+                        <td>{r.agent}</td>
+                        <td>{r.reference}</td>
+                        <td>{r.project}</td>
+                        <td className="text-capitalize">{(r.category || "-").replace("_", " ")}</td>
+                        <td>{r.pointsType}</td>
+                        <td className="text-end">{moneyFull(r.amount)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
