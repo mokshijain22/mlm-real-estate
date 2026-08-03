@@ -120,6 +120,7 @@ router.put('/banks/:id', bankController.update);
 router.delete('/banks/:id', bankController.remove);
 router.get('/account-ledger/overview', accountLedgerController.overview);
 router.get('/account-ledger/collections', accountLedgerController.collections);
+router.get('/account-ledger/dp-emis', accountLedgerController.dpEmis);
 // Withdrawals
 router.use('/withdrawals', requirePermission('withdrawals'));
 router.get('/withdrawals', withdrawalController.index);

@@ -15,6 +15,10 @@ function moneyFull(n) {
 function pct(n) {
   return (Number(n) || 0).toFixed(1) + "%";
 }
+function fmtDate(d) {
+  if (!d) return "-";
+  return new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+}
 
 const TABS = [
   { key: "overview", label: "Overview", icon: "solar:widget-2-bold-duotone" },
@@ -36,6 +40,9 @@ function AccountLedger() {
 
   const [collectionRows, setCollectionRows] = useState(null);
   const [collectionMeta, setCollectionMeta] = useState(null);
+
+  const [dpEmiRows, setDpEmiRows] = useState(null);
+  const [dpEmiMeta, setDpEmiMeta] = useState(null);
 
   useEffect(() => {
     api
@@ -69,6 +76,19 @@ function AccountLedger() {
       .catch((err) => setError(err.response?.data?.message || err.message));
   };
 
+  const loadDpEmis = () => {
+    setDpEmiRows(null);
+    api
+      .get("/admin/account-ledger/dp-emis", {
+        params: { period, project_id: projectId || undefined },
+      })
+      .then((res) => {
+        setDpEmiRows(res.data.data);
+        setDpEmiMeta(res.data.meta);
+      })
+      .catch((err) => setError(err.response?.data?.message || err.message));
+  };
+
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -76,6 +96,7 @@ function AccountLedger() {
 
   useEffect(() => {
     if (tab === "collections") loadCollections();
+    if (tab === "dp_emis") loadDpEmis();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, period, projectId]);
 
@@ -304,7 +325,7 @@ function AccountLedger() {
                   <tbody>
                     {collectionRows.map((r, i) => (
                       <tr key={i}>
-                        <td>{r.date ? new Date(r.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "-"}</td>
+                        <td>{fmtDate(r.date)}</td>
                         <td>{r.type}</td>
                         <td>{r.reference}</td>
                         <td>{r.customer}</td>
@@ -321,11 +342,70 @@ function AccountLedger() {
         </div>
       )}
 
-      {tab !== "overview" && tab !== "collections" && (
+      {tab === "dp_emis" && (
         <div className="card border-0 shadow-sm">
-          <div className="card-body text-center text-muted py-5">
-            This tab is coming soon.
+          <div className="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h5 className="card-title mb-0">
+              <iconify-icon icon="solar:checklist-bold-duotone" className="align-middle me-1"></iconify-icon>
+              DP / EMIs
+            </h5>
+            {dpEmiMeta && (
+              <span className="text-muted small">
+                {dpEmiMeta.count} entries · Due {moneyFull(dpEmiMeta.totalDue)} · Pending {moneyFull(dpEmiMeta.totalPending)} · Overdue{" "}
+                {moneyFull(dpEmiMeta.totalOverdue)}
+              </span>
+            )}
           </div>
+          <div className="card-body">
+            {!dpEmiRows ? (
+              <div className="text-center py-4">Loading...</div>
+            ) : dpEmiRows.length === 0 ? (
+              <div className="text-center text-muted py-4">No DP/EMI items due in this period.</div>
+            ) : (
+              <div className="table-responsive">
+                <table className="table table-centered table-nowrap mb-0">
+                  <thead className="table-light">
+                    <tr>
+                      <th>Due date</th>
+                      <th>Type</th>
+                      <th>Reference</th>
+                      <th>Customer</th>
+                      <th>Project</th>
+                      <th>Status</th>
+                      <th className="text-end">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {dpEmiRows.map((r, i) => (
+                      <tr key={i}>
+                        <td>{fmtDate(r.dueDate)}</td>
+                        <td>{r.type}</td>
+                        <td>{r.reference}</td>
+                        <td>{r.customer}</td>
+                        <td>{r.project}</td>
+                        <td>
+                          {r.status === "paid" ? (
+                            <span className="badge bg-success-subtle text-success">Paid</span>
+                          ) : r.status === "overdue" ? (
+                            <span className="badge bg-danger-subtle text-danger">Overdue</span>
+                          ) : (
+                            <span className="badge bg-warning-subtle text-warning">Pending</span>
+                          )}
+                        </td>
+                        <td className="text-end">{moneyFull(r.amount)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {tab !== "overview" && tab !== "collections" && tab !== "dp_emis" && (
+        <div className="card border-0 shadow-sm">
+          <div className="card-body text-center text-muted py-5">This tab is coming soon.</div>
         </div>
       )}
     </div>

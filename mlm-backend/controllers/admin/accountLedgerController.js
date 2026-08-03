@@ -16,7 +16,6 @@ function periodRange(period) {
     return { start, end };
   }
   if (period === 'all_time') return null;
-  // default: this_month
   const start = new Date(now.getFullYear(), now.getMonth(), 1);
   const end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
   return { start, end };
@@ -38,7 +37,6 @@ async function overview(req, res) {
   const emiProjectFilter = bookingIds ? { booking: { $in: bookingIds } } : {};
   const wtProjectFilter = bookingIds ? { booking: { $in: bookingIds } } : {};
 
-  // --- Collected (this period) ---
   const bookingPaymentMatch = {
     ...bookingProjectFilter,
     approvalStatus: 'approved',
@@ -74,7 +72,6 @@ async function overview(req, res) {
     else modeGroup.bank += amt;
   }
 
-  // --- Plot value / outstanding (all-time snapshot, not period-boxed) ---
   const approvedBookings = await Booking.find({ ...bookingProjectFilter, approvalStatus: 'approved' }).select('totalAmount bookingAmount _id');
   const plotValueTotal = approvedBookings.reduce((sum, b) => sum + (b.totalAmount || 0), 0);
   const approvedBookingIds = approvedBookings.map((b) => b._id);
@@ -88,7 +85,6 @@ async function overview(req, res) {
   const outstanding = Math.max(plotValueTotal - receivedToDate, 0);
   const collectionRate = plotValueTotal > 0 ? (receivedToDate / plotValueTotal) * 100 : 0;
 
-  // --- Commission (this period) ---
   const commissionMatch = {
     ...wtProjectFilter,
     type: 'credit',
@@ -195,4 +191,81 @@ async function collections(req, res) {
   res.json({ data: rows, meta: { count: rows.length, total } });
 }
 
-module.exports = { overview, collections };
+// GET /api/admin/account-ledger/dp-emis?period=&project_id=
+async function dpEmis(req, res) {
+  const { period = 'this_month', project_id } = req.query;
+  const range = periodRange(period);
+  const bookingIds = await projectBookingIds(project_id);
+  const bookingProjectFilter = project_id ? { project: project_id } : {};
+  const emiProjectFilter = bookingIds ? { booking: { $in: bookingIds } } : {};
+
+  const bookings = await Booking.find({ ...bookingProjectFilter, approvalStatus: 'approved' })
+    .select('bookingNumber customer project downPaymentAmount downPaymentDueDate downPayment2Amount downPayment2DueDate registryAmount registryDueDate')
+    .populate('customer', 'name')
+    .populate('project', 'name');
+
+  const rows = [];
+  const now = new Date();
+
+  const inRange = (d) => {
+    if (!range) return true;
+    if (!d) return false;
+    const dd = new Date(d);
+    return dd >= range.start && dd < range.end;
+  };
+
+  for (const b of bookings) {
+    const stages = [
+      { label: 'Down Payment 1', amount: b.downPaymentAmount, dueDate: b.downPaymentDueDate },
+      { label: 'Down Payment 2', amount: b.downPayment2Amount, dueDate: b.downPayment2DueDate },
+      { label: 'Registry', amount: b.registryAmount, dueDate: b.registryDueDate },
+    ];
+    for (const s of stages) {
+      if (!s.amount) continue;
+      if (!inRange(s.dueDate)) continue;
+      const overdue = s.dueDate && new Date(s.dueDate) < now;
+      rows.push({
+        type: s.label,
+        reference: b.bookingNumber,
+        customer: b.customer?.name || '-',
+        project: b.project?.name || '-',
+        dueDate: s.dueDate,
+        amount: s.amount,
+        status: overdue ? 'overdue' : 'pending',
+      });
+    }
+  }
+
+  const emis = await Emi.find({
+    ...emiProjectFilter,
+    ...(range ? { dueDate: { $gte: range.start, $lt: range.end } } : {}),
+  })
+    .select('emiNumber amount dueDate status paidDate booking')
+    .populate({ path: 'booking', select: 'bookingNumber customer project', populate: [{ path: 'customer', select: 'name' }, { path: 'project', select: 'name' }] })
+    .sort({ dueDate: 1 });
+
+  for (const e of emis) {
+    rows.push({
+      type: `EMI #${e.emiNumber}`,
+      reference: e.booking?.bookingNumber || '-',
+      customer: e.booking?.customer?.name || '-',
+      project: e.booking?.project?.name || '-',
+      dueDate: e.dueDate,
+      amount: e.amount,
+      status: e.status,
+    });
+  }
+
+  rows.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+
+  const totalDue = rows.reduce((s, r) => s + (r.amount || 0), 0);
+  const totalPending = rows.filter((r) => r.status === 'pending' || r.status === 'overdue').reduce((s, r) => s + (r.amount || 0), 0);
+  const totalOverdue = rows.filter((r) => r.status === 'overdue').reduce((s, r) => s + (r.amount || 0), 0);
+
+  res.json({
+    data: rows,
+    meta: { count: rows.length, totalDue, totalPending, totalOverdue },
+  });
+}
+
+module.exports = { overview, collections, dpEmis };

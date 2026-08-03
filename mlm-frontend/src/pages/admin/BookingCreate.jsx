@@ -269,6 +269,7 @@ function BookingCreate() {
         email: email || undefined,
         phone: phone || undefined,
         address: address || undefined,
+        status: "active",
       });
       const customerId = customerRes.data.data?._id || customerRes.data._id;
 
