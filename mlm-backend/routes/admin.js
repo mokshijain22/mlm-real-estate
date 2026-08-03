@@ -119,6 +119,7 @@ router.post('/banks', bankController.store);
 router.put('/banks/:id', bankController.update);
 router.delete('/banks/:id', bankController.remove);
 router.get('/account-ledger/overview', accountLedgerController.overview);
+router.get('/account-ledger/collections', accountLedgerController.collections);
 // Withdrawals
 router.use('/withdrawals', requirePermission('withdrawals'));
 router.get('/withdrawals', withdrawalController.index);

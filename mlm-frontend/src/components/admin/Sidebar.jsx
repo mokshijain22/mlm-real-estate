@@ -272,6 +272,16 @@ function Sidebar() {
               </NavLink>
             </li>
           )}
+          {isSuperAdmin && (
+            <li className="nav-item">
+              <NavLink className="nav-link" to="/admin/account-ledger">
+                <span className="nav-icon">
+                  <iconify-icon icon="solar:document-text-bold-duotone"></iconify-icon>
+                </span>
+                <span className="nav-text"> Account Ledger </span>
+              </NavLink>
+            </li>
+          )}
 
 
           {/* Settings */}

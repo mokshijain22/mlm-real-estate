@@ -135,4 +135,64 @@ async function overview(req, res) {
   });
 }
 
-module.exports = { overview };
+// GET /api/admin/account-ledger/collections?period=&project_id=
+async function collections(req, res) {
+  const { period = 'this_month', project_id } = req.query;
+  const range = periodRange(period);
+  const bookingIds = await projectBookingIds(project_id);
+
+  const bookingProjectFilter = project_id ? { project: project_id } : {};
+  const emiProjectFilter = bookingIds ? { booking: { $in: bookingIds } } : {};
+
+  const bookingPaymentMatch = {
+    ...bookingProjectFilter,
+    approvalStatus: 'approved',
+    ...(range ? { paymentDate: { $gte: range.start, $lt: range.end } } : {}),
+  };
+  const bookingPayments = await Booking.find(bookingPaymentMatch)
+    .select('bookingNumber bookingAmount paymentMode paymentDate customer project')
+    .populate('customer', 'name')
+    .populate('project', 'name')
+    .sort({ paymentDate: -1 });
+
+  const emiPaidMatch = {
+    ...emiProjectFilter,
+    status: 'paid',
+    ...(range ? { paidDate: { $gte: range.start, $lt: range.end } } : {}),
+  };
+  const emiPayments = await Emi.find(emiPaidMatch)
+    .select('amount paymentMode paidDate emiNumber booking')
+    .populate({ path: 'booking', select: 'bookingNumber customer project', populate: [{ path: 'customer', select: 'name' }, { path: 'project', select: 'name' }] })
+    .sort({ paidDate: -1 });
+
+  const rows = [];
+  for (const b of bookingPayments) {
+    rows.push({
+      date: b.paymentDate,
+      type: 'Booking amount',
+      reference: b.bookingNumber,
+      customer: b.customer?.name || '-',
+      project: b.project?.name || '-',
+      mode: b.paymentMode,
+      amount: b.bookingAmount || 0,
+    });
+  }
+  for (const e of emiPayments) {
+    rows.push({
+      date: e.paidDate,
+      type: `EMI #${e.emiNumber}`,
+      reference: e.booking?.bookingNumber || '-',
+      customer: e.booking?.customer?.name || '-',
+      project: e.booking?.project?.name || '-',
+      mode: e.paymentMode,
+      amount: e.amount || 0,
+    });
+  }
+
+  rows.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  const total = rows.reduce((s, r) => s + r.amount, 0);
+  res.json({ data: rows, meta: { count: rows.length, total } });
+}
+
+module.exports = { overview, collections };
