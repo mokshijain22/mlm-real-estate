@@ -262,6 +262,16 @@ function Sidebar() {
               </NavLink>
             </li>
           )}
+          {isSuperAdmin && (
+            <li className="nav-item">
+              <NavLink className="nav-link" to="/admin/pricing-rules">
+                <span className="nav-icon">
+                  <iconify-icon icon="solar:tag-price-bold-duotone"></iconify-icon>
+                </span>
+                <span className="nav-text"> Pricing Rules </span>
+              </NavLink>
+            </li>
+          )}
 
 
           {/* Settings */}
