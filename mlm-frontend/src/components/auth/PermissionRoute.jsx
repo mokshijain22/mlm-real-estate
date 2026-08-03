@@ -8,7 +8,7 @@ function PermissionRoute({ children, permission, superAdminOnly }) {
   const allowed = superAdminOnly ? isSuperAdmin : isSuperAdmin || perms.includes(permission);
 
   if (!allowed) {
-    return <Navigate to="/admin/dashboard" replace />;
+    return <Navigate to="/admin/no-access" replace />;
   }
 
   return children;

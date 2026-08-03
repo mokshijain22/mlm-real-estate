@@ -3,6 +3,8 @@ import { useParams, Link } from "react-router-dom";
 import api from "../../api/axios.js";
 import { OrgNode, OrgTreeStyles } from "../../components/shared/OrgTree.jsx";
 
+const STORAGE_BASE = "http://localhost:5000/storage/";
+
 function AgentDetail() {
   const { id } = useParams();
   const [tab, setTab] = useState("profile");
@@ -103,7 +105,16 @@ function AgentDetail() {
   if (error) return <div className="alert alert-danger">{error}</div>;
   if (!profileData) return <div className="text-center py-5">Loading...</div>;
 
-  const { agent, referrals, assignedProjects, bankDetails } = profileData;
+  const { agent, referrals, assignedProjects, bankDetails, kyc } = profileData;
+
+  const kycDocs = kyc
+    ? [
+        { label: "Aadhaar Front", value: kyc.aadhaarFront },
+        { label: "Aadhaar Back", value: kyc.aadhaarBack },
+        { label: "PAN Document", value: kyc.panDocument },
+        { label: "Bank Proof", value: kyc.bankProof },
+      ]
+    : [];
 
   return (
     <>
@@ -391,6 +402,84 @@ function AgentDetail() {
                       </tr>
                     </tbody>
                   </table>
+                )}
+              </div>
+            </div>
+
+            <div className="card border-0 shadow-sm mt-3">
+              <div className="card-header bg-white border-bottom py-3">
+                <h4 className="card-title mb-0">KYC Details</h4>
+              </div>
+              <div className="card-body">
+                {!kyc ? (
+                  <p className="text-muted mb-0">KYC not submitted yet by this agent.</p>
+                ) : (
+                  <>
+                    <table className="table table-borderless mb-3">
+                      <tbody>
+                        <tr>
+                          <td className="text-muted" style={{ width: "40%" }}>KYC Status</td>
+                          <td className="fw-medium">
+                            <span
+                              className={`badge ${
+                                kyc.status === "approved"
+                                  ? "bg-success-subtle text-success"
+                                  : kyc.status === "rejected"
+                                  ? "bg-danger-subtle text-danger"
+                                  : "bg-warning-subtle text-warning"
+                              }`}
+                            >
+                              {kyc.status?.charAt(0).toUpperCase() + kyc.status?.slice(1)}
+                            </span>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="text-muted">Aadhaar Number</td>
+                          <td className="fw-medium">{kyc.aadhaarNumber || "-"}</td>
+                        </tr>
+                        <tr>
+                          <td className="text-muted">PAN Number</td>
+                          <td className="fw-medium">{kyc.panNumber || "-"}</td>
+                        </tr>
+                        {kyc.status === "rejected" && kyc.rejectionReason && (
+                          <tr>
+                            <td className="text-muted">Rejection Reason</td>
+                            <td className="fw-medium text-danger">{kyc.rejectionReason}</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+
+                    <p className="small fw-semibold mb-2">Uploaded Documents</p>
+                    <div className="row g-3">
+                      {kycDocs.map((doc) => (
+                        <div className="col-md-3 col-sm-6" key={doc.label}>
+                          <div className="border rounded p-2 text-center h-100 d-flex flex-column">
+                            <p className="small fw-semibold mb-2">{doc.label}</p>
+                            {doc.value ? (
+                              <a
+                                href={`${STORAGE_BASE}${doc.value}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="flex-grow-1"
+                              >
+                                <img
+                                  src={`${STORAGE_BASE}${doc.value}`}
+                                  alt={doc.label}
+                                  className="img-fluid rounded"
+                                  style={{ maxHeight: "150px", objectFit: "cover" }}
+                                />
+                              </a>
+                            ) : (
+                              <div className="flex-grow-1 d-flex align-items-center justify-content-center text-muted small">
+                                Not uploaded
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
                 )}
               </div>
             </div>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../../api/axios.js";
 import CountUp from "../../components/admin/charts/CountUp.jsx";
@@ -18,7 +18,7 @@ function Dashboard() {
   const [overdueDues, setOverdueDues] = useState([]);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
+  const loadDashboard = useCallback(() => {
     api
       .get("/admin/dashboard")
       .then((res) => {
@@ -30,6 +30,25 @@ function Dashboard() {
       })
       .catch((err) => setError(err.response?.data?.message || err.message));
   }, []);
+
+  useEffect(() => {
+    loadDashboard();
+
+    // Dues can be updated from the EMI page while this dashboard remains
+    // mounted. Refresh when the user returns and periodically while viewing.
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") loadDashboard();
+    };
+    const refreshTimer = window.setInterval(refreshWhenVisible, 30_000);
+    window.addEventListener("focus", loadDashboard);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+
+    return () => {
+      window.clearInterval(refreshTimer);
+      window.removeEventListener("focus", loadDashboard);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
+  }, [loadDashboard]);
 
   if (error) return <div className="alert alert-danger">{error}</div>;
   if (!stats) return <div className="text-center py-5">Loading...</div>;

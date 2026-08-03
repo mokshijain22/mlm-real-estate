@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import api from "../../api/axios.js";
+import ExportButton from "../../components/shared/ExportButton.jsx";
 
 function ExecutiveTdsReport() {
   const [rows, setRows] = useState(null);
   const [summary, setSummary] = useState(null);
   const [error, setError] = useState(null);
-  const [exporting, setExporting] = useState(false);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
@@ -27,22 +27,10 @@ function ExecutiveTdsReport() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateFrom, dateTo]);
 
-  const handleExport = async () => {
-    setExporting(true);
-    try {
-      const res = await api.get("/admin/reports/executive-tds/export", { params: buildParams(), responseType: "blob" });
-      const url = window.URL.createObjectURL(new Blob([res.data]));
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", `executive_tds_${Date.now()}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    } catch (err) {
-      alert("Export failed: " + (err.response?.data?.message || err.message));
-    } finally {
-      setExporting(false);
-    }
+  const getExportParams = () => {
+    const params = { ...buildParams() };
+    delete params.page;
+    return params;
   };
 
   const fmt = (n) => Number(n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -54,10 +42,7 @@ function ExecutiveTdsReport() {
       <div className="row mb-3">
         <div className="col-12 d-flex justify-content-between align-items-center">
           <h3 className="mt-2 mb-4">Executive TDS Report</h3>
-          <button type="button" className="btn btn-success" onClick={handleExport} disabled={exporting}>
-            <iconify-icon icon="solar:download-bold-duotone" className="me-1"></iconify-icon>
-            {exporting ? "Exporting..." : "Export to CSV"}
-          </button>
+          <ExportButton url="/admin/reports/executive-tds/export" params={getExportParams()} title="Executive TDS Report" filenamePrefix="executive_tds" />
         </div>
       </div>
 

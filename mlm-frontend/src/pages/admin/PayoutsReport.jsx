@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../../api/axios.js";
+import ExportButton from "../../components/shared/ExportButton.jsx";
 
 function PayoutsReport() {
   const [payouts, setPayouts] = useState(null);
@@ -8,7 +9,6 @@ function PayoutsReport() {
   const [summary, setSummary] = useState(null);
   const [agents, setAgents] = useState([]);
   const [error, setError] = useState(null);
-  const [exporting, setExporting] = useState(false);
 
   const [status, setStatus] = useState("all");
   const [dateFrom, setDateFrom] = useState("");
@@ -77,24 +77,10 @@ function PayoutsReport() {
     setSearch("");
   };
 
-  const handleExport = async () => {
-    setExporting(true);
-    try {
-      const params = { ...buildParams() };
-      delete params.page;
-      const res = await api.get("/admin/reports/payouts/export", { params, responseType: "blob" });
-      const url = window.URL.createObjectURL(new Blob([res.data]));
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", `payouts_${Date.now()}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    } catch (err) {
-      alert("Export failed: " + (err.response?.data?.message || err.message));
-    } finally {
-      setExporting(false);
-    }
+  const getExportParams = () => {
+    const params = { ...buildParams() };
+    delete params.page;
+    return params;
   };
 
   const fmt = (n) =>
@@ -109,10 +95,7 @@ function PayoutsReport() {
       <div className="row mb-3">
         <div className="col-12 d-flex justify-content-between align-items-center">
           <h3 className="mt-2 mb-4">Payouts Report</h3>
-          <button type="button" className="btn btn-success" onClick={handleExport} disabled={exporting}>
-            <iconify-icon icon="solar:download-bold-duotone" className="me-1"></iconify-icon>
-            {exporting ? "Exporting..." : "Export to CSV"}
-          </button>
+          <ExportButton url="/admin/reports/payouts/export" params={getExportParams()} title="Payouts Report" filenamePrefix="payouts" />
         </div>
       </div>
 

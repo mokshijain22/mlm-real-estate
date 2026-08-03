@@ -7,6 +7,8 @@ function Bookings() {
   const [meta, setMeta] = useState(null);
   const [projects, setProjects] = useState([]);
   const [agents, setAgents] = useState([]);
+  const [customers, setCustomers] = useState([]);
+  const [existingCustomerId, setExistingCustomerId] = useState("");
   const [pendingCount, setPendingCount] = useState(0);
   const [error, setError] = useState(null);
 

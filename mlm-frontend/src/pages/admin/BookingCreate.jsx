@@ -23,6 +23,8 @@ function BookingCreate() {
   // Reference data
   const [projects, setProjects] = useState([]);
   const [agents, setAgents] = useState([]);
+  const [customers, setCustomers] = useState([]);
+  const [existingCustomerId, setExistingCustomerId] = useState("");
 
   const [searchParams] = useSearchParams();
 
@@ -158,6 +160,7 @@ function BookingCreate() {
       .then((res) => {
         setProjects(res.data.projects || []);
         setAgents(res.data.agents || []);
+        setCustomers(res.data.customers || []);
       })
       .catch((err) => setError(err.response?.data?.message || err.message))
       .finally(() => setLoading(false));
@@ -271,13 +274,28 @@ function BookingCreate() {
   // ---- validation ----
   function validateStep1() {
     const errs = {};
-    if (!name.trim()) errs.name = "Full name is required.";
-    if (!email.trim() && !phone.trim()) errs.contact = "Email or phone is required.";
+    if (customerMode === "existing") {
+      if (!existingCustomerId) errs.existingCustomerId = "Please select a customer.";
+    } else {
+      if (!name.trim()) errs.name = "Full name is required.";
+      if (!email.trim() && !phone.trim()) errs.contact = "Email or phone is required.";
+    }
     if (!projectId) errs.projectId = "Project is required.";
     if (!plotId) errs.plotId = "Plot is required.";
     // executive is optional — a booking can go direct with no assigned executive
     setStep1Errors(errs);
     return Object.keys(errs).length === 0;
+  }
+
+  function handleExistingCustomerSelect(id) {
+    setExistingCustomerId(id);
+    const c = customers.find((cu) => cu._id === id);
+    if (c) {
+      setName(c.name || "");
+      setEmail(c.email || "");
+      setPhone(c.phone || "");
+      setAddress(c.address || "");
+    }
   }
 
   function validateStep2() {
@@ -307,14 +325,17 @@ function BookingCreate() {
     setCreating(true);
     setCreateError(null);
     try {
-      const customerRes = await api.post("/admin/customers", {
-        name,
-        email: email || undefined,
-        phone: phone || undefined,
-        address: address || undefined,
-        status: "active",
-      });
-      const customerId = customerRes.data.data?._id || customerRes.data._id;
+      let customerId = existingCustomerId;
+      if (customerMode !== "existing" || !customerId) {
+        const customerRes = await api.post("/admin/customers", {
+          name,
+          email: email || undefined,
+          phone: phone || undefined,
+          address: address || undefined,
+          status: "active",
+        });
+        customerId = customerRes.data.data?._id || customerRes.data._id;
+      }
 
       const payload = {
         customer_id: customerId,
@@ -423,12 +444,52 @@ function BookingCreate() {
                 From lead
               </button>
             </li>
+            <li className="nav-item">
+              <button
+                type="button"
+                className={`nav-link ${customerMode === "existing" ? "active" : ""}`}
+                onClick={() => {
+                  setCustomerMode("existing");
+                  setLeadId(null);
+                  setSelectedLead(null);
+                }}
+              >
+                Existing customer
+              </button>
+            </li>
           </ul>
 
           <p className="text-muted small mb-4">
             Enter customer details, then select project and an available plot. Payment and documents are on the
             next page.
           </p>
+
+          {customerMode === "existing" && (
+            <div className="mb-4">
+              <label className="form-label">Select Customer</label>
+              <select
+                className={`form-select ${step1Errors.existingCustomerId ? "is-invalid" : ""}`}
+                value={existingCustomerId}
+                onChange={(e) => handleExistingCustomerSelect(e.target.value)}
+              >
+                <option value="">Select customer</option>
+                {customers.map((c) => (
+                  <option key={c._id} value={c._id}>
+                    {c.name} {c.phone ? `(${c.phone})` : c.email ? `(${c.email})` : ""}
+                  </option>
+                ))}
+              </select>
+              {step1Errors.existingCustomerId && (
+                <div className="invalid-feedback">{step1Errors.existingCustomerId}</div>
+              )}
+              {existingCustomerId && (
+                <div className="text-success small mt-1">
+                  <iconify-icon icon="solar:check-circle-bold" className="align-middle me-1"></iconify-icon>
+                  Customer selected — details prefilled below.
+                </div>
+              )}
+            </div>
+          )}
 
           {customerMode === "from-lead" && (
             <div className="mb-4 position-relative">
@@ -490,6 +551,7 @@ function BookingCreate() {
                 placeholder="Customer name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                readOnly={customerMode === "existing"}
               />
               {step1Errors.name && <div className="invalid-feedback">{step1Errors.name}</div>}
             </div>

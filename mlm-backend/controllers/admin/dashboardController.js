@@ -13,6 +13,7 @@ const Role = require('../../models/Role');
 async function index(req, res) {
   try {
     const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
@@ -20,6 +21,14 @@ async function index(req, res) {
     const monthWindowStart = new Date(now.getFullYear(), now.getMonth() - 5, 1);
 
     const agentRole = await Role.findOne({ slug: 'agent' });
+
+    // Keep the dashboard in sync with the EMI dues screen.  A pending line
+    // becomes overdue at the start of the following day, not merely because
+    // its stored date has a midnight time component.
+    await Emi.updateMany(
+      { status: 'pending', dueDate: { $lt: startOfToday } },
+      { status: 'overdue' }
+    );
 
     const [
       totalProjects,
@@ -102,10 +111,10 @@ async function index(req, res) {
         { $group: { _id: { y: { $year: '$createdAt' }, m: { $month: '$createdAt' } }, total: { $sum: '$amount' } } },
       ]),
       Emi.aggregate([
-        { $match: { status: { $in: ['pending', 'overdue'] }, dueDate: { $lt: now } } },
+        { $match: { status: 'overdue', dueDate: { $lt: startOfToday } } },
         { $group: { _id: null, count: { $sum: 1 }, total: { $sum: '$amount' } } },
       ]),
-      Emi.find({ status: { $in: ['pending', 'overdue'] }, dueDate: { $lt: now } })
+      Emi.find({ status: 'overdue', dueDate: { $lt: startOfToday } })
         .sort({ dueDate: 1 })
         .limit(20)
         .populate({

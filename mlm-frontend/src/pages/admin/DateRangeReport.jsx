@@ -1,5 +1,6 @@
 import { useState } from "react";
 import api from "../../api/axios.js";
+import ExportButton from "../../components/shared/ExportButton.jsx";
 
 const ALL_COLUMNS = [
   { key: "paidOn", label: "Paid On" },
@@ -33,7 +34,6 @@ function DateRangeReport() {
   const [order, setOrder] = useState("asc");
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [exporting, setExporting] = useState(false);
   const [error, setError] = useState(null);
   const [visibleCols, setVisibleCols] = useState(ALL_COLUMNS.map((c) => c.key));
   const [showColsMenu, setShowColsMenu] = useState(false);
@@ -71,28 +71,7 @@ function DateRangeReport() {
       .finally(() => setLoading(false));
   };
 
-  const handleExportCsv = async () => {
-    if (!dateFrom || !dateTo) return;
-    setExporting(true);
-    try {
-      const res = await api.get("/admin/reports/date-range/export", { params: buildParams(), responseType: "blob" });
-      const url = window.URL.createObjectURL(new Blob([res.data]));
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", `date_range_report_${Date.now()}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    } catch (err) {
-      alert("Export failed: " + (err.response?.data?.message || err.message));
-    } finally {
-      setExporting(false);
-    }
-  };
-
-  const handleExportPdf = () => {
-    window.print();
-  };
+  const getExportParams = () => buildParams();
 
   const toggleColumn = (key) => {
     setVisibleCols((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
@@ -189,16 +168,14 @@ function DateRangeReport() {
               </div>
             )}
             {data && (
-              <>
-                <button type="button" className="btn btn-sm btn-success" onClick={handleExportCsv} disabled={exporting}>
-                  <iconify-icon icon="solar:download-bold-duotone" className="me-1"></iconify-icon>
-                  CSV
-                </button>
-                <button type="button" className="btn btn-sm btn-warning" onClick={handleExportPdf}>
-                  <iconify-icon icon="solar:file-text-bold-duotone" className="me-1"></iconify-icon>
-                  PDF
-                </button>
-              </>
+              <ExportButton
+                url="/admin/reports/date-range/export"
+                params={getExportParams()}
+                title="Date Range Report"
+                filenamePrefix="date_range_report"
+                className="btn btn-sm btn-success"
+                label="Export"
+              />
             )}
           </div>
         </div>

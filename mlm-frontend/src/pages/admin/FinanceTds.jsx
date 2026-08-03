@@ -80,7 +80,10 @@ function FinanceTds() {
           <div className="col-md-3">
             <div className="card border-0 shadow-sm h-100">
               <div className="card-body">
-                <div className="text-muted small text-uppercase">Gross withdrawals</div>
+                <div className="text-muted small text-uppercase">
+                  <iconify-icon icon="solar:cash-out-bold-duotone" className="align-middle me-1"></iconify-icon>
+                  Gross withdrawals
+                </div>
                 <div className="fs-3 fw-bold">{moneyFull(meta.totalGross)}</div>
                 <div className="text-muted small">{meta.count} entries</div>
               </div>
@@ -89,7 +92,10 @@ function FinanceTds() {
           <div className="col-md-3">
             <div className="card border-0 shadow-sm h-100">
               <div className="card-body">
-                <div className="text-muted small text-uppercase">TDS deducted</div>
+                <div className="text-muted small text-uppercase">
+                  <iconify-icon icon="solar:percentage-square-bold-duotone" className="align-middle me-1"></iconify-icon>
+                  TDS deducted
+                </div>
                 <div className="fs-3 fw-bold text-danger">{moneyFull(meta.totalTds)}</div>
               </div>
             </div>
@@ -97,7 +103,10 @@ function FinanceTds() {
           <div className="col-md-3">
             <div className="card border-0 shadow-sm h-100">
               <div className="card-body">
-                <div className="text-muted small text-uppercase">Net paid out</div>
+                <div className="text-muted small text-uppercase">
+                  <iconify-icon icon="solar:wallet-money-bold-duotone" className="align-middle me-1"></iconify-icon>
+                  Net paid out
+                </div>
                 <div className="fs-3 fw-bold text-success">{moneyFull(meta.totalNet)}</div>
               </div>
             </div>

@@ -76,7 +76,7 @@ async function show(req, res) {
         }
       : null;
 
-    return res.json({ agent, referrals, assignedProjects, bankDetails });
+    return res.json({ agent, referrals, assignedProjects, bankDetails, kyc });
   } catch (err) {
     return res.status(500).json({ message: 'Failed to fetch agent.', error: err.message });
   }

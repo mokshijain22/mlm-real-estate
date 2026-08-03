@@ -124,12 +124,12 @@ function AuditLogs() {
               onChange={(e) => setIpAddress(e.target.value)}
             />
           </div>
-          <div className="col-md-1 d-flex align-items-end">
-            <div className="btn-group w-100">
-              <button type="submit" className="btn btn-primary">
+          <div className="col-12 col-md-3 col-lg-2 d-flex align-items-end">
+            <div className="d-flex gap-2 w-100 flex-column flex-sm-row">
+              <button type="submit" className="btn btn-primary flex-fill">
                 Apply
               </button>
-              <button type="button" className="btn btn-light" onClick={handleReset}>
+              <button type="button" className="btn btn-light flex-fill" onClick={handleReset}>
                 Reset
               </button>
             </div>

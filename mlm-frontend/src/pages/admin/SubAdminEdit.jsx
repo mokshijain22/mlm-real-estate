@@ -3,6 +3,7 @@ import { useNavigate, useParams, Link } from "react-router-dom";
 import api from "../../api/axios.js";
 
 const PERMISSION_OPTIONS = [
+  { key: "dashboard", label: "Dashboard" },
   { key: "kyc", label: "KYC Verifications" },
   { key: "agents", label: "Agents" },
   { key: "referrals", label: "Referral Links" },
@@ -10,6 +11,9 @@ const PERMISSION_OPTIONS = [
   { key: "customers", label: "Customers" },
   { key: "leads", label: "Lead Engine" },
   { key: "bookings", label: "Bookings" },
+  { key: "site_visits", label: "Site Visits" },
+  { key: "installment_schedules", label: "Installment Schedules" },
+  { key: "installment_dues", label: "Installment Dues" },
   { key: "emis", label: "Installments (EMI)" },
   { key: "reports", label: "Reports (Overview)" },
   { key: "reports_emi", label: "Reports — EMI Collections" },

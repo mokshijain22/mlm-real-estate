@@ -52,6 +52,7 @@ import PricingRules from "./pages/admin/PricingRules.jsx";
 import AccountLedger from "./pages/admin/AccountLedger.jsx";
 import FinanceTds from "./pages/admin/FinanceTds.jsx";
 import AdminProfile from "./pages/admin/Profile.jsx";
+import NoAccess from "./pages/admin/NoAccess.jsx";
 import Leads from "./pages/admin/Leads.jsx";
 import ReportsOverview from "./pages/admin/ReportsOverview.jsx";
 import EmiCollectionsReport from "./pages/admin/EmiCollectionsReport.jsx";
@@ -117,7 +118,8 @@ function App() {
           </ProtectedRoute>
         }
       >
-        <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        <Route path="/admin/no-access" element={<NoAccess />} />
+        <Route path="/admin/dashboard" element={<PermissionRoute permission="dashboard"><AdminDashboard /></PermissionRoute>} />
 
         <Route path="/admin/agents" element={<PermissionRoute permission="agents"><Agents /></PermissionRoute>} />
         <Route path="/admin/agents/:id" element={<PermissionRoute permission="agents"><AgentDetail /></PermissionRoute>} />
@@ -129,9 +131,9 @@ function App() {
         <Route path="/admin/referrals" element={<PermissionRoute permission="referrals"><AdminReferrals /></PermissionRoute>} />
 
         <Route path="/admin/bookings" element={<PermissionRoute permission="bookings"><AdminBookings /></PermissionRoute>} />
-        <Route path="/admin/site-visits" element={<AdminSiteVisits />} />
-        <Route path="/admin/installment-dues" element={<AdminInstallmentDues />} />
-        <Route path="/admin/installment-schedules" element={<AdminInstallmentSchedules />} />
+        <Route path="/admin/site-visits" element={<PermissionRoute permission="site_visits"><AdminSiteVisits /></PermissionRoute>} />
+        <Route path="/admin/installment-dues" element={<PermissionRoute permission="installment_dues"><AdminInstallmentDues /></PermissionRoute>} />
+        <Route path="/admin/installment-schedules" element={<PermissionRoute permission="installment_schedules"><AdminInstallmentSchedules /></PermissionRoute>} />
         <Route path="/admin/bookings/create" element={<PermissionRoute permission="bookings"><AdminBookingCreate /></PermissionRoute>} />
         <Route path="/admin/bookings/pending" element={<PermissionRoute permission="bookings"><AdminBookingsPending /></PermissionRoute>} />
         <Route path="/admin/bookings/:id" element={<PermissionRoute permission="bookings"><AdminBookingDetail /></PermissionRoute>} />
@@ -150,16 +152,16 @@ function App() {
         <Route path="/admin/profile" element={<AdminProfile />} />
 
         <Route path="/admin/reports" element={<PermissionRoute permission="reports"><ReportsOverview /></PermissionRoute>} />
-        <Route path="/admin/reports/emi-collections" element={<PermissionRoute permission="reports"><EmiCollectionsReport /></PermissionRoute>} />
-        <Route path="/admin/reports/commissions" element={<PermissionRoute permission="reports"><CommissionsReport /></PermissionRoute>} />
-        <Route path="/admin/reports/agent-earnings" element={<PermissionRoute permission="reports"><AgentEarningsReport /></PermissionRoute>} />
-        <Route path="/admin/reports/project-sales" element={<PermissionRoute permission="reports"><ProjectSalesReport /></PermissionRoute>} />
-        <Route path="/admin/reports/payouts" element={<PermissionRoute permission="reports"><PayoutsReport /></PermissionRoute>} />
-        <Route path="/admin/reports/date-range" element={<PermissionRoute permission="reports"><DateRangeReport /></PermissionRoute>} />
-        <Route path="/admin/reports/month-end" element={<PermissionRoute permission="reports"><MonthEndReport /></PermissionRoute>} />
-        <Route path="/admin/reports/single-unit" element={<PermissionRoute permission="reports"><SingleUnitReport /></PermissionRoute>} />
-        <Route path="/admin/reports/cancelled-bookings" element={<PermissionRoute permission="reports"><CancelledBookingsReport /></PermissionRoute>} />
-        <Route path="/admin/reports/executive-tds" element={<PermissionRoute permission="reports"><ExecutiveTdsReport /></PermissionRoute>} />
+        <Route path="/admin/reports/emi-collections" element={<PermissionRoute permission="reports_emi"><EmiCollectionsReport /></PermissionRoute>} />
+        <Route path="/admin/reports/commissions" element={<PermissionRoute permission="reports_commissions"><CommissionsReport /></PermissionRoute>} />
+        <Route path="/admin/reports/agent-earnings" element={<PermissionRoute permission="reports_agent_earnings"><AgentEarningsReport /></PermissionRoute>} />
+        <Route path="/admin/reports/project-sales" element={<PermissionRoute permission="reports_project_sales"><ProjectSalesReport /></PermissionRoute>} />
+        <Route path="/admin/reports/payouts" element={<PermissionRoute permission="reports_payouts"><PayoutsReport /></PermissionRoute>} />
+        <Route path="/admin/reports/date-range" element={<PermissionRoute permission="reports_date_range"><DateRangeReport /></PermissionRoute>} />
+        <Route path="/admin/reports/month-end" element={<PermissionRoute permission="reports_month_end"><MonthEndReport /></PermissionRoute>} />
+        <Route path="/admin/reports/single-unit" element={<PermissionRoute permission="reports_single_unit"><SingleUnitReport /></PermissionRoute>} />
+        <Route path="/admin/reports/cancelled-bookings" element={<PermissionRoute permission="reports_cancelled_bookings"><CancelledBookingsReport /></PermissionRoute>} />
+        <Route path="/admin/reports/executive-tds" element={<PermissionRoute permission="reports_executive_tds"><ExecutiveTdsReport /></PermissionRoute>} />
 
         <Route path="/admin/projects" element={<PermissionRoute permission="projects"><AdminProjects /></PermissionRoute>} />
         <Route path="/admin/projects/create" element={<PermissionRoute permission="projects"><ProjectCreate /></PermissionRoute>} />
