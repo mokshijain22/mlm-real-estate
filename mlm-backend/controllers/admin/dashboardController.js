@@ -54,6 +54,10 @@ async function index(req, res) {
       commissionByMonth,
       overdueAgg,
       overdueDuesRaw,
+      totalRevenueAgg,
+      totalOutstandingAgg,
+      totalCommissionGeneratedAgg,
+      totalCommissionReceivedAgg,
     ] = await Promise.all([
       Project.countDocuments({ status: 'active' }),
       Plot.countDocuments({}),
@@ -127,6 +131,26 @@ async function index(req, res) {
           ],
         })
         .select('booking emiNumber amount dueDate status'),
+      // All-time total sale value of every active/completed booking
+      Booking.aggregate([
+        { $match: { status: { $ne: 'cancelled' } } },
+        { $group: { _id: null, total: { $sum: '$totalAmount' } } },
+      ]),
+      // All-time outstanding balance across active/completed bookings
+      Booking.aggregate([
+        { $match: { status: { $ne: 'cancelled' } } },
+        { $group: { _id: null, total: { $sum: '$remainingAmount' } } },
+      ]),
+      // All-time commission generated (credited to agent wallets)
+      WalletTransaction.aggregate([
+        { $match: { type: 'credit', category: 'emi_commission' } },
+        { $group: { _id: null, total: { $sum: '$amount' } } },
+      ]),
+      // All-time commission actually paid out (approved withdrawals)
+      WithdrawalRequest.aggregate([
+        { $match: { status: 'approved' } },
+        { $group: { _id: null, total: { $sum: '$netAmount' } } },
+      ]),
     ]);
 
     const sumOf = (agg) => (agg[0] ? agg[0].total : 0);
@@ -151,6 +175,11 @@ async function index(req, res) {
       total_pv_paid_out: sumOf(pvPaidOutAgg),
       overdue_lines: overdueAgg[0]?.count || 0,
       overdue_outstanding: overdueAgg[0]?.total || 0,
+      total_revenue_sale: sumOf(totalRevenueAgg),
+      total_revenue_collected: sumOf(totalRevenueAgg) - sumOf(totalOutstandingAgg),
+      total_outstanding: sumOf(totalOutstandingAgg),
+      total_commission_generated: sumOf(totalCommissionGeneratedAgg),
+      total_commission_received: sumOf(totalCommissionReceivedAgg),
     };
 
     const overdueDues = overdueDuesRaw.map((e) => ({

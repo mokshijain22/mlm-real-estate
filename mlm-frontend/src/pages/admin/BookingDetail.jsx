@@ -18,7 +18,7 @@ function BookingDetail() {
 
   const [booking, setBooking] = useState(null);
   const [emis, setEmis] = useState([]);
-  const [commissionPreview, setCommissionPreview] = useState([]);
+  const [commissionPreview, setCommissionPreview] = useState({ rows: [], summary: null });
   const [error, setError] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -41,7 +41,7 @@ function BookingDetail() {
       .then((res) => {
         setBooking(res.data.booking);
         setEmis(res.data.emis);
-        setCommissionPreview(res.data.commissionPreview);
+        setCommissionPreview(res.data.commissionPreview || { rows: [], summary: null });
       })
       .catch((err) => setError(err.response?.data?.message || err.message));
   };
@@ -349,20 +349,20 @@ function BookingDetail() {
             </div>
 
             {/* Summary bar */}
-            <div className="row bg-light rounded p-3 mx-0 mb-4">
-              <div className="col-md-3">
+            <div className="row bg-light rounded p-3 mx-0 mb-4 g-3">
+              <div className="col-6 col-md-3">
                 <p className="text-muted mb-1 small">Total Amount</p>
-                <h4 className="mb-0">₹ {fmtMoney(booking.totalAmount)}</h4>
+                <h4 className="mb-0 text-break">₹ {fmtMoney(booking.totalAmount)}</h4>
               </div>
-              <div className="col-md-3">
+              <div className="col-6 col-md-3">
                 <p className="text-muted mb-1 small">Booking Deposit</p>
-                <h4 className="mb-0">₹ {fmtMoney(booking.bookingAmount)}</h4>
+                <h4 className="mb-0 text-break">₹ {fmtMoney(booking.bookingAmount)}</h4>
               </div>
-              <div className="col-md-3">
+              <div className="col-6 col-md-3">
                 <p className="text-muted mb-1 small">Remaining Balance</p>
-                <h4 className="mb-0 text-primary">₹ {fmtMoney(booking.remainingAmount)}</h4>
+                <h4 className="mb-0 text-primary text-break">₹ {fmtMoney(booking.remainingAmount)}</h4>
               </div>
-              <div className="col-md-3">
+              <div className="col-6 col-md-3">
                 <p className="text-muted mb-1 small">Status</p>
                 {booking.status === "active" ? (
                   <span className="badge bg-primary">Active</span>
@@ -509,7 +509,36 @@ function BookingDetail() {
             )}
 
             {/* Commission preview */}
-            <h5 className="text-primary mt-4 mb-3">Commission Distribution Preview (Per EMI)</h5>
+            <h5 className="text-primary mt-4 mb-3">Commission Distribution Preview</h5>
+
+            {commissionPreview.summary && (
+              <div className="row bg-light rounded p-3 mx-0 mb-3 g-3">
+                <div className="col-6 col-md-3">
+                  <p className="text-muted mb-1 small">Total Booking Amount</p>
+                  <h5 className="mb-0 text-break">₹ {fmtMoney(commissionPreview.summary.totalBookingAmount)}</h5>
+                </div>
+                <div className="col-6 col-md-3">
+                  <p className="text-muted mb-1 small">Booking Deposit (Token + DP)</p>
+                  <h5 className="mb-0 text-break">₹ {fmtMoney(commissionPreview.summary.bookingDepositAmount)}</h5>
+                </div>
+                <div className="col-6 col-md-3">
+                  <p className="text-muted mb-1 small">Commission from EMIs</p>
+                  <h5 className="mb-0 text-break">₹ {fmtMoney(commissionPreview.summary.totalEmiCommission)}</h5>
+                </div>
+                <div className="col-6 col-md-3">
+                  <p className="text-muted mb-1 small">Grand Total Commission</p>
+                  <h5 className="mb-0 text-success fw-bold text-break">
+                    ₹ {fmtMoney(commissionPreview.summary.grandTotalCommission)}
+                  </h5>
+                </div>
+              </div>
+            )}
+            <p className="text-muted fs-12 fst-italic mb-2">
+              "Deposit Comm" = one-time commission on Booking Token + Down Payment (released together, per processCombinedDepositCommission).
+              "EMI Total" = commission across all {""}
+              {commissionPreview.rows[0] ? "monthly EMIs" : "EMIs"}. Grand Total = both combined — this is the agent's full earning from this booking.
+            </p>
+
             <div className="table-responsive">
               <table className="table table-sm table-centered text-nowrap">
                 <thead className="table-light">
@@ -519,18 +548,22 @@ function BookingDetail() {
                     <th>Role</th>
                     <th>Pts / sqft</th>
                     <th>Comm / EMI</th>
-                    <th>Total Comm</th>
+                    <th>Deposit Comm</th>
+                    <th>EMI Total</th>
+                    <th>Grand Total</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {commissionPreview.map((item, idx) => (
+                  {commissionPreview.rows.map((item, idx) => (
                     <tr key={idx} className={item.role === "Selling Agent" ? "table-primary" : ""}>
                       <td>{item.agent_name}</td>
                       <td>{item.rank}</td>
                       <td>{item.role}</td>
                       <td>{Number(item.points_per_sf).toFixed(2)}</td>
-                      <td className="fw-bold">₹ {fmtMoney(item.commission_per_emi)}</td>
-                      <td className="text-success fw-bold">₹ {fmtMoney(item.total_commission)}</td>
+                      <td>₹ {fmtMoney(item.commission_per_emi)}</td>
+                      <td>₹ {fmtMoney(item.deposit_commission)}</td>
+                      <td>₹ {fmtMoney(item.total_commission)}</td>
+                      <td className="text-success fw-bold">₹ {fmtMoney(item.grand_total)}</td>
                     </tr>
                   ))}
                 </tbody>

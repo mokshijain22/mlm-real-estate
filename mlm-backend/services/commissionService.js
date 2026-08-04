@@ -267,22 +267,112 @@ async function previewCommissionForData({ agentId, agentRankId, pricePerSqft, em
 }
 
 /**
+ * Preview commission for the one-time Booking Deposit + Down Payment portion
+ * (no wallet writes). Mirrors what processCombinedDepositCommission() actually pays.
+ */
+async function previewDepositCommissionForData({ agentId, agentRankId, pricePerSqft, depositSqft, paymentMode }) {
+  const sellingAgent = await User.findById(agentId);
+  if (!sellingAgent || depositSqft <= 0) return [];
+
+  const preview = [];
+  const pointsType = isOnlineMode(paymentMode) ? 'BV' : 'PV';
+  const multiplier = await settingService.get(`${pointsType.toLowerCase()}_per_sqft`, 1.0);
+
+  let bookingRank = agentRankId ? await Rank.findById(agentRankId) : null;
+  if (!bookingRank) {
+    bookingRank = sellingAgent.rank ? await Rank.findById(sellingAgent.rank) : null;
+  }
+  if (!bookingRank) {
+    bookingRank = await Rank.findOne().sort({ sortOrder: 1 });
+  }
+
+  const sellerPoints = pointsType === 'BV' ? Number(bookingRank?.bvPoints || 0) : Number(bookingRank?.pvPoints || 0);
+  preview.push({ agent_name: sellingAgent.name, commission: depositSqft * sellerPoints * multiplier });
+
+  const uplineChain = await treeBuilderService.getUplineChain(sellingAgent);
+  let previousRankPoints = sellerPoints;
+
+  for (const [level, uplineId] of Object.entries(uplineChain)) {
+    const uplineAgent = await User.findById(uplineId).populate('rank');
+    if (!uplineAgent) continue;
+
+    const uplinePoints = await rankService.getAgentRankPoints(uplineAgent, pointsType);
+    const difference = uplinePoints - previousRankPoints;
+
+    if (difference > 0) {
+      preview.push({ agent_name: uplineAgent.name, commission: depositSqft * difference * multiplier });
+      previousRankPoints = uplinePoints;
+    }
+  }
+
+  return preview;
+}
+
+/**
  * Preview commission distribution for an already-saved booking (no wallet writes).
  */
 async function previewCommission(booking) {
   await booking.populate('agent');
   await booking.populate('agentRank');
 
-  if (!booking.agent) return [];
+  if (!booking.agent) {
+    return { rows: [], summary: null };
+  }
 
-  return previewCommissionForData({
+  const pricePerSqft = Number(booking.pricePerSqft) || 0;
+
+  const emiRows = await previewCommissionForData({
     agentId: booking.agent._id,
     agentRankId: booking.agentRank?._id || null,
-    pricePerSqft: Number(booking.pricePerSqft) || 0,
+    pricePerSqft,
     emiAmount: booking.emiAmount,
     emiMonths: booking.emiMonths,
     paymentMode: booking.paymentMode,
   });
+
+  // Booking Deposit + Down Payment are paid up front and their commission is
+  // released together (see processCombinedDepositCommission) — separate from
+  // the recurring per-EMI commission above.
+  const depositAmount = Number(booking.bookingAmount || 0) + Number(booking.downPaymentAmount || 0);
+  const depositSqft = pricePerSqft > 0 ? depositAmount / pricePerSqft : 0;
+
+  const depositRows = await previewDepositCommissionForData({
+    agentId: booking.agent._id,
+    agentRankId: booking.agentRank?._id || null,
+    pricePerSqft,
+    depositSqft,
+    paymentMode: booking.paymentMode,
+  });
+  const depositMap = new Map(depositRows.map((d) => [d.agent_name, d.commission]));
+
+  const rows = emiRows.map((row) => {
+    const depositCommission = depositMap.get(row.agent_name) || 0;
+    return {
+      ...row,
+      deposit_commission: depositCommission,
+      grand_total: depositCommission + row.total_commission,
+    };
+  });
+
+  const totalDepositCommission = depositRows.reduce((s, d) => s + d.commission, 0);
+  const totalEmiCommission = emiRows.reduce((s, r) => s + r.total_commission, 0);
+
+  return {
+    rows,
+    summary: {
+      totalBookingAmount: Number(booking.totalAmount) || 0,
+      bookingDepositAmount: depositAmount,
+      totalDepositCommission,
+      totalEmiCommission,
+      grandTotalCommission: totalDepositCommission + totalEmiCommission,
+    },
+  };
 }
 
-module.exports = { processEmiCommission, processCombinedDepositCommission, previewCommission, previewCommissionForData };
+module.exports = {
+  processEmiCommission,
+  processCombinedDepositCommission,
+  previewCommission,
+  previewCommissionForData,
+  previewDepositCommissionForData,
+};

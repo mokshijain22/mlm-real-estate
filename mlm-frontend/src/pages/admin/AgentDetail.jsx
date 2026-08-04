@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import api from "../../api/axios.js";
 import { OrgNode, OrgTreeStyles } from "../../components/shared/OrgTree.jsx";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import { buildCsvBlob, downloadBlob } from "../../utils/exportUtils.js";
 
 const STORAGE_BASE = "http://localhost:5000/storage/";
 
@@ -11,6 +14,9 @@ function AgentDetail() {
 
   const [profileData, setProfileData] = useState(null);
   const [treeData, setTreeData] = useState(null);
+  const [projects, setProjects] = useState([]);
+  const [treeProjectId, setTreeProjectId] = useState("");
+  const [treePreview, setTreePreview] = useState(false);
   const [rankData, setRankData] = useState(null);
   const [error, setError] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
@@ -23,6 +29,134 @@ function AgentDetail() {
   const [detailsForm, setDetailsForm] = useState({ position: "", slab_per_sqft: "", gender: "", address: "" });
   const [savingDetails, setSavingDetails] = useState(false);
   const [detailsError, setDetailsError] = useState(null);
+
+  const flattenTree = (node, level = 1, rows = []) => {
+    if (!node) return rows;
+    rows.push({
+      level,
+      name: node.name,
+      designation: node.rank_name || "-",
+      status: node.status || "-",
+      cap: level === 1 ? node.pool : node.cap,
+      own: node.own,
+      team: node.team,
+    });
+    (node.children || []).forEach((child) => flattenTree(child, level + 1, rows));
+    return rows;
+  };
+
+  const treeHeaders = ["Level", "Name", "Designation", "Status", "Cap/Pool (\u20B9)", "Own (\u20B9)", "Team (\u20B9)"];
+
+  const treeRowsForExport = () =>
+    flattenTree(treeData.treeData).map((r) => [
+      `L${r.level}`,
+      r.name,
+      r.designation,
+      r.status?.charAt(0).toUpperCase() + r.status?.slice(1),
+      r.cap != null ? r.cap : "\u2014",
+      r.own != null ? r.own : "\u2014",
+      r.team != null ? r.team : "\u2014",
+    ]);
+
+  const openTreePreview = () => {
+    if (!treeData?.treeData) return;
+    setTreePreview(true);
+  };
+
+  const handleDownloadTreeCsv = () => {
+    const blob = buildCsvBlob(treeHeaders, treeRowsForExport());
+    downloadBlob(blob, `executive-tree-${treeData.agent.name.replace(/\s+/g, "_")}.csv`);
+  };
+
+  const generateTreePdf = () => {
+    if (!treeData?.treeData) return;
+    const rows = flattenTree(treeData.treeData);
+    const selectedProject = projects.find((p) => p._id === treeProjectId);
+    const totalOwn = rows.reduce((sum, r) => sum + (r.own || 0), 0);
+
+    const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 32;
+
+    // ---- Header band ----
+    doc.setFillColor(79, 70, 229);
+    doc.rect(0, 0, pageWidth, 64, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18);
+    doc.setFont(undefined, "bold");
+    doc.text(
+      selectedProject ? `${selectedProject.name.toUpperCase()} — EXECUTIVE TREE REPORT` : "EXECUTIVE TREE REPORT",
+      margin,
+      30
+    );
+    doc.setFontSize(9);
+    doc.setFont(undefined, "normal");
+    const generatedOn = new Date().toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
+    doc.text(`Generated on ${generatedOn}   ·   Total Records: ${rows.length}`, margin, 48);
+
+    // ---- Summary strip ----
+    doc.setTextColor(60, 60, 60);
+    doc.setFontSize(9);
+    const summaryY = 80;
+    doc.text(`Root Executive: ${treeData.agent.name}`, margin, summaryY);
+    doc.text(
+      selectedProject ? `Pool Rate: ₹${selectedProject.commissionPool}/sqft` : "Pool Rate: —",
+      margin + 220,
+      summaryY
+    );
+    doc.text(`Total Own Committed: ₹${totalOwn}`, margin + 400, summaryY);
+    doc.setDrawColor(220, 220, 220);
+    doc.line(margin, summaryY + 8, pageWidth - margin, summaryY + 8);
+
+    // ---- Table ----
+    autoTable(doc, {
+      startY: summaryY + 20,
+      margin: { left: margin, right: margin },
+      head: [["Level", "Executive Name", "Designation", "Status", "Cap / Pool (₹)", "Own (₹)", "Team (₹)"]],
+      body: rows.map((r) => [
+        `L${r.level}`,
+        r.name,
+        r.designation,
+        r.status?.charAt(0).toUpperCase() + r.status?.slice(1),
+        r.cap != null ? r.cap.toLocaleString("en-IN") : "—",
+        r.own != null ? r.own.toLocaleString("en-IN") : "—",
+        r.team != null ? r.team.toLocaleString("en-IN") : "—",
+      ]),
+      theme: "striped",
+      styles: { fontSize: 9, cellPadding: 6, lineColor: [230, 230, 230], lineWidth: 0.5 },
+      headStyles: { fillColor: [79, 70, 229], textColor: 255, fontStyle: "bold", halign: "left" },
+      alternateRowStyles: { fillColor: [247, 247, 252] },
+      columnStyles: {
+        0: { halign: "center", cellWidth: 45 },
+        4: { halign: "right" },
+        5: { halign: "right" },
+        6: { halign: "right" },
+      },
+      didParseCell: (data) => {
+        if (data.section === "body" && data.column.index === 3) {
+          const val = String(data.cell.raw).toLowerCase();
+          data.cell.styles.textColor = val === "active" ? [22, 163, 74] : [107, 114, 128];
+          data.cell.styles.fontStyle = "bold";
+        }
+      },
+      didDrawPage: (data) => {
+        const pageCount = doc.internal.getNumberOfPages();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        doc.setFontSize(8);
+        doc.setTextColor(150, 150, 150);
+        doc.text(
+          `Page ${doc.internal.getCurrentPageInfo().pageNumber} of ${pageCount}`,
+          pageWidth - margin - 60,
+          pageHeight - 16
+        );
+        doc.text("MLM Real Estate · Confidential", margin, pageHeight - 16);
+      },
+    });
+
+    doc.save(`executive-tree-${treeData.agent.name.replace(/\s+/g, "_")}.pdf`);
+  };
+
+  const handleDownloadPdf = generateTreePdf; // kept for backward reference
 
   const loadProfile = () => {
     api
@@ -37,11 +171,33 @@ function AgentDetail() {
   }, [id]);
 
   useEffect(() => {
+    if (tab === "tree" && projects.length === 0) {
+      api
+        .get("/admin/projects", { params: { limit: 100 } })
+        .then((res) => {
+          const list = Array.isArray(res.data?.data)
+            ? res.data.data
+            : Array.isArray(res.data?.projects)
+            ? res.data.projects
+            : Array.isArray(res.data)
+            ? res.data
+            : [];
+          setProjects(list);
+        })
+        .catch((err) => console.error("projects fetch failed:", err));
+    }
     if (tab === "tree" && !treeData) {
       api
-        .get(`/admin/agents/${id}/tree`)
-        .then((res) => setTreeData(res.data))
-        .catch((err) => setError(err.response?.data?.message || err.message));
+        .get(`/admin/agents/${id}/tree`, {
+          params: { ...(treeProjectId ? { projectId: treeProjectId } : {}), _t: Date.now() },
+        })
+        .then((res) => {
+          setTreeData(res.data);
+        })
+        .catch((err) => {
+          console.error("tree fetch failed:", err);
+          setError(err.response?.data?.message || err.message);
+        });
     }
     if (tab === "rank" && !rankData) {
       api
@@ -50,7 +206,7 @@ function AgentDetail() {
         .catch((err) => setError(err.response?.data?.message || err.message));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, id]);
+  }, [tab, id, treeProjectId]);
 
   const handleAction = (action) => {
     setActionLoading(true);
@@ -556,7 +712,34 @@ function AgentDetail() {
                   </div>
                 )}
 
-                <h5 className="fw-bold mb-3">Network Tree</h5>
+                <div className="d-flex align-items-center justify-content-between mb-2">
+                  <h5 className="fw-bold mb-0">Executive Tree</h5>
+                  <div className="d-flex align-items-center gap-2">
+                    <button className="btn btn-sm btn-outline-primary" onClick={openTreePreview}>
+                      <iconify-icon icon="solar:file-download-bold-duotone" className="align-middle me-1"></iconify-icon>
+                      Download
+                    </button>
+                  <select
+                    className="form-select form-select-sm"
+                    style={{ maxWidth: 260 }}
+                    value={treeProjectId}
+                    onChange={(e) => {
+                      setTreeProjectId(e.target.value);
+                      setTreeData(null);
+                    }}
+                  >
+                    <option value="">Select project for Pool view</option>
+                    {projects.map((p) => (
+                      <option key={p._id} value={p._id}>
+                        {p.name} (Pool ₹{p.commissionPool}/sqft)
+                      </option>
+                    ))}
+                  </select>
+                  </div>
+                </div>
+                <p className="fs-12 text-muted fst-italic mb-3">
+                  Cap = rate budget · Own = kept here · Team = to reports (per sq ft)
+                </p>
                 <OrgTreeStyles />
                 <div className="org-tree-scroll mb-4" style={{ minHeight: 260 }}>
                   <div className="org-tree-wrap">
@@ -566,6 +749,54 @@ function AgentDetail() {
                       <p className="text-muted mb-0">No team data available.</p>
                     )}
                   </div>
+                </div>
+
+                <h5 className="fw-bold mb-3">Executive Tree — List View</h5>
+                <div className="table-responsive mb-4">
+                  <table className="table table-sm table-hover align-middle mb-0">
+                    <thead className="bg-light bg-opacity-50">
+                      <tr>
+                        <th className="ps-3 text-muted small">Level</th>
+                        <th className="text-muted small">Name</th>
+                        <th className="text-muted small">Designation</th>
+                        <th className="text-muted small">Status</th>
+                        <th className="text-muted small">Cap/Pool</th>
+                        <th className="text-muted small">Own</th>
+                        <th className="text-muted small">Team</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {treeData.treeData ? (
+                        flattenTree(treeData.treeData).map((r, i) => (
+                          <tr key={i}>
+                            <td className="ps-3">
+                              <span className="badge bg-info-subtle text-info">L{r.level}</span>
+                            </td>
+                            <td className="fw-semibold">{r.name}</td>
+                            <td>{r.designation}</td>
+                            <td>
+                              <span
+                                className={`badge ${
+                                  r.status === "active" ? "bg-success-subtle text-success" : "bg-secondary-subtle text-secondary"
+                                }`}
+                              >
+                                {r.status}
+                              </span>
+                            </td>
+                            <td>{r.cap != null ? `₹${r.cap}` : "-"}</td>
+                            <td>{r.own != null ? `₹${r.own}` : "-"}</td>
+                            <td>{r.team != null ? `₹${r.team}` : "-"}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={7} className="text-center text-muted py-4">
+                            No team data available.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
 
                 <h5 className="fw-bold mb-3">Downline (By Level)</h5>
@@ -684,6 +915,71 @@ function AgentDetail() {
                 )}
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {treePreview && treeData?.treeData && (
+        <div className="modal d-block" style={{ background: "rgba(15,15,25,0.6)" }} onClick={() => setTreePreview(false)}>
+          <div className="modal-dialog modal-dialog-centered modal-xl" style={{ maxWidth: "95vw" }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-content border-0 shadow-lg overflow-hidden">
+              <div
+                className="modal-header border-0 text-white"
+                style={{ background: "linear-gradient(135deg, #4f46e5, #6366f1)" }}
+              >
+                <div>
+                  <h5 className="modal-title fw-bold mb-1">Executive Tree — {treeData.agent.name}</h5>
+                  <p className="mb-0 small opacity-75">
+                    {flattenTree(treeData.treeData).length} record(s) \u00B7 Generated{" "}
+                    {new Date().toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
+                  </p>
+                </div>
+                <button className="btn-close btn-close-white" onClick={() => setTreePreview(false)}></button>
+              </div>
+              <div className="modal-body p-0" style={{ maxHeight: "60vh", overflow: "auto" }}>
+                <div className="table-responsive">
+                  <table className="table table-sm table-hover mb-0">
+                    <thead style={{ position: "sticky", top: 0, zIndex: 1 }}>
+                      <tr>
+                        {treeHeaders.map((h, i) => (
+                          <th
+                            key={i}
+                            className="text-uppercase small fw-bold"
+                            style={{ whiteSpace: "nowrap", background: "#eef0ff", color: "#4338ca", padding: "10px 14px" }}
+                          >
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {treeRowsForExport().map((row, ri) => (
+                        <tr key={ri} style={{ background: ri % 2 ? "#fafaff" : "#fff" }}>
+                          {row.map((cell, ci) => (
+                            <td key={ci} className="px-3 py-2">
+                              {cell}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div className="modal-footer bg-light border-0">
+                <button className="btn btn-light" onClick={() => setTreePreview(false)}>
+                  Cancel
+                </button>
+                <button className="btn btn-success" onClick={handleDownloadTreeCsv}>
+                  <iconify-icon icon="solar:file-text-bold-duotone" className="align-middle me-1"></iconify-icon>
+                  Download CSV
+                </button>
+                <button className="btn btn-primary" onClick={generateTreePdf}>
+                  <iconify-icon icon="solar:file-download-bold-duotone" className="align-middle me-1"></iconify-icon>
+                  Download PDF
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

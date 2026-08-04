@@ -19,7 +19,7 @@
     <text x="100" y="165" class="plot-area">1,000 sqft</text>
   </g>
   <g class="plot-group" id="plot-group-6a719f7f1124c5ec87faa4fd" data-plot-id="6a719f7f1124c5ec87faa4fd" data-plot-number="p2">
-    <rect id="plot-p2" class="plot available" x="180" y="100" width="120" height="100" rx="8" />
+    <rect id="plot-p2" class="plot sold" x="180" y="100" width="120" height="100" rx="8" />
     <text x="240" y="145" class="plot-text">p2</text>
     <text x="240" y="165" class="plot-area">100 sqft</text>
   </g>

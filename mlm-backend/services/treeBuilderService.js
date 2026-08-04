@@ -95,8 +95,12 @@ async function getDownlineByLevel(agent) {
 /**
  * Returns a recursive hierarchical tree for the agent (for tree visualization UI).
  */
-async function getHierarchicalTree(agent, maxLevel = 7) {
+async function getHierarchicalTree(agent, maxLevel = 7, poolPerSqft = null) {
   await agent.populate(['role', 'rank']);
+
+  const own = agent.slabPerSqft ?? 0;
+  const cap = poolPerSqft; // root's cap = the project's full pool
+  const team = cap != null ? Math.max(cap - own, 0) : null;
 
   return {
     id: agent._id,
@@ -107,19 +111,26 @@ async function getHierarchicalTree(agent, maxLevel = 7) {
     rank_name: agent.rank?.name || 'N/A',
     position: agent.position || null,
     slab_per_sqft: agent.slabPerSqft ?? null,
+    pool: cap,
+    own,
+    team,
     status: agent.status,
     created_at: agent.createdAt,
-    children: await getChildrenRecursive(agent._id, 1, maxLevel),
+    children: await getChildrenRecursive(agent._id, 1, maxLevel, team),
   };
 }
 
-async function getChildrenRecursive(parentId, currentLevel, maxLevel) {
+async function getChildrenRecursive(parentId, currentLevel, maxLevel, parentCap) {
   if (currentLevel > maxLevel) return [];
 
   const children = await User.find({ referredBy: parentId }).populate('rank').populate('role');
 
   const branch = [];
   for (const child of children) {
+    const own = child.slabPerSqft ?? 0;
+    const cap = parentCap; // this agent's cap = what the upline passed down
+    const team = cap != null ? Math.max(cap - own, 0) : null;
+
     branch.push({
       id: child._id,
       name: child.name,
@@ -129,9 +140,12 @@ async function getChildrenRecursive(parentId, currentLevel, maxLevel) {
       rank_name: child.rank?.name || 'N/A',
       position: child.position || null,
       slab_per_sqft: child.slabPerSqft ?? null,
+      cap,
+      own,
+      team,
       status: child.status,
       created_at: child.createdAt,
-      children: await getChildrenRecursive(child._id, currentLevel + 1, maxLevel),
+      children: await getChildrenRecursive(child._id, currentLevel + 1, maxLevel, team),
     });
   }
   return branch;

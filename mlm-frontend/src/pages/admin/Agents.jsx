@@ -85,7 +85,7 @@ function Agents() {
       <div className="card border-0 shadow-sm mb-3">
         <div className="card-body">
           <div className="row g-3 align-items-end">
-            <div className="col-md-6">
+            <div className="col-12 col-md-6">
               <label className="form-label fs-11 fw-bold text-muted text-uppercase mb-1">Search</label>
               <div className="input-group">
                 <span className="input-group-text bg-light border-end-0">
@@ -100,7 +100,7 @@ function Agents() {
                 />
               </div>
             </div>
-            <div className="col-md-3">
+            <div className="col-6 col-md-3">
               <label className="form-label fs-11 fw-bold text-muted text-uppercase mb-1">Status</label>
               <select
                 className="form-select"
@@ -116,7 +116,7 @@ function Agents() {
                 <option value="blocked">Blocked</option>
               </select>
             </div>
-            <div className="col-md-2">
+            <div className="col-6 col-md-2">
               <select
                 className="form-select"
                 value={kycStatus}
@@ -130,7 +130,7 @@ function Agents() {
                 <option value="0">KYC Not Verified</option>
               </select>
             </div>
-            <div className="col-md-1">
+            <div className="col-12 col-md-1">
               <button className="btn btn-light w-100" onClick={resetFilters}>
                 Reset
               </button>

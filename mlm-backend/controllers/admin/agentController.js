@@ -4,6 +4,7 @@ const RankHistory = require('../../models/RankHistory');
 const Booking = require('../../models/Booking');
 const KycVerification = require('../../models/KycVerification');
 const treeBuilderService = require('../../services/treeBuilderService');
+const Project = require('../../models/Project');
 const auditService = require('../../services/auditService');
 
 // GET /api/admin/agents?status=&kyc_status=&search=&page=
@@ -112,7 +113,18 @@ async function tree(req, res) {
       teamByLevel[level] = usersWithCounts;
     }
 
-    return res.json({ agent, uplineChain, teamByLevel, treeData: await treeBuilderService.getHierarchicalTree(agent) });
+    let poolPerSqft = null;
+    if (req.query.projectId) {
+      const project = await Project.findById(req.query.projectId).select('commissionPool');
+      poolPerSqft = project ? project.commissionPool : null;
+    }
+
+    return res.json({
+      agent,
+      uplineChain,
+      teamByLevel,
+      treeData: await treeBuilderService.getHierarchicalTree(agent, 7, poolPerSqft),
+    });
   } catch (err) {
     return res.status(500).json({ message: 'Failed to fetch agent tree.', error: err.message });
   }

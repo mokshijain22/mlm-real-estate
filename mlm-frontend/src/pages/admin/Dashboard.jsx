@@ -105,6 +105,94 @@ function Dashboard() {
         </div>
       </div>
 
+      {/* Overall Business Summary */}
+      {can("reports") && (
+      <>
+      <div className="dash-welcome-banner dash-animate">
+        <h5 className="dash-welcome-title mb-0">
+          Overall Business Summary <span className="fs-13 fw-normal opacity-75">(All-time totals)</span>
+        </h5>
+      </div>
+      <div className="row mb-4">
+        <div className="col-md-3 col-6 mb-3">
+          <Link to="/admin/reports/project-sales" className="dash-stat-card dash-animate d-block">
+            <div className="dash-stat-body">
+              <div className="dash-stat-icon dash-grad-blue">
+                <iconify-icon icon="solar:bill-check-bold-duotone"></iconify-icon>
+              </div>
+              <div>
+                <p className="dash-stat-value">
+                  <CountUp value={stats.total_revenue_sale} format={inr} />
+                </p>
+                <p className="dash-stat-label">Total Revenue (Sale)</p>
+              </div>
+            </div>
+          </Link>
+        </div>
+        <div className="col-md-3 col-6 mb-3">
+          <Link to="/admin/reports/emi-collections" className="dash-stat-card dash-animate d-block">
+            <div className="dash-stat-body">
+              <div className="dash-stat-icon dash-grad-green">
+                <iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon>
+              </div>
+              <div>
+                <p className="dash-stat-value">
+                  <CountUp value={stats.total_revenue_collected} format={inr} />
+                </p>
+                <p className="dash-stat-label">Total Revenue Collected</p>
+              </div>
+            </div>
+          </Link>
+        </div>
+        <div className="col-md-3 col-6 mb-3">
+          <Link to="/admin/reports/commissions" className="dash-stat-card dash-animate d-block">
+            <div className="dash-stat-body">
+              <div className="dash-stat-icon dash-grad-purple">
+                <iconify-icon icon="solar:graph-up-bold-duotone"></iconify-icon>
+              </div>
+              <div>
+                <p className="dash-stat-value">
+                  <CountUp value={stats.total_commission_generated} format={inr} />
+                </p>
+                <p className="dash-stat-label">Total Commission Generated</p>
+              </div>
+            </div>
+          </Link>
+        </div>
+        <div className="col-md-3 col-6 mb-3">
+          <Link to="/admin/withdrawals?status=approved" className="dash-stat-card dash-animate d-block">
+            <div className="dash-stat-body">
+              <div className="dash-stat-icon dash-grad-teal">
+                <iconify-icon icon="solar:hand-money-bold-duotone"></iconify-icon>
+              </div>
+              <div>
+                <p className="dash-stat-value">
+                  <CountUp value={stats.total_commission_received} format={inr} />
+                </p>
+                <p className="dash-stat-label">Total Commission Received</p>
+              </div>
+            </div>
+          </Link>
+        </div>
+        <div className="col-md-3 col-6 mb-3">
+          <Link to="/admin/reports/emi-collections" className="dash-stat-card dash-animate d-block">
+            <div className="dash-stat-body">
+              <div className="dash-stat-icon dash-grad-red">
+                <iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon>
+              </div>
+              <div>
+                <p className="dash-stat-value">
+                  <CountUp value={stats.total_outstanding} format={inr} />
+                </p>
+                <p className="dash-stat-label">Total Outstanding</p>
+              </div>
+            </div>
+          </Link>
+        </div>
+      </div>
+      </>
+      )}
+
       {/* This Month at a Glance */}
       {(can("reports") || can("withdrawals")) && (
       <>

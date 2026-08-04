@@ -249,9 +249,20 @@ async function bulkImport(req, res) {
     let created = 0;
     const skippedExisting = [];
     const skippedNoSpace = [];
+    const skippedMissingArea = [];
+
+    // Parses a "WxH" dimension string (e.g. "25x63") into its area in sqft.
+    // Returns null if the string isn't a recognisable WxH pair.
+    const parseDimensionArea = (val) => {
+      const match = String(val || '').trim().match(/^(\d+(?:\.\d+)?)\s*[xX×]\s*(\d+(?:\.\d+)?)$/);
+      if (!match) return null;
+      return Number(match[1]) * Number(match[2]);
+    };
 
     for (const row of rows) {
-      const number = String(row.number || '').trim();
+      // Accept either our standard header ("number") or this project's
+      // export format ("plot_number").
+      const number = String(row.number || row.plot_number || '').trim();
       const key = number.toLowerCase();
 
       if (!number || existingNumbers.has(key)) {
@@ -259,17 +270,28 @@ async function bulkImport(req, res) {
         continue;
       }
 
-      const area = Number(row.total_area);
-      if (!area || area > remainingArea) {
+      // total_area may arrive as a plain sqft number, OR as a "WxH" size
+      // string (e.g. "25x63") from the project's own CSV format.
+      let area = Number(row.total_area);
+      if (!area) {
+        area = parseDimensionArea(row.total_area) || parseDimensionArea(row.size) || 0;
+      }
+      if (!area || area <= 0) {
+        skippedMissingArea.push(number);
+        continue;
+      }
+      if (area > remainingArea) {
         skippedNoSpace.push(number);
         continue;
       }
+
+      const price = Number(row.price_per_sqft) || Number(row.base_price) || Number(row.final_price) || 0;
 
       await Plot.create({
         project: project._id,
         plotNumber: number,
         totalArea: area,
-        pricePerSqft: Number(row.price_per_sqft) || 0,
+        pricePerSqft: price,
         plcAmount: Number(row.plc_amount) || 0,
         status: PLOT_STATUSES.includes(row.status) ? row.status : 'available',
         createdBy: req.user._id,
@@ -287,6 +309,7 @@ async function bulkImport(req, res) {
       created,
       skipped_existing: skippedExisting,
       skipped_no_space: skippedNoSpace,
+      skipped_missing_area: skippedMissingArea,
     });
   } catch (err) {
     return res.status(500).json({ message: 'Bulk import failed.', error: err.message });
