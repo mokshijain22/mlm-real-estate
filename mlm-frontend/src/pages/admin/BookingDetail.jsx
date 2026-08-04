@@ -381,6 +381,7 @@ function BookingDetail() {
                 <thead className="table-light">
                   <tr>
                     <th>#</th>
+                    <th>Milestone</th>
                     <th>Due Date</th>
                     <th>Amount</th>
                     <th>Sqft</th>
@@ -394,6 +395,17 @@ function BookingDetail() {
                   {emis.map((emi) => (
                     <tr key={emi._id}>
                       <td>{emi.emiNumber}</td>
+                      <td>
+                        {emi.emiNumber === -1
+                          ? "Down Payment"
+                          : emi.emiNumber === -2
+                          ? "Down Payment 2"
+                          : emi.emiNumber === 0
+                          ? "Booking Token"
+                          : emi.emiNumber === 99
+                          ? "Registry"
+                          : `EMI ${emi.emiNumber}`}
+                      </td>
                       <td>{fmtDate(emi.dueDate)}</td>
                       <td>₹ {fmtMoney(emi.amount)}</td>
                       <td>{fmtMoney(emi.sqftPortion)}</td>
@@ -437,7 +449,20 @@ function BookingDetail() {
                 <div className="card-body">
                   <form onSubmit={handlePayEmi}>
                     <h6 className="mb-3">
-                      Pay EMI #{emis.find((e) => e._id === payingEmiId)?.emiNumber} — ₹{" "}
+                      Pay{" "}
+                      {(() => {
+                        const n = emis.find((e) => e._id === payingEmiId)?.emiNumber;
+                        return n === -1
+                          ? "Down Payment"
+                          : n === -2
+                          ? "Down Payment 2"
+                          : n === 0
+                          ? "Booking Token"
+                          : n === 99
+                          ? "Registry"
+                          : `EMI #${n}`;
+                      })()}{" "}
+                      — ₹{" "}
                       {fmtMoney(emis.find((e) => e._id === payingEmiId)?.amount || 0)}
                     </h6>
                     <div className="row g-3">

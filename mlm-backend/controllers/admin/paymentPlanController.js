@@ -19,10 +19,9 @@ async function replace(req, res) {
   const errors = [];
   plans.forEach((p, i) => {
     if (!p.name || !p.name.trim()) errors.push(`Plan ${i + 1}: name is required.`);
-    const dpTotal = (p.down_payment_stages || []).reduce((s, st) => s + (Number(st.percent) || 0), 0);
     const emiTotal = (Number(p.emi_percent) || 0) * (parseInt(p.emi_count, 10) || 0);
-    if (dpTotal + emiTotal > 100) {
-      errors.push(`Plan ${i + 1} (${p.name}): down payment + EMIs exceed 100% of selling price.`);
+    if (emiTotal > 100) {
+      errors.push(`Plan ${i + 1} (${p.name}): EMI% × EMI count exceeds 100% of selling price.`);
     }
   });
   if (errors.length) return res.status(422).json({ message: errors.join(' ') });
@@ -36,15 +35,8 @@ async function replace(req, res) {
       project: project._id,
       name: p.name.trim(),
       bookingAmount: Number(p.booking_amount) || 0,
-      editableAtBooking: !!p.editable_at_booking,
+      downPaymentAmount: Number(p.down_payment_amount) || 0,
       isDefault,
-      plcEnabled: !!p.plc_enabled,
-      plcOptions: (p.plc_options || [])
-        .filter((o) => o.label && o.label.trim())
-        .map((o) => ({ label: o.label.trim(), percent: Number(o.percent) || 0 })),
-      downPaymentStages: (p.down_payment_stages || [])
-        .filter((s) => s.label && s.label.trim())
-        .map((s) => ({ label: s.label.trim(), percent: Number(s.percent) || 0 })),
       emiPercent: Number(p.emi_percent) || 0,
       emiCount: parseInt(p.emi_count, 10) || 0,
       sortOrder: i,

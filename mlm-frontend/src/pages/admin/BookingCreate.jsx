@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import api from "../../api/axios.js";
+import BookingPlotMap from "./BookingPlotMap.jsx";
 
 const STEPS = [
   { key: 1, label: "Customer & property" },
@@ -55,9 +56,41 @@ function BookingCreate() {
   const [step1Errors, setStep1Errors] = useState({});
 
   // Step 2 — payment plan
-  const [paymentPlan, setPaymentPlan] = useState("standard");
-  const [scheduleRule, setScheduleRule] = useState("standard");
-  const emiMonths = 6; // fixed by the Standard plan (20% deposit · 6 × 10% EMI)
+  const [plans, setPlans] = useState([]);
+  const [selectedPlanId, setSelectedPlanId] = useState("");
+  const [downPaymentAmount, setDownPaymentAmount] = useState(0);
+  const [emiAmountEach, setEmiAmountEach] = useState(0); // ₹ per EMI — the real source of truth
+  const [emiCount, setEmiCount] = useState(0);
+  const emiMonths = emiCount;
+
+  useEffect(() => {
+    if (!projectId) {
+      setPlans([]);
+      return;
+    }
+    api
+      .get(`/admin/projects/${projectId}/payment-plans`)
+      .then((res) => {
+        const data = res.data.data || [];
+        setPlans(data);
+        const def = data.find((p) => p.isDefault) || data[0];
+        if (def) applyPlan(def._id, data);
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId]);
+
+  function applyPlan(id, sourcePlans) {
+    setSelectedPlanId(id);
+    const list = sourcePlans || plans;
+    const p = list.find((pl) => pl._id === id);
+    if (p) {
+      setBookingAmount(p.bookingAmount || "");
+      setDownPaymentAmount(p.downPaymentAmount || 0);
+      setEmiCount(p.emiCount || 0);
+      setEmiAmountEach(Math.round((sellingPrice * (Number(p.emiPercent) || 0)) / 100));
+    }
+  }
 
   // Step 2 — payment
   const [banks, setBanks] = useState([]);
@@ -199,6 +232,7 @@ function BookingCreate() {
   const sellingPrice = selectedPlot
     ? Number(selectedPlot.totalArea || 0) * Number(selectedPlot.pricePerSqft || 0) + Number(selectedPlot.plcAmount || 0)
     : 0;
+  const emiPercent = sellingPrice > 0 ? Math.round(((emiAmountEach / sellingPrice) * 100) * 100) / 100 : 0; // display-only
 
   function addMonths(date, months) {
     const d = new Date(date);
@@ -206,46 +240,66 @@ function BookingCreate() {
     return d.toISOString().slice(0, 10);
   }
 
-  function buildStandardSchedule(total, token, date) {
-    const dp1Nominal = total * 0.15;
-    const dp2 = Math.round(total * 0.05);
-    const emi = Math.round(total * 0.1);
-    const registry = Math.round(total - token - Math.max(dp1Nominal - token, 0) - dp2 - emi * 6);
-    const dp1 = Math.round(Math.max(dp1Nominal - token, 0));
+  function buildPlanSchedule(total, token, downPayment, emiEach, emiN, date) {
+    const n = Number(emiN) || 0;
+    let registry = Math.round(total - token - downPayment - (Number(emiEach) || 0) * n);
+    if (registry < 0) registry = 0;
 
     const rows = [
       { key: "token", label: "Booking amount (token)", amount: token, date },
-      { key: "dp1", label: "Down payment 1", amount: dp1, date },
-      { key: "dp2", label: "Down payment 2", amount: dp2, date: addMonths(date, 1) },
+      { key: "dp1", label: "Down payment", amount: downPayment, date },
     ];
-    for (let i = 1; i <= 6; i++) {
-      rows.push({ key: `emi${i}`, label: `EMI ${i}`, amount: emi, date: addMonths(date, i + 1) });
+    for (let i = 1; i <= n; i++) {
+      rows.push({ key: `emi${i}`, label: `EMI ${i}`, amount: Number(emiEach) || 0, date: addMonths(date, i) });
     }
-    rows.push({ key: "registry", label: "Registry", amount: registry, date: addMonths(date, 8) });
+    rows.push({ key: "registry", label: "Registry", amount: registry, date: addMonths(date, n + 1) });
     return rows;
   }
 
+  // Rebuilds the whole schedule from the template controls (down payment,
+  // EMI amount, EMI count). This intentionally resets any manual per-row
+  // edits — that's expected when you change a template control. Individual
+  // row edits (via updateScheduleRow below) don't touch these dependencies,
+  // so they won't get wiped by unrelated re-renders.
   useEffect(() => {
     if (!sellingPrice) {
       setScheduleDates([]);
       return;
     }
-    setScheduleDates(buildStandardSchedule(sellingPrice, Number(bookingAmount) || 0, bookingDate));
+    setScheduleDates(
+      buildPlanSchedule(sellingPrice, Number(bookingAmount) || 0, Number(downPaymentAmount) || 0, emiAmountEach, emiCount, bookingDate)
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sellingPrice, bookingAmount, bookingDate, paymentPlan]);
+  }, [sellingPrice, bookingAmount, downPaymentAmount, emiAmountEach, emiCount, bookingDate]);
 
   function updateScheduleRow(key, field, value) {
-    setScheduleDates((rows) =>
-      rows.map((r) => (r.key === key ? { ...r, [field]: field === "amount" ? Number(value) || 0 : value } : r))
-    );
+    setScheduleDates((rows) => {
+      if (field !== "amount") {
+        return rows.map((r) => (r.key === key ? { ...r, [field]: value } : r));
+      }
+
+      const newAmount = Number(value) || 0;
+      const oldRow = rows.find((r) => r.key === key);
+      const oldAmount = oldRow ? oldRow.amount : 0;
+      const delta = newAmount - oldAmount;
+
+      // Any manual edit to token / down payment / an individual EMI shifts the
+      // difference to/from Registry, so the schedule always still totals to
+      // the selling price. Editing Registry itself just sets it directly.
+      return rows.map((r) => {
+        if (r.key === key) return { ...r, amount: newAmount };
+        if (key !== "registry" && r.key === "registry") {
+          return { ...r, amount: Math.max(r.amount - delta, 0) };
+        }
+        return r;
+      });
+    });
   }
 
-  const downPaymentAmount = scheduleDates.find((r) => r.key === "dp1")?.amount || 0;
-  const downPayment2Amount = scheduleDates.find((r) => r.key === "dp2")?.amount || 0;
   const registryAmount = scheduleDates.find((r) => r.key === "registry")?.amount || 0;
   const emiAmount = scheduleDates.find((r) => r.key === "emi1")?.amount || 0;
   const remainingAmount = Math.max(
-    sellingPrice - (Number(bookingAmount) || 0) - downPaymentAmount - downPayment2Amount - registryAmount,
+    sellingPrice - (Number(bookingAmount) || 0) - (Number(downPaymentAmount) || 0) - registryAmount,
     0
   );
   const scheduleRows = scheduleDates;
@@ -344,15 +398,13 @@ function BookingCreate() {
         agent_id: agentId || undefined,
         price_per_sqft: selectedPlot?.pricePerSqft || 0,
         booking_amount: Number(bookingAmount) || 0,
-        down_payment_amount: downPaymentAmount,
+        down_payment_amount: Number(downPaymentAmount) || 0,
         down_payment_due_date: scheduleDates.find((r) => r.key === "dp1")?.date,
-        down_payment2_amount: downPayment2Amount,
-        down_payment2_due_date: scheduleDates.find((r) => r.key === "dp2")?.date,
         registry_amount: registryAmount,
         registry_due_date: scheduleDates.find((r) => r.key === "registry")?.date,
         emi_due_dates: scheduleDates.filter((r) => r.key.startsWith("emi")).map((r) => r.date),
-        emi_months: emiMonths,
-        payment_plan_key: paymentPlan,
+        emi_months: emiCount,
+        payment_plan_key: plans.find((p) => p._id === selectedPlanId)?.name || "custom",
         payment_mode: paymentMode,
         bank_id: bankId || undefined,
         payment_reference: paymentReference || undefined,
@@ -654,6 +706,8 @@ function BookingCreate() {
             </div>
           </div>
 
+          <BookingPlotMap projectId={projectId} plotId={plotId} onSelectPlot={setPlotId} />
+
           {selectedPlot && (
             <div className="card bg-light border-0 mt-2 mb-3">
               <div className="card-body py-3">
@@ -739,23 +793,73 @@ function BookingCreate() {
                 Remaining after token: {money(Math.max(sellingPrice - (Number(bookingAmount) || 0), 0))}
               </p>
             </div>
-            <div className="col-md-4">
+            <div className="col-md-3">
               <label className="form-label">Payment plan</label>
-              <select className="form-select" value={paymentPlan} onChange={(e) => setPaymentPlan(e.target.value)}>
-                <option value="standard">Standard (Default) — 20% deposit · 6 × 10% EMI</option>
+              <select
+                className="form-select"
+                value={selectedPlanId}
+                onChange={(e) => applyPlan(e.target.value)}
+              >
+                <option value="">— Custom —</option>
+                {plans.map((p) => (
+                  <option key={p._id} value={p._id}>
+                    {p.name}
+                    {p.isDefault ? " (Default)" : ""}
+                  </option>
+                ))}
               </select>
             </div>
-            <div className="col-md-4">
-              <label className="form-label">Schedule rule</label>
-              <select className="form-select" value={scheduleRule} onChange={(e) => setScheduleRule(e.target.value)}>
-                <option value="standard">Standard — fixed monthly schedule from booking month</option>
-              </select>
+            <div className="col-md-3">
+              <label className="form-label">Down payment (₹)</label>
+              <input
+                type="number"
+                className="form-control"
+                value={downPaymentAmount}
+                onChange={(e) => setDownPaymentAmount(Number(e.target.value) || 0)}
+              />
+            </div>
+            <div className="col-md-3">
+              <label className="form-label">EMI amount, each (₹)</label>
+              <input
+                type="number"
+                className="form-control"
+                value={emiAmountEach}
+                onChange={(e) => setEmiAmountEach(Number(e.target.value) || 0)}
+              />
+              <p className="text-muted small mb-0 mt-1">≈ {emiPercent}% of selling price</p>
+            </div>
+            <div className="col-md-3">
+              <label className="form-label">EMI months</label>
+              <input
+                type="number"
+                className="form-control"
+                value={emiCount}
+                onChange={(e) => setEmiCount(parseInt(e.target.value, 10) || 0)}
+              />
+            </div>
+            <div className="col-md-3">
+              <label className="form-label">Total EMI (all months)</label>
+              <div className="form-control bg-white fw-semibold" style={{ cursor: "default" }}>
+                {money((Number(emiAmountEach) || 0) * (Number(emiCount) || 0))}
+              </div>
+              <p className="text-muted small mb-0 mt-1">
+                {money(emiAmountEach)} × {emiCount || 0} months — auto-calculated, not editable directly
+              </p>
             </div>
           </div>
           <p className="text-muted small mb-3">
-            Token, down payment and EMIs fall on fixed monthly dates from the booking month. You can adjust any due
-            date below.
+            Booking amount, down payment, EMI amount and EMI months are all editable — Registry (final amount) is
+            whatever's left. Token, down payment and EMIs fall on monthly dates from the booking month; you can
+            adjust any due date below.
           </p>
+          {Number(bookingAmount || 0) + Number(downPaymentAmount || 0) + (Number(emiAmountEach) || 0) * (Number(emiCount) || 0) > sellingPrice && (
+            <div className="alert alert-danger py-2 small mb-3">
+              <iconify-icon icon="solar:danger-triangle-bold" className="align-middle me-1"></iconify-icon>
+              Token + Down payment + Total EMI ({money(Number(bookingAmount || 0) + Number(downPaymentAmount || 0) + (Number(emiAmountEach) || 0) * (Number(emiCount) || 0))}) exceeds the selling price ({money(sellingPrice)}) by{" "}
+              {money(Number(bookingAmount || 0) + Number(downPaymentAmount || 0) + (Number(emiAmountEach) || 0) * (Number(emiCount) || 0) - sellingPrice)}.
+              Reduce the EMI amount, EMI months, or down payment — Registry can't go negative.
+            </div>
+          )}
 
           <div className="card bg-light border-0 mb-4">
             <div className="card-body py-3">
