@@ -42,7 +42,8 @@ async function createBooking(data, actingUser) {
       const totalArea = plot.totalArea;
       const pricePerSqft = Number(data.price_per_sqft);
       const baseAmount = Number(totalArea) * pricePerSqft;
-      const plcAmount = Number(plot.plcAmount) || 0;
+      const plcPercent = Number(plot.plcPercent) || 0;
+      const plcAmount = Math.round((baseAmount * plcPercent) / 100);
       const totalAmount = baseAmount + plcAmount;
       const bookingAmount = Number(data.booking_amount);
       const downPaymentAmount = Number(data.down_payment_amount) || 0;
@@ -120,6 +121,7 @@ async function createBooking(data, actingUser) {
               nominationRelation: data.nomination_relation || null,
             },
             plcAmount,
+            plcPercent,
             paymentSchedule: {
               tokenDate: data.token_date || null,
               tokenAmount: Number(data.token_amount) || 0,

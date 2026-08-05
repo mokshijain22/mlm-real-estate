@@ -18,6 +18,10 @@ const WithdrawalRequest = require('../models/WithdrawalRequest');
 const RankHistory = require('../models/RankHistory');
 const AgentTree = require('../models/AgentTree');
 const AgentWallet = require('../models/AgentWallet');
+const Lead = require('../models/Lead');
+const SiteVisit = require('../models/SiteVisit');
+const PaymentPlan = require('../models/PaymentPlan');
+const PricingRule = require('../models/PricingRule');
 
 async function wipeTestData() {
   const models = [
@@ -34,6 +38,10 @@ async function wipeTestData() {
     { name: 'Rank History', model: RankHistory },
     { name: 'Agent Tree', model: AgentTree },
     { name: 'Agent Wallets', model: AgentWallet },
+    { name: 'Leads', model: Lead },
+    { name: 'Site Visits', model: SiteVisit },
+    { name: 'Payment Plans', model: PaymentPlan },
+    { name: 'Pricing Rules', model: PricingRule },
     { name: 'Users (all agents/sub-admins/admins)', model: User },
   ];
 

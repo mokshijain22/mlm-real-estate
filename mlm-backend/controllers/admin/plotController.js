@@ -61,8 +61,8 @@ async function store(req, res) {
     const project = await Project.findById(req.params.projectId);
     if (!project) return res.status(404).json({ message: 'Project not found.' });
 
-    const {
-      plot_number, total_area, price_per_sqft, plc_amount, status,
+   const {
+      plot_number, total_area, price_per_sqft, plc_percent, status,
       facing, zone_type, corner_plot, boundary_n, boundary_s, boundary_e, boundary_w,
     } = req.body;
     const remainingArea = await getRemainingArea(project);
@@ -78,7 +78,7 @@ async function store(req, res) {
       errors.total_area = `The plot area exceeds the remaining project area (${remainingArea} sqft).`;
     }
     if (price_per_sqft === undefined || Number(price_per_sqft) < 0) errors.price_per_sqft = 'Price per sqft is required.';
-    if (plc_amount !== undefined && Number(plc_amount) < 0) errors.plc_amount = 'PLC amount cannot be negative.';
+    if (plc_percent !== undefined && (Number(plc_percent) < 0 || Number(plc_percent) > 100)) errors.plc_percent = 'PLC percent must be between 0 and 100.';
     if (!status || !PLOT_STATUSES.includes(status)) errors.status = 'Invalid status.';
 
     if (Object.keys(errors).length) return res.status(422).json({ errors });
@@ -88,8 +88,8 @@ async function store(req, res) {
       plotNumber: plot_number,
       totalArea: total_area,
       pricePerSqft: price_per_sqft,
-      plcAmount: plc_amount || 0,
-      status,
+      plcPercent: plc_percent || 0,
+      status,      
       facing: facing || '',
       zoneType: zone_type || '',
       cornerPlot: corner_plot || '',
@@ -138,8 +138,8 @@ async function update(req, res) {
     const plot = await Plot.findOne({ _id: req.params.plotId, project: project._id });
     if (!plot) return res.status(404).json({ message: 'Plot not found.' });
 
-    const {
-      plot_number, total_area, price_per_sqft, plc_amount, status,
+   const {
+      plot_number, total_area, price_per_sqft, plc_percent, status,
       facing, zone_type, corner_plot, boundary_n, boundary_s, boundary_e, boundary_w,
     } = req.body;
     const remainingArea = await getRemainingArea(project, plot._id);
@@ -159,7 +159,7 @@ async function update(req, res) {
       errors.total_area = `The plot area exceeds the remaining project area (${remainingArea} sqft).`;
     }
     if (price_per_sqft === undefined || Number(price_per_sqft) < 0) errors.price_per_sqft = 'Price per sqft is required.';
-    if (plc_amount !== undefined && Number(plc_amount) < 0) errors.plc_amount = 'PLC amount cannot be negative.';
+    if (plc_percent !== undefined && (Number(plc_percent) < 0 || Number(plc_percent) > 100)) errors.plc_percent = 'PLC percent must be between 0 and 100.';
     if (!status || !PLOT_STATUSES.includes(status)) errors.status = 'Invalid status.';
 
     if (Object.keys(errors).length) return res.status(422).json({ errors });
@@ -167,7 +167,7 @@ async function update(req, res) {
     plot.plotNumber = plot_number;
     plot.totalArea = total_area;
     plot.pricePerSqft = price_per_sqft;
-    plot.plcAmount = plc_amount || 0;
+    plot.plcPercent = plc_percent || 0;
     plot.status = status;
     plot.facing = facing || '';
     plot.zoneType = zone_type || '';
@@ -222,7 +222,7 @@ async function updateStatus(req, res) {
 async function availablePlots(req, res) {
   const plots = await Plot.find(
     { project: req.params.projectId, status: 'available' },
-    'plotNumber totalArea pricePerSqft plcAmount'
+    'plotNumber totalArea pricePerSqft plcPercent'
   );
   return res.json(plots);
 }
@@ -292,7 +292,7 @@ async function bulkImport(req, res) {
         plotNumber: number,
         totalArea: area,
         pricePerSqft: price,
-        plcAmount: Number(row.plc_amount) || 0,
+        plcPercent: Number(row.plc_percent) || 0,
         status: PLOT_STATUSES.includes(row.status) ? row.status : 'available',
         createdBy: req.user._id,
       });
@@ -325,8 +325,8 @@ async function quickCreate(req, res) {
     const project = await Project.findById(req.params.projectId);
     if (!project) return res.status(404).json({ message: 'Project not found.' });
 
-    const {
-      plot_number, total_area, price_per_sqft, plc_amount, status, map_coordinates,
+   const {
+      plot_number, total_area, price_per_sqft, plc_percent, status, map_coordinates,
     } = req.body;
     const remainingArea = await getRemainingArea(project);
 
@@ -350,7 +350,7 @@ async function quickCreate(req, res) {
       plotNumber: plot_number,
       totalArea: total_area,
       pricePerSqft: price_per_sqft,
-      plcAmount: Number(plc_amount) || 0,
+      plcPercent: Number(plc_percent) || 0,
       status: PLOT_STATUSES.includes(status) ? status : 'available',
       mapCoordinates: map_coordinates,
       createdBy: req.user._id,
@@ -373,7 +373,7 @@ async function mapPlots(req, res) {
 
   const plots = await Plot.find(
     { project: project._id },
-    'plotNumber totalArea pricePerSqft plcAmount status mapCoordinates'
+    'plotNumber totalArea pricePerSqft plcPercent status mapCoordinates'
   );
 
   const hasHandDrawnLayout = plots.some((p) => !!p.mapCoordinates);
@@ -391,7 +391,7 @@ async function mapPlots(req, res) {
       plot_number: p.plotNumber,
       total_area: p.totalArea,
       price_per_sqft: p.pricePerSqft,
-      plc_amount: p.plcAmount,
+      plc_percent: p.plcPercent,
       status: p.status,
       coordinates: p.mapCoordinates,
     })),

@@ -6,8 +6,7 @@ const plotSchema = new mongoose.Schema(
     plotNumber: { type: String, required: true },
     totalArea: { type: Number, required: true },
     pricePerSqft: { type: Number, default: 0 },
-    plcAmount: { type: Number, default: 0 }, // Preferential Location Charge for this plot
-    // Note: bv_per_sqft / pv_per_sqft were added then dropped from plots in Laravel migration history — intentionally omitted here
+    plcPercent: { type: Number, default: 0 }, // Preferential Location Charge, as % of (totalArea * pricePerSqft)    // Note: bv_per_sqft / pv_per_sqft were added then dropped from plots in Laravel migration history — intentionally omitted here
     status: { type: String, default: 'available' }, // mirrors App\Enums\PlotStatus (available/booked/sold)
     facing: { type: String, default: '' },
     zoneType: { type: String, default: '' },

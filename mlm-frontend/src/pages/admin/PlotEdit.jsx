@@ -18,7 +18,7 @@ function PlotEdit() {
   const [plotNumber, setPlotNumber] = useState("");
   const [totalArea, setTotalArea] = useState("");
   const [pricePerSqft, setPricePerSqft] = useState("");
-  const [plcAmount, setPlcAmount] = useState("0");
+  const [plcPercent, setPlcPercent] = useState("0");
   const [status, setStatus] = useState("");
 
   useEffect(() => {
@@ -32,7 +32,7 @@ function PlotEdit() {
         setTotalArea(res.data.plot.totalArea);
         setInitialPlotArea(res.data.plot.totalArea);
         setPricePerSqft(res.data.plot.pricePerSqft);
-        setPlcAmount(res.data.plot.plcAmount || 0);
+        setPlcPercent(res.data.plot.plcPercent || 0);
         setStatus(res.data.plot.status);
       })
       .catch((err) => setError(err.response?.data?.message || err.message))
@@ -53,7 +53,7 @@ function PlotEdit() {
         plot_number: plotNumber,
         total_area: totalArea,
         price_per_sqft: pricePerSqft,
-        plc_amount: plcAmount,
+        plc_percent: plcPercent,
         status,
       })
       .then(() => {
@@ -144,18 +144,23 @@ function PlotEdit() {
                 </div>
                 <div className="col-md-6">
                   <div className="mb-3">
-                    <label htmlFor="plc_amount" className="form-label">
-                      PLC Amount (₹) <span className="text-muted fs-12">(if any)</span>
+                    <label htmlFor="plc_percent" className="form-label">
+                      PLC (%) <span className="text-muted fs-12">(if any)</span>
                     </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      id="plc_amount"
-                      className={`form-control ${errors.plc_amount ? "is-invalid" : ""}`}
-                      value={plcAmount}
-                      onChange={(e) => setPlcAmount(e.target.value)}
-                    />
-                    {errors.plc_amount && <div className="invalid-feedback">{errors.plc_amount}</div>}
+                    <div className="input-group">
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        max="100"
+                        id="plc_percent"
+                        className={`form-control ${errors.plc_percent ? "is-invalid" : ""}`}
+                        value={plcPercent}
+                        onChange={(e) => setPlcPercent(e.target.value)}
+                      />
+                      <span className="input-group-text">%</span>
+                    </div>
+                    {errors.plc_percent && <div className="invalid-feedback d-block">{errors.plc_percent}</div>}
                   </div>
                 </div>
               </div>

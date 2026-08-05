@@ -63,6 +63,8 @@ function BookingCreate() {
   const [emiAmountEach, setEmiAmountEach] = useState(0); // ₹ per EMI — the real source of truth
   const [emiCount, setEmiCount] = useState(0);
   const emiMonths = emiCount;
+  const [downPaymentMode, setDownPaymentMode] = useState("percent"); // "percent" | "per_sqft"
+  const [emiMode, setEmiMode] = useState("percent");
 
   useEffect(() => {
     if (!projectId) {
@@ -224,10 +226,43 @@ function BookingCreate() {
   }, []);
 
   // ---- derived values (declared once, used everywhere below) ----
-  const sellingPrice = selectedPlot
-    ? Number(selectedPlot.totalArea || 0) * Number(selectedPlot.pricePerSqft || 0) + Number(selectedPlot.plcAmount || 0)
-    : 0;
+  const baseAmount = selectedPlot ? Number(selectedPlot.totalArea || 0) * Number(selectedPlot.pricePerSqft || 0) : 0;
+  const plcAmount = selectedPlot ? Math.round((baseAmount * Number(selectedPlot.plcPercent || 0)) / 100) : 0;
+  const sellingPrice = baseAmount + plcAmount;
   const emiPercent = sellingPrice > 0 ? Math.round(((emiAmountEach / sellingPrice) * 100) * 100) / 100 : 0; // display-only
+  const totalSqftForToggle = Number(selectedPlot?.totalArea) || 0;
+
+  const downPaymentDisplayValue =
+    downPaymentMode === "percent"
+      ? sellingPrice > 0
+        ? Math.round((downPaymentAmount / sellingPrice) * 10000) / 100
+        : 0
+      : totalSqftForToggle > 0
+      ? Math.round((downPaymentAmount / totalSqftForToggle) * 100) / 100
+      : 0;
+
+  const emiDisplayValue =
+    emiMode === "percent"
+      ? sellingPrice > 0
+        ? Math.round((emiAmountEach / sellingPrice) * 10000) / 100
+        : 0
+      : totalSqftForToggle > 0
+      ? Math.round((emiAmountEach / totalSqftForToggle) * 100) / 100
+      : 0;
+
+  function handleDownPaymentInput(value) {
+    const v = Number(value) || 0;
+    setDownPaymentAmount(
+      downPaymentMode === "percent" ? Math.round((sellingPrice * v) / 100) : Math.round(v * totalSqftForToggle)
+    );
+  }
+
+  function handleEmiInput(value) {
+    const v = Number(value) || 0;
+    setEmiAmountEach(
+      emiMode === "percent" ? Math.round((sellingPrice * v) / 100) : Math.round(v * totalSqftForToggle)
+    );
+  };
 
   function addMonths(date, months) {
     const d = new Date(date);
@@ -805,23 +840,62 @@ function BookingCreate() {
               </select>
             </div>
             <div className="col-md-3">
-              <label className="form-label">Down payment (₹)</label>
+              <div className="d-flex justify-content-between align-items-center mb-1">
+                <label className="form-label mb-0">Down payment</label>
+                <div className="btn-group btn-group-sm" role="group">
+                  <button
+                    type="button"
+                    className={`btn ${downPaymentMode === "percent" ? "btn-primary" : "btn-outline-secondary"}`}
+                    onClick={() => setDownPaymentMode("percent")}
+                  >
+                    %
+                  </button>
+                  <button
+                    type="button"
+                    className={`btn ${downPaymentMode === "per_sqft" ? "btn-primary" : "btn-outline-secondary"}`}
+                    onClick={() => setDownPaymentMode("per_sqft")}
+                  >
+                    ₹/sqft
+                  </button>
+                </div>
+              </div>
               <input
                 type="number"
                 className="form-control"
-                value={downPaymentAmount}
-                onChange={(e) => setDownPaymentAmount(Number(e.target.value) || 0)}
+                value={downPaymentDisplayValue}
+                onChange={(e) => handleDownPaymentInput(e.target.value)}
               />
+              <p className="text-muted small mb-0 mt-1">= {money(downPaymentAmount)}</p>
             </div>
             <div className="col-md-3">
-              <label className="form-label">EMI amount, each (₹)</label>
+              <div className="d-flex justify-content-between align-items-center mb-1">
+                <label className="form-label mb-0">EMI amount, each</label>
+                <div className="btn-group btn-group-sm" role="group">
+                  <button
+                    type="button"
+                    className={`btn ${emiMode === "percent" ? "btn-primary" : "btn-outline-secondary"}`}
+                    onClick={() => setEmiMode("percent")}
+                  >
+                    %
+                  </button>
+                  <button
+                    type="button"
+                    className={`btn ${emiMode === "per_sqft" ? "btn-primary" : "btn-outline-secondary"}`}
+                    onClick={() => setEmiMode("per_sqft")}
+                  >
+                    ₹/sqft
+                  </button>
+                </div>
+              </div>
               <input
                 type="number"
                 className="form-control"
-                value={emiAmountEach}
-                onChange={(e) => setEmiAmountEach(Number(e.target.value) || 0)}
+                value={emiDisplayValue}
+                onChange={(e) => handleEmiInput(e.target.value)}
               />
-              <p className="text-muted small mb-0 mt-1">≈ {emiPercent}% of selling price</p>
+              <p className="text-muted small mb-0 mt-1">
+                = {money(emiAmountEach)} ({emiPercent}% of selling price)
+              </p>
             </div>
             <div className="col-md-3">
               <label className="form-label">EMI months</label>
@@ -1066,6 +1140,78 @@ function BookingCreate() {
             </div>
           </div>
 
+          <div className="card bg-light border-0 mb-4">
+            <div className="card-body">
+              <h6 className="mb-3">Review before continuing</h6>
+              <div className="row g-3 small">
+                <div className="col-md-3">
+                  <div className="text-muted">Customer</div>
+                  <div className="fw-semibold">{name}</div>
+                </div>
+                <div className="col-md-3">
+                  <div className="text-muted">Plot</div>
+                  <div className="fw-semibold">
+                    {selectedPlot?.plotNumber} · {selectedPlot?.totalArea} sq.ft
+                  </div>
+                </div>
+                <div className="col-md-3">
+                  <div className="text-muted">Selling price (incl. PLC)</div>
+                  <div className="fw-semibold">{money(sellingPrice)}</div>
+                </div>
+                <div className="col-md-3">
+                  <div className="text-muted">Payment mode</div>
+                  <div className="fw-semibold text-capitalize">{paymentMode.replace("_", " ")}</div>
+                </div>
+                <div className="col-md-3">
+                  <div className="text-muted">Booking token</div>
+                  <div className="fw-semibold">{money(bookingAmount)}</div>
+                </div>
+                <div className="col-md-3">
+                  <div className="text-muted">Down payment</div>
+                  <div className="fw-semibold">{money(downPaymentAmount)}</div>
+                </div>
+                <div className="col-md-3">
+                  <div className="text-muted">EMI</div>
+                  <div className="fw-semibold">
+                    {money(emiAmountEach)} × {emiCount} = {money(emiAmountEach * emiCount)}
+                  </div>
+                </div>
+                <div className="col-md-3">
+                  <div className="text-muted">Registry</div>
+                  <div className="fw-semibold">{money(registryAmount)}</div>
+                </div>
+                <div className="col-md-3">
+                  <div className="text-muted">Total scheduled</div>
+                  <div
+                    className={`fw-semibold ${
+                      Math.round(
+                        Number(bookingAmount || 0) + downPaymentAmount + emiAmountEach * emiCount + registryAmount
+                      ) !== Math.round(sellingPrice)
+                        ? "text-danger"
+                        : "text-success"
+                    }`}
+                  >
+                    {money(Number(bookingAmount || 0) + downPaymentAmount + emiAmountEach * emiCount + registryAmount)}
+                  </div>
+                </div>
+                <div className="col-md-3">
+                  <div className="text-muted">Receipt ID</div>
+                  <div className="fw-semibold">{receiptId || "—"}</div>
+                </div>
+                <div className="col-md-3">
+                  <div className="text-muted">Documents uploaded</div>
+                  <div className="fw-semibold">{Object.values(documents).filter(Boolean).length} / 5</div>
+                </div>
+                <div className="col-md-3">
+                  <div className="text-muted">Executive</div>
+                  <div className="fw-semibold">
+                    {agents.find((a) => a._id === agentId)?.name || "— (direct booking)"}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="d-flex justify-content-between pt-3 border-top">
             <button type="button" className="btn btn-light" onClick={() => setStep(1)}>
               ← Back to step 1
@@ -1183,11 +1329,8 @@ function BookingCreate() {
                 </div>
                 <div className="col-md-2">
                   <div className="text-muted">Owner total (min + PLC)</div>
-                  <div className="fw-semibold">
-                    {money(Number(selectedPlot?.pricePerSqft || 0) * Number(selectedPlot?.totalArea || 0) + Number(selectedPlot?.plcAmount || 0))}
-                  </div>
-                </div>
-                <div className="col-md-2">
+                  <div className="fw-semibold">{money(sellingPrice)}</div>
+                </div>                <div className="col-md-2">
                   <div className="text-muted">Customer</div>
                   <div className="fw-semibold">{name}</div>
                 </div>

@@ -61,10 +61,6 @@ function Bookings() {
     <div className="card border-0 shadow-sm">
       <div className="card-header bg-white d-flex justify-content-between align-items-center py-3">
         <h4 className="card-title mb-0">My Bookings</h4>
-        <Link to="/agent/bookings/new" className="btn btn-primary btn-sm shadow-sm">
-          <iconify-icon icon="solar:add-circle-bold-duotone" className="align-middle me-1"></iconify-icon>
-          New Booking
-        </Link>
       </div>
 
       <div className="card-body border-bottom pb-0">

@@ -23,8 +23,6 @@ router.put('/profile/password', profileController.updatePassword);
 router.get('/dashboard', dashboardController.index);
 
 router.get('/bookings', bookingController.index);
-router.get('/bookings/create-data', bookingController.createData);
-router.post('/bookings', bookingController.store);
 router.get('/bookings/:id', bookingController.show);
 
 router.get('/customers', customerController.index);

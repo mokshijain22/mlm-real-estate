@@ -28,8 +28,8 @@ function parseCsv(text) {
       number: row.number || row.plot_number || "",
       total_area: row.total_area || row.area || row.size || "",
       price_per_sqft: row.price_per_sqft || row.base_price || row.final_price || "",
-      status: row.status || "available",
-      plc_amount: row.plc_amount || "",
+       status: row.status || "available",
+      plc_percent: row.plc_percent || "",
     };
   });
 }
@@ -250,8 +250,7 @@ function PlotsList() {
               </div>
               <div className="modal-body">
                 <p className="text-muted small mb-2">
-                  CSV headers: <code>number, total_area, price_per_sqft, status, plc_amount</code>. Plot numbers
-                  that already exist in this project will be skipped.
+                  CSV headers: <code>number, total_area, price_per_sqft, status, plc_percent</code>. Plot numbers                  that already exist in this project will be skipped.
                 </p>
                 <input
                   ref={fileInputRef}
@@ -270,7 +269,7 @@ function PlotsList() {
                           <th>Total Area</th>
                           <th>Price/Sqft</th>
                           <th>Status</th>
-                          <th>PLC Amount</th>
+                          <th>PLC %</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -280,7 +279,7 @@ function PlotsList() {
                             <td>{r.total_area}</td>
                             <td>{r.price_per_sqft}</td>
                             <td>{r.status}</td>
-                            <td>{r.plc_amount}</td>
+                            <td>{r.plc_percent}</td>
                           </tr>
                         ))}
                       </tbody>

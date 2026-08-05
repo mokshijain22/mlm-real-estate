@@ -55,7 +55,7 @@ function parseCsv(text) {
       total_area: row.total_area || row.area || areaFromSize || "",
       price_per_sqft: row.price_per_sqft || row.price || row.final_price || row.base_price || "",
       status: STATUSES.includes(row.status) ? row.status : "",
-      plc_amount: row.plc_amount || "",
+      plc_percent: row.plc_percent || "",
       facing: row.facing || "",
       zone_type: row.zone_type || "",
       corner_plot: row.corner_plot || "",
@@ -82,7 +82,7 @@ function PlotMapper() {
   const [draft, setDraft] = useState(null); // first click point
   const [pendingRect, setPendingRect] = useState(null); // rect awaiting form
   const [form, setForm] = useState({
-    number: "", total_area: "", price_per_sqft: "", status: "available", plc_amount: "",
+    number: "", total_area: "", price_per_sqft: "", status: "available", plc_percent: "",
     facing: "", zone_type: "", corner_plot: "", boundary_n: "", boundary_s: "", boundary_e: "", boundary_w: "",
   });
 
@@ -135,7 +135,7 @@ function PlotMapper() {
       const map = parseCsv(evt.target.result);
       setCsvData(map);
       setCsvCount(Object.keys(map).length);
-      setMessage({ type: "success", text: `CSV loaded: ${Object.keys(map).length} plot rows. Ab number type karte hi auto-fill hoga.` });
+      setMessage({ type: "success", text: `CSV loaded: ${Object.keys(map).length} plot rows. Fields auto-fill as soon as you enter the number.` });
     };
     reader.readAsText(file);
   };
@@ -160,8 +160,8 @@ function PlotMapper() {
     const h = Math.abs(point.y - draft.y);
     setDraft(null);
     setPendingRect({ x, y, w, h });
-    setForm({
-      number: "", total_area: "", price_per_sqft: "", status: "available", plc_amount: "",
+   setForm({
+      number: "", total_area: "", price_per_sqft: "", status: "available", plc_percent: "",
       facing: "", zone_type: "", corner_plot: "", boundary_n: "", boundary_s: "", boundary_e: "", boundary_w: "",
     });
   };
@@ -173,12 +173,12 @@ function PlotMapper() {
 
   const handleDeletePlot = () => {
     if (!previewPlot) return;
-    if (!window.confirm(`Plot #${previewPlot.plotNumber} ko poori tarah delete karna hai? Ye undo nahi hoga.`)) return;
+    if (!window.confirm(`Do you want to delete plot #${previewPlot.plotNumber} completely? This cannot be undone.`)) return;
     setDeleting(true);
     api
       .delete(`/admin/projects/${id}/plots/${previewPlot._id}`)
       .then(() => {
-        setMessage({ type: "success", text: `Plot #${previewPlot.plotNumber} delete ho gaya.` });
+        setMessage({ type: "success", text: `Plot #${previewPlot.plotNumber} was deleted.` });
         setPreviewPlot(null);
         load();
       })
@@ -188,12 +188,12 @@ function PlotMapper() {
 
   const handleUnmapPlot = () => {
     if (!previewPlot) return;
-    if (!window.confirm(`Plot #${previewPlot.plotNumber} ki tracing (image se) hatani hai? Plot record rahega, sirf map se hat jayega.`)) return;
+    if (!window.confirm(`Do you want to remove the tracing for plot #${previewPlot.plotNumber}? The plot record will remain, but it will be removed from the map.`)) return;
     setDeleting(true);
     api
       .post(`/admin/projects/${id}/layout`, { plots: { [previewPlot._id]: { latlngs: null } } })
       .then(() => {
-        setMessage({ type: "success", text: `Plot #${previewPlot.plotNumber} map se untrace ho gaya.` });
+        setMessage({ type: "success", text: `Plot #${previewPlot.plotNumber} was removed from the map.` });
         setPreviewPlot(null);
         load();
       })
@@ -211,7 +211,7 @@ function PlotMapper() {
       total_area: csvRow?.total_area || existing?.totalArea || f.total_area,
       price_per_sqft: csvRow?.price_per_sqft || existing?.pricePerSqft || f.price_per_sqft,
       status: csvRow?.status || existing?.status || f.status,
-      plc_amount: csvRow?.plc_amount || existing?.plcAmount || f.plc_amount,
+      plc_percent: csvRow?.plc_percent || existing?.plcPercent || f.plc_percent,
       facing: csvRow?.facing || f.facing,
       zone_type: csvRow?.zone_type || f.zone_type,
       corner_plot: csvRow?.corner_plot || f.corner_plot,
@@ -224,7 +224,7 @@ function PlotMapper() {
 
   const savePlot = () => {
     if (!form.number.trim() || !pendingRect) {
-      setMessage({ type: "error", text: "Plot number likho." });
+      setMessage({ type: "error", text: "Enter a plot number." });
       return;
     }
     const latlngs = rectToLatLngs(pendingRect.x, pendingRect.y, pendingRect.w, pendingRect.h, imgNatural.w, imgNatural.h);
@@ -235,7 +235,7 @@ function PlotMapper() {
       api
         .post(`/admin/projects/${id}/layout`, { plots: { [plotId]: { latlngs } } })
         .then(() => {
-          setMessage({ type: "success", text: `Plot #${form.number} traced & saved.` });
+          setMessage({ type: "success", text: `Plot #${form.number} was traced and saved.` });
           cancelDraft();
           load();
         })
@@ -252,7 +252,7 @@ function PlotMapper() {
           plot_number: form.number,
           total_area: form.total_area || 0.01,
           price_per_sqft: form.price_per_sqft || 0,
-          plc_amount: form.plc_amount || 0,
+          plc_percent: form.plc_percent || 0,
           status: form.status || "available",
           facing: form.facing,
           zone_type: form.zone_type,
@@ -279,7 +279,7 @@ function PlotMapper() {
             Plot Mapper
           </h4>
           <p className="text-muted mb-0">
-            Image pe do opposite corners click karo → plot number likho → save. Nayi number ho to plot khud ban jayega.
+            Click two opposite corners on the image, enter a plot number, then save. If the number is new, the plot will be created automatically.
           </p>
         </div>
         <div className="d-flex gap-3 align-items-center">
@@ -298,8 +298,8 @@ function PlotMapper() {
       {!imageUrl ? (
         <div className="card shadow-sm border-0">
           <div className="card-body text-center py-5">
-            <h5>Is project ka koi map image nahi hai</h5>
-            <p className="text-muted">Layout, satellite ya scanned drawing — koi bhi image upload karo.</p>
+            <h5>This project has no map image</h5>
+            <p className="text-muted">Upload any image you want to use, such as a layout, satellite view, or scanned drawing.</p>
             <input type="file" accept="image/*" onChange={handleUpload} disabled={uploading} />
           </div>
         </div>
@@ -311,8 +311,7 @@ function PlotMapper() {
                 <div className="fw-bold mb-2">Upload CSV — bulk autofill</div>
                 <input type="file" accept=".csv" onChange={handleCsvFile} className="form-control form-control-sm mb-1" />
                 <div className="text-muted small">
-                  Columns: number, total_area, price_per_sqft, status, plc_amount. Number type karte hi auto-fill hoga.
-                  {csvCount > 0 && ` (${csvCount} rows loaded)`}
+                 Columns: number, total_area, price_per_sqft, status, plc_percent. Fields auto-fill as soon as you enter the number.                  {csvCount > 0 && ` (${csvCount} rows loaded)`}
                 </div>
                 {csvCount > 0 && (
                   <button
@@ -321,14 +320,14 @@ function PlotMapper() {
                     onClick={() => {
                       setCsvData({});
                       setCsvCount(0);
-                      setMessage({ type: "success", text: "CSV data clear kar diya." });
+                      setMessage({ type: "success", text: "CSV data cleared." });
                     }}
                   >
                     Clear CSV data
                   </button>
                 )}
                 <hr />
-                <label className="form-label small mb-1">Map image badalni ho:</label>
+                <label className="form-label small mb-1">Replace the map image:</label>
                 <input type="file" accept="image/*" onChange={handleUpload} disabled={uploading} className="form-control form-control-sm" />
               </div>
             </div>
@@ -540,13 +539,13 @@ function PlotMapper() {
               </div>
               <div className="modal-footer">
                 <button className="btn btn-light" onClick={cancelDraft}>Cancel</button>
-                <button
+                  <button
                   type="button"
                   className="btn btn-outline-primary"
                   disabled={!form.number.trim()}
                   onClick={() => setShowFormPreview(true)}
                 >
-                  Preview (agent ko kya dikhega)
+                  Preview (what the agent will see)
                 </button>
                 <button className="btn btn-primary" onClick={savePlot} disabled={saving || !form.number.trim()}>
                   {saving ? "Saving..." : "Save plot"}
@@ -566,7 +565,7 @@ function PlotMapper() {
                 <button className="btn-close btn-close-white" onClick={() => setShowFormPreview(false)}></button>
               </div>
               <div className="modal-body">
-                <p className="text-muted small mb-3">Agent/customer ko exactly ye details dikhengi jab wo is plot ko dekhega.</p>
+                <p className="text-muted small mb-3">The agent or customer will see these exact details when they open this plot.</p>
                 <div className="row g-2">
                   <div className="col-6">
                     <div className="bg-light rounded p-2 text-center">
@@ -588,8 +587,8 @@ function PlotMapper() {
                   </div>
                   <div className="col-6">
                     <div className="bg-light rounded p-2 text-center">
-                      <small className="text-muted d-block">PLC Amount</small>
-                      <span className="fw-bold">{form.plc_amount ? `₹${Number(form.plc_amount).toLocaleString()}` : "—"}</span>
+                      <small className="text-muted d-block">PLC %</small>
+                      <span className="fw-bold">{form.plc_percent ? `${Number(form.plc_percent)}%` : "—"}</span>
                     </div>
                   </div>
                   <div className="col-6">
@@ -658,9 +657,8 @@ function PlotMapper() {
                   </div>
                   <div className="col-6">
                     <div className="bg-light rounded p-2 text-center">
-                      <small className="text-muted d-block">PLC Amount</small>
-                      <span className="fw-bold">₹{Number(previewPlot.plcAmount || 0).toLocaleString()}</span>
-                    </div>
+                      <small className="text-muted d-block">PLC %</small>
+                      <span className="fw-bold">{Number(previewPlot.plcPercent || 0)}%</span>                    </div>
                   </div>
                   {previewPlot.facing && (
                     <div className="col-6">

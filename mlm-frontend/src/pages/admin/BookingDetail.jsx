@@ -135,9 +135,44 @@ function BookingDetail() {
 
   return (
     <div className="row">
+      <style>{`
+        @media print {
+          @page {
+            size: A4;
+            margin: 12mm;
+          }
+          body {
+            background: #fff !important;
+          }
+          .wrapper > .topbar-custom,
+          .wrapper > .left-side-menu,
+          .app-footer,
+          .no-print,
+          .d-print-none {
+            display: none !important;
+          }
+          .page-content {
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+          .container-fluid {
+            padding: 0 !important;
+            max-width: 100% !important;
+          }
+          .card {
+            border: none !important;
+            box-shadow: none !important;
+          }
+          .col-xl-9 {
+            width: 100% !important;
+            max-width: 100% !important;
+            flex: 0 0 100% !important;
+          }
+        }
+      `}</style>
       <div className="col-xl-9">
         <div className="card border-0 shadow-sm">
-          <div className="card-header bg-white d-flex justify-content-between align-items-center py-3">
+          <div className="card-header bg-white d-flex justify-content-between align-items-center py-3 d-print-none">
             <h4 className="card-title mb-0">Booking Details: {booking.bookingNumber}</h4>
             <div>
               {booking.status === "active" && (
@@ -148,12 +183,20 @@ function BookingDetail() {
               <Link to="/admin/bookings" className="btn btn-light btn-sm ms-2">
                 Back to List
               </Link>
+              <button className="btn btn-primary btn-sm ms-2" onClick={() => window.print()}>
+                Print
+              </button>
             </div>
+          </div>
+          <div className="d-none d-print-block p-4 pb-0 text-center">
+            <h3 className="mb-1">{booking.project?.name}</h3>
+            <p className="text-muted mb-0">Booking Receipt</p>
+            <hr />
           </div>
           <div className="card-body">
             {/* Status banners */}
             {booking.approvalStatus === "pending" && (
-              <div className="alert alert-warning border-0 mb-4">
+              <div className="alert alert-warning border-0 mb-4 d-print-none">
                 <div className="d-flex align-items-center justify-content-between">
                   <div className="d-flex align-items-center">
                     <iconify-icon icon="solar:clock-circle-bold-duotone" className="fs-24 me-2"></iconify-icon>
@@ -175,7 +218,7 @@ function BookingDetail() {
             )}
 
             {booking.approvalStatus === "rejected" && (
-              <div className="alert alert-danger border-0 mb-4">
+              <div className="alert alert-danger border-0 mb-4 d-print-none">
                 <div className="d-flex align-items-center">
                   <iconify-icon icon="solar:close-circle-bold-duotone" className="fs-24 me-2"></iconify-icon>
                   <div>
@@ -192,7 +235,7 @@ function BookingDetail() {
             )}
 
             {booking.approvalStatus === "approved" && booking.status !== "cancelled" && (
-              <div className="alert alert-success border-0 mb-4">
+              <div className="alert alert-success border-0 mb-4 d-print-none">
                 <div className="d-flex align-items-center">
                   <iconify-icon icon="solar:check-circle-bold-duotone" className="fs-24 me-2"></iconify-icon>
                   <div>
@@ -212,7 +255,7 @@ function BookingDetail() {
             )}
 
             {booking.status === "cancelled" && booking.approvalStatus !== "rejected" && (
-              <div className="alert alert-danger border-0 mb-4">
+              <div className="alert alert-danger border-0 mb-4 d-print-none">
                 <div className="d-flex align-items-center">
                   <iconify-icon icon="solar:trash-bin-trash-bold-duotone" className="fs-24 me-2"></iconify-icon>
                   <div>
@@ -225,7 +268,7 @@ function BookingDetail() {
 
             {/* Approve form */}
             {showApproveForm && (
-              <div className="card border-0 shadow-sm mb-3 border-success">
+              <div className="card border-0 shadow-sm mb-3 border-success d-print-none">
                 <div className="card-body">
                   <form onSubmit={handleApprove}>
                     <p>Are you sure you want to approve this booking? This will activate the plot and generate EMIs.</p>
@@ -252,7 +295,7 @@ function BookingDetail() {
 
             {/* Reject form */}
             {showRejectForm && (
-              <div className="card border-0 shadow-sm mb-3 border-danger">
+              <div className="card border-0 shadow-sm mb-3 border-danger d-print-none">
                 <div className="card-body">
                   <form onSubmit={handleReject}>
                     <p className="text-danger">This will cancel the booking and release the plot back to available status.</p>
@@ -314,7 +357,7 @@ function BookingDetail() {
                   </tbody>
                 </table>
                 {rankMismatch && (
-                  <div className="alert alert-info border-0 p-2 mt-2">
+                  <div className="alert alert-info border-0 p-2 mt-2 d-print-none">
                     <iconify-icon icon="solar:info-circle-broken" className="fs-18 me-1 align-middle"></iconify-icon>
                     <span className="small">
                       Agent promoted since booking. Commission calculated at booking rank:{" "}
@@ -388,7 +431,7 @@ function BookingDetail() {
                     <th>Status</th>
                     <th>Paid Date</th>
                     <th>Reference</th>
-                    <th>Action</th>
+                    <th className="d-print-none">Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -422,7 +465,7 @@ function BookingDetail() {
                       </td>
                       <td>{emi.paidDate ? fmtDate(emi.paidDate) : "-"}</td>
                       <td>{emi.paymentReference || "-"}</td>
-                      <td>
+                      <td className="d-print-none">
                         {emi.status !== "paid" && emi.status !== "cancelled" && booking.status === "active" && (
                           <button
                             className="btn btn-primary btn-sm"
@@ -445,7 +488,7 @@ function BookingDetail() {
             </div>
 
             {payingEmiId && (
-              <div className="card border-0 shadow-sm mb-4 border-primary">
+              <div className="card border-0 shadow-sm mb-4 border-primary d-print-none">
                 <div className="card-body">
                   <form onSubmit={handlePayEmi}>
                     <h6 className="mb-3">
@@ -509,10 +552,10 @@ function BookingDetail() {
             )}
 
             {/* Commission preview */}
-            <h5 className="text-primary mt-4 mb-3">Commission Distribution Preview</h5>
+            <h5 className="text-primary mt-4 mb-3 d-print-none">Commission Distribution Preview</h5>
 
             {commissionPreview.summary && (
-              <div className="row bg-light rounded p-3 mx-0 mb-3 g-3">
+              <div className="row bg-light rounded p-3 mx-0 mb-3 g-3 d-print-none">
                 <div className="col-6 col-md-3">
                   <p className="text-muted mb-1 small">Total Booking Amount</p>
                   <h5 className="mb-0 text-break">₹ {fmtMoney(commissionPreview.summary.totalBookingAmount)}</h5>
@@ -533,13 +576,13 @@ function BookingDetail() {
                 </div>
               </div>
             )}
-            <p className="text-muted fs-12 fst-italic mb-2">
+            <p className="text-muted fs-12 fst-italic mb-2 d-print-none">
               "Deposit Comm" = one-time commission on Booking Token + Down Payment (released together, per processCombinedDepositCommission).
               "EMI Total" = commission across all {""}
               {commissionPreview.rows[0] ? "monthly EMIs" : "EMIs"}. Grand Total = both combined — this is the agent's full earning from this booking.
             </p>
 
-            <div className="table-responsive">
+            <div className="table-responsive d-print-none">
               <table className="table table-sm table-centered text-nowrap">
                 <thead className="table-light">
                   <tr>
@@ -573,7 +616,7 @@ function BookingDetail() {
         </div>
       </div>
 
-      <div className="col-xl-3">
+      <div className="col-xl-3 d-print-none">
         <div className="card border-0 shadow-sm">
           <div className="card-header bg-white py-3">
             <h4 className="card-title mb-0">Booking Meta</h4>

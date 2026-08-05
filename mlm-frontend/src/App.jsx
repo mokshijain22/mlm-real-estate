@@ -98,7 +98,6 @@ function App() {
         <Route path="/agent/kyc" element={<Kyc />} />
         <Route path="/agent/bookings" element={<Bookings />} />
         <Route path="/agent/site-visits" element={<AgentSiteVisits />} />
-        <Route path="/agent/bookings/new" element={<BookingCreate />} />
         <Route path="/agent/bookings/:id" element={<BookingDetail />} />
         <Route path="/agent/wallet" element={<Wallet />} />
         <Route path="/agent/commissions" element={<Commissions />} />

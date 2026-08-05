@@ -171,9 +171,8 @@ function ProjectMapView() {
                   </div>
                   <div className="col-6">
                     <div className="bg-light rounded p-2 text-center">
-                      <small className="text-muted d-block">PLC Amount</small>
-                      <span className="fw-bold">{previewPlot.plcAmount ? `₹${Number(previewPlot.plcAmount).toLocaleString()}` : "—"}</span>
-                    </div>
+                       <small className="text-muted d-block">PLC %</small>
+                      <span className="fw-bold">{previewPlot.plcPercent ? `${Number(previewPlot.plcPercent)}%` : "—"}</span>                    </div>
                   </div>
                   {previewPlot.facing && (
                     <div className="col-6">

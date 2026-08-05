@@ -62,7 +62,7 @@ function AccountLedger() {
     setError(null);
     api
       .get("/admin/account-ledger/overview", {
-        params: { period, project_id: projectId || undefined },
+        params: periodParams(),
       })
       .then((res) => setData(res.data.data))
       .catch((err) => setError(err.response?.data?.message || err.message))
@@ -73,7 +73,7 @@ function AccountLedger() {
     setCollectionRows(null);
     api
       .get("/admin/account-ledger/collections", {
-        params: { period, project_id: projectId || undefined },
+        params: periodParams(),
       })
       .then((res) => {
         setCollectionRows(res.data.data);
@@ -86,7 +86,7 @@ function AccountLedger() {
     setDpEmiRows(null);
     api
       .get("/admin/account-ledger/dp-emis", {
-        params: { period, project_id: projectId || undefined },
+        params: periodParams(),
       })
       .then((res) => {
         setDpEmiRows(res.data.data);
@@ -112,7 +112,7 @@ function AccountLedger() {
     setCommissionRows(null);
     api
       .get("/admin/account-ledger/commission", {
-        params: { period, project_id: projectId || undefined },
+        params: periodParams(),
       })
       .then((res) => {
         setCommissionRows(res.data.data);
@@ -122,33 +122,63 @@ function AccountLedger() {
   };
 
   useEffect(() => {
-    load();
+    if (period !== "custom" || (dateFrom && dateTo)) load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [period, projectId]);
+  }, [period, projectId, dateFrom, dateTo]);
 
   useEffect(() => {
+    if (period === "custom" && (!dateFrom || !dateTo)) return;
     if (tab === "collections") loadCollections();
     if (tab === "dp_emis") loadDpEmis();
     if (tab === "receivables") loadReceivables();
     if (tab === "commission") loadCommission();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, period, projectId]);
+  }, [tab, period, projectId, dateFrom, dateTo]);
 
   return (
     <div>
-      <div className="card border-0 shadow-sm mb-3">
+      <style>{`
+        @media print {
+          .no-print { display: none !important; }
+          .card { border: none !important; box-shadow: none !important; }
+        }
+      `}</style>
+      <div className="card border-0 shadow-sm mb-3 no-print">
         <div className="card-body">
           <div className="row g-3 align-items-end">
-            <div className="col-md-3">
+            <div className="col-md-2">
               <label className="form-label small text-uppercase text-muted">Period</label>
               <select className="form-select" value={period} onChange={(e) => setPeriod(e.target.value)}>
                 <option value="this_month">This month</option>
                 <option value="last_month">Last month</option>
                 <option value="this_year">This year</option>
+                <option value="custom">Custom range</option>
                 <option value="all_time">All time</option>
               </select>
             </div>
-            <div className="col-md-4">
+            {period === "custom" && (
+              <>
+                <div className="col-md-2">
+                  <label className="form-label small text-uppercase text-muted">From</label>
+                  <input
+                    type="date"
+                    className="form-control"
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                  />
+                </div>
+                <div className="col-md-2">
+                  <label className="form-label small text-uppercase text-muted">To</label>
+                  <input
+                    type="date"
+                    className="form-control"
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                  />
+                </div>
+              </>
+            )}
+            <div className={period === "custom" ? "col-md-3" : "col-md-4"}>
               <label className="form-label small text-uppercase text-muted">Project</label>
               <select className="form-select" value={projectId} onChange={(e) => setProjectId(e.target.value)}>
                 <option value="">All projects</option>
@@ -159,10 +189,16 @@ function AccountLedger() {
                 ))}
               </select>
             </div>
-            <div className="col-md-2">
+            <div className="col-md-1">
               <button className="btn btn-warning w-100" onClick={load} disabled={loading}>
                 <iconify-icon icon="solar:refresh-bold" className="align-middle me-1"></iconify-icon>
                 {loading ? "..." : "Refresh"}
+              </button>
+            </div>
+            <div className="col-md-2">
+              <button className="btn btn-outline-secondary w-100" onClick={() => window.print()}>
+                <iconify-icon icon="solar:printer-bold" className="align-middle me-1"></iconify-icon>
+                Print
               </button>
             </div>
           </div>
