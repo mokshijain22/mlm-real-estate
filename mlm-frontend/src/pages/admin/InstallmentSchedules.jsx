@@ -5,7 +5,7 @@ function emptyPlan(isFirst) {
   return {
     name: "",
     booking_amount: 21000,
-    down_payment_amount: 0,
+    down_payment_percent: 0,
     is_default: isFirst,
     emi_percent: 1,
     emi_count: 12,
@@ -18,8 +18,10 @@ function money(n) {
 
 function PlanCard({ plan, index, onChange, onRemove, onMakeDefault }) {
   const emiTotal = (Number(plan.emi_percent) || 0) * (Number(plan.emi_count) || 0);
-  const finalTotal = Math.max(100 - emiTotal, 0);
-  const over100 = emiTotal > 100;
+  const downPaymentPercent = Number(plan.down_payment_percent) || 0;
+  const usedTotal = downPaymentPercent + emiTotal;
+  const finalTotal = Math.max(100 - usedTotal, 0);
+  const over100 = usedTotal > 100;
 
   function set(field, value) {
     onChange({ ...plan, [field]: value });
@@ -43,13 +45,17 @@ function PlanCard({ plan, index, onChange, onRemove, onMakeDefault }) {
             />
           </div>
           <div className="col-md-4">
-            <label className="form-label">Down Payment (₹)</label>
-            <input
-              type="number"
-              className="form-control"
-              value={plan.down_payment_amount}
-              onChange={(e) => set("down_payment_amount", Number(e.target.value) || 0)}
-            />
+            <label className="form-label">Down Payment (% of plot price)</label>
+            <div className="input-group">
+              <input
+                type="number"
+                className="form-control"
+                value={plan.down_payment_percent}
+                onChange={(e) => set("down_payment_percent", Number(e.target.value) || 0)}
+              />
+              <span className="input-group-text">%</span>
+            </div>
+            <div className="form-text">Booking amount is already part of this % — don't add it separately.</div>
           </div>
         </div>
 
@@ -100,10 +106,15 @@ function PlanCard({ plan, index, onChange, onRemove, onMakeDefault }) {
         <div className="card border-0 bg-white">
           <div className="card-body py-3">
             <div className="progress mb-2" style={{ height: 8 }}>
-              <div className="progress-bar bg-purple" style={{ width: `${emiTotal}%`, backgroundColor: "#8b5cf6" }}></div>
+              <div className="progress-bar" style={{ width: `${downPaymentPercent}%`, backgroundColor: "#6366f1" }}></div>
+              <div className="progress-bar" style={{ width: `${emiTotal}%`, backgroundColor: "#8b5cf6" }}></div>
               <div className="progress-bar bg-success" style={{ width: `${finalTotal}%` }}></div>
             </div>
             <div className="d-flex justify-content-between small flex-wrap gap-2">
+              <span>
+                <span style={{ color: "#6366f1" }}>●</span> Down payment <strong>{downPaymentPercent}%</strong>{" "}
+                <span className="text-muted">(includes booking amount)</span>
+              </span>
               <span>
                 <span style={{ color: "#8b5cf6" }}>●</span> EMIs <strong>{emiTotal}%</strong>{" "}
                 <span className="text-muted">
@@ -111,14 +122,13 @@ function PlanCard({ plan, index, onChange, onRemove, onMakeDefault }) {
                 </span>
               </span>
               <span>
-                <span className="text-success">●</span> Final settlement (Registry) <strong>{finalTotal}%</strong>{" "}
-                <span className="text-muted">minus booking + down payment</span>
+                <span className="text-success">●</span> Final settlement (Registry) <strong>{finalTotal}%</strong>
               </span>
               <span className="fw-bold">= 100% of plot price</span>
             </div>
             {over100 && (
               <div className="text-danger small mt-2">
-                EMI% × EMI count exceeds 100% — reduce EMI% or EMI count before saving.
+                Down payment% + EMI% × EMI count exceeds 100% — reduce one of them before saving.
               </div>
             )}
           </div>
@@ -148,7 +158,7 @@ function InstallmentSchedules() {
     return data.map((p) => ({
       name: p.name,
       booking_amount: p.bookingAmount,
-      down_payment_amount: p.downPaymentAmount,
+      down_payment_percent: p.downPaymentPercent,
       is_default: p.isDefault,
       emi_percent: p.emiPercent,
       emi_count: p.emiCount,
@@ -216,9 +226,10 @@ function InstallmentSchedules() {
       {projectId && (
         <div className="card-body">
           <p className="text-muted small mb-4">
-            Booking amount + down payment (both flat ₹) + EMI% × EMI count. Registry (final settlement) is
-            whatever's left — it's calculated automatically at booking time, not entered here. Admin can override
-            every value while creating a booking. One plan is the Default (pre-selected at booking).
+            Booking amount (flat ₹) + down payment (% of plot price, includes the booking amount) + EMI% × EMI
+            count. Registry (final settlement) is whatever's left — calculated automatically at booking time, not
+            entered here. Admin can override every value while creating a booking. One plan is the Default
+            (pre-selected at booking).
           </p>
 
           {message && <div className="alert alert-success">{message}</div>}

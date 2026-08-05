@@ -79,6 +79,7 @@ import PlotShow from "./pages/admin/PlotShow.jsx";
 import ProjectMap from "./pages/admin/ProjectMap.jsx";
 import ProjectBuilder from "./pages/admin/ProjectBuilder.jsx";
 import PlotMapper from "./pages/admin/PlotMapper.jsx";
+import FullTree from "./pages/admin/FullTree.jsx";
 
 function App() {
   return (
@@ -131,6 +132,7 @@ function App() {
         <Route path="/admin/kyc/:id" element={<PermissionRoute permission="kyc"><AdminKycDetail /></PermissionRoute>} />
 
         <Route path="/admin/ranks" element={<PermissionRoute superAdminOnly><Ranks /></PermissionRoute>} />
+        <Route path="/admin/full-tree" element={<PermissionRoute superAdminOnly><FullTree /></PermissionRoute>} />
         <Route path="/admin/referrals" element={<PermissionRoute permission="referrals"><AdminReferrals /></PermissionRoute>} />
 
         <Route path="/admin/bookings" element={<PermissionRoute permission="bookings"><AdminBookings /></PermissionRoute>} />

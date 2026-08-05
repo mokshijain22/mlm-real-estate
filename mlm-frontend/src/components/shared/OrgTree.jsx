@@ -27,14 +27,23 @@ export function OrgNode({ node, isRoot, onNodeClick }) {
           onClick={() => onNodeClick && onNodeClick(node)}
         >
           <div className="org-avatar-wrap" style={{ borderColor: c.border }}>
-            <img
-              src={node.photo}
-              alt={node.name}
-              width="44"
-              height="44"
-              className="rounded-circle"
-              onError={(e) => (e.target.style.display = "none")}
-            />
+            {node.isCompany ? (
+              <div
+                className="d-flex align-items-center justify-content-center rounded-circle"
+                style={{ width: 44, height: 44, background: "rgba(255,255,255,0.25)" }}
+              >
+                <iconify-icon icon="solar:buildings-2-bold-duotone" style={{ fontSize: 24, color: "#fff" }}></iconify-icon>
+              </div>
+            ) : (
+              <img
+                src={node.photo}
+                alt={node.name}
+                width="44"
+                height="44"
+                className="rounded-circle"
+                onError={(e) => (e.target.style.display = "none")}
+              />
+            )}
           </div>
           <div className={`fw-semibold fs-13 mt-1 ${isRoot ? "text-white" : ""}`}>{node.name}</div>
           <span

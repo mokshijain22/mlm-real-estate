@@ -3,8 +3,15 @@ const Emi = require('../../models/Emi');
 const WalletTransaction = require('../../models/WalletTransaction');
 const WithdrawalRequest = require('../../models/WithdrawalRequest');
 
-function periodRange(period) {
+function periodRange(period, dateFrom, dateTo) {
   const now = new Date();
+  if (period === 'custom') {
+    if (!dateFrom || !dateTo) return null;
+    const start = new Date(dateFrom);
+    const end = new Date(dateTo);
+    end.setDate(end.getDate() + 1); // make "To" date inclusive
+    return { start, end };
+  }
   if (period === 'last_month') {
     const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const end = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -29,8 +36,8 @@ async function projectBookingIds(projectId) {
 
 // GET /api/admin/account-ledger/overview?period=&project_id=
 async function overview(req, res) {
-  const { period = 'this_month', project_id } = req.query;
-  const range = periodRange(period);
+  const { period = 'this_month', project_id, date_from, date_to } = req.query;
+  const range = periodRange(period, date_from, date_to);
   const bookingIds = await projectBookingIds(project_id);
 
   const bookingProjectFilter = project_id ? { project: project_id } : {};
@@ -133,8 +140,8 @@ async function overview(req, res) {
 
 // GET /api/admin/account-ledger/collections?period=&project_id=
 async function collections(req, res) {
-  const { period = 'this_month', project_id } = req.query;
-  const range = periodRange(period);
+  const { period = 'this_month', project_id, date_from, date_to } = req.query;
+  const range = periodRange(period, date_from, date_to);
   const bookingIds = await projectBookingIds(project_id);
 
   const bookingProjectFilter = project_id ? { project: project_id } : {};
@@ -193,8 +200,8 @@ async function collections(req, res) {
 
 // GET /api/admin/account-ledger/dp-emis?period=&project_id=
 async function dpEmis(req, res) {
-  const { period = 'this_month', project_id } = req.query;
-  const range = periodRange(period);
+  const { period = 'this_month', project_id, date_from, date_to } = req.query;
+  const range = periodRange(period, date_from, date_to);
   const bookingIds = await projectBookingIds(project_id);
   const bookingProjectFilter = project_id ? { project: project_id } : {};
   const emiProjectFilter = bookingIds ? { booking: { $in: bookingIds } } : {};
@@ -309,8 +316,8 @@ async function receivables(req, res) {
 
 // GET /api/admin/account-ledger/commission?period=&project_id=
 async function commission(req, res) {
-  const { period = 'this_month', project_id } = req.query;
-  const range = periodRange(period);
+  const { period = 'this_month', project_id, date_from, date_to } = req.query;
+  const range = periodRange(period, date_from, date_to);
   const bookingIds = await projectBookingIds(project_id);
   const wtProjectFilter = bookingIds ? { booking: { $in: bookingIds } } : {};
 

@@ -35,7 +35,7 @@ async function replace(req, res) {
       project: project._id,
       name: p.name.trim(),
       bookingAmount: Number(p.booking_amount) || 0,
-      downPaymentAmount: Number(p.down_payment_amount) || 0,
+      downPaymentPercent: Number(p.down_payment_percent) || 0,
       isDefault,
       emiPercent: Number(p.emi_percent) || 0,
       emiCount: parseInt(p.emi_count, 10) || 0,

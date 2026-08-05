@@ -26,7 +26,7 @@ function AgentDetail() {
   const [savingCode, setSavingCode] = useState(false);
 
   const [editingDetails, setEditingDetails] = useState(false);
-  const [detailsForm, setDetailsForm] = useState({ position: "", slab_per_sqft: "", gender: "", address: "" });
+  const [detailsForm, setDetailsForm] = useState({ position: "", slab_per_sqft: "", gender: "", address: "", project_id: "" });
   const [savingDetails, setSavingDetails] = useState(false);
   const [detailsError, setDetailsError] = useState(null);
 
@@ -396,13 +396,30 @@ function AgentDetail() {
                       <td className="text-muted">Slab / sqft</td>
                       <td className="fw-medium">
                         {editingDetails ? (
-                          <input
-                            type="number"
-                            className="form-control form-control-sm"
-                            value={detailsForm.slab_per_sqft}
-                            onChange={(e) => setDetailsForm({ ...detailsForm, slab_per_sqft: e.target.value })}
-                            placeholder="e.g. 50"
-                          />
+                          <>
+                            <select
+                              className="form-select form-select-sm mb-1"
+                              value={detailsForm.project_id}
+                              onChange={(e) => setDetailsForm({ ...detailsForm, project_id: e.target.value })}
+                            >
+                              <option value="">Select project (for cap validation)</option>
+                              {projects.map((p) => (
+                                <option key={p._id} value={p._id}>
+                                  {p.name} (Pool ₹{p.commissionPool}/sqft)
+                                </option>
+                              ))}
+                            </select>
+                            <input
+                              type="number"
+                              className="form-control form-control-sm"
+                              value={detailsForm.slab_per_sqft}
+                              onChange={(e) => setDetailsForm({ ...detailsForm, slab_per_sqft: e.target.value })}
+                              placeholder="e.g. 50"
+                            />
+                            {detailsError && (
+                              <div className="text-danger fs-11 mt-1">{detailsError}</div>
+                            )}
+                          </>
                         ) : (
                           agent.slabPerSqft != null ? `₹${agent.slabPerSqft}` : "-"
                         )}

@@ -351,13 +351,32 @@ async function updateReferralCode(req, res) {
 // PATCH /api/admin/agents/:id/details
 async function updateDetails(req, res) {
   try {
-    const { position, slab_per_sqft, gender, address } = req.body;
+    const { position, slab_per_sqft, gender, address, project_id } = req.body;
 
     const agent = await User.findById(req.params.id);
     if (!agent) return res.status(404).json({ message: 'Agent not found.' });
 
     if (position !== undefined) agent.position = position;
-    if (slab_per_sqft !== undefined && slab_per_sqft !== '') agent.slabPerSqft = Number(slab_per_sqft);
+    if (slab_per_sqft !== undefined && slab_per_sqft !== '') {
+      const newCap = Number(slab_per_sqft);
+
+      let poolPerSqft = null;
+      if (project_id) {
+        const project = await Project.findById(project_id).select('commissionPool');
+        if (project) poolPerSqft = project.commissionPool;
+      }
+
+      const maxAssignable = await treeBuilderService.getMaxAssignableCap(agent, poolPerSqft);
+      if (maxAssignable != null && newCap > maxAssignable) {
+        return res.status(422).json({
+          errors: {
+            slab_per_sqft: `Cap can't exceed ₹${maxAssignable}/sqft — that's all that's left after your own upline's allocation. Assigning more would leave no profit for you or the company.`,
+          },
+        });
+      }
+
+      agent.slabPerSqft = newCap;
+    }
     if (gender !== undefined && ['male', 'female', 'other', ''].includes(gender)) {
       agent.gender = gender || null;
     }

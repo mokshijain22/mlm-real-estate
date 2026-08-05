@@ -167,9 +167,18 @@ async function getChildrenRecursive(parentId, currentLevel, maxLevel) {
  * to those top-level agents; Company's Team = what's been assigned to them.
  */
 async function getCompanyTree(poolPerSqft, maxLevel = 7) {
-  const topLevelAgents = await User.find({
-    $or: [{ referredBy: null }, { referredBy: { $exists: false } }],
-  }).populate(['role', 'rank']);
+  const allUsers = await User.find({}).populate(['role', 'rank']);
+  const isAgent = (u) => u.role && u.role.slug === 'agent';
+
+  const agentIds = new Set(allUsers.filter(isAgent).map((u) => u._id.toString()));
+
+  // Top-level = a real agent whose referrer is NOT itself an agent
+  // (no referrer at all, or referred by a Super Admin / Sub Admin).
+  const topLevelAgents = allUsers.filter((u) => {
+    if (!isAgent(u)) return false;
+    if (!u.referredBy) return true;
+    return !agentIds.has(u.referredBy.toString());
+  });
 
   const children = [];
   for (const agent of topLevelAgents) {
@@ -213,6 +222,35 @@ async function getCompanyTree(poolPerSqft, maxLevel = 7) {
   };
 }
 
+/**
+ * Returns the maximum ₹/sqft this agent can assign to a new/existing downline
+ * without exceeding what was allocated to them (or the project pool, if they're
+ * top-of-chain). Returns null when there isn't enough context (no project given
+ * for a top-level agent) — caller should skip validation in that case.
+ */
+async function getMaxAssignableCap(agent, poolPerSqft) {
+  let uplineCap;
+  let siblingsQuery;
+
+  if (agent.referredBy) {
+    const upline = await User.findById(agent.referredBy);
+    if (!upline) return null;
+    uplineCap = upline.slabPerSqft ?? 0;
+    siblingsQuery = { referredBy: agent.referredBy, _id: { $ne: agent._id } };
+  } else {
+    if (poolPerSqft == null) return null;
+    uplineCap = poolPerSqft;
+    siblingsQuery = {
+      $or: [{ referredBy: null }, { referredBy: { $exists: false } }],
+      _id: { $ne: agent._id },
+    };
+  }
+
+  const siblings = await User.find(siblingsQuery).select('slabPerSqft');
+  const siblingsTotal = siblings.reduce((sum, s) => sum + (Number(s.slabPerSqft) || 0), 0);
+  return Math.max(uplineCap - siblingsTotal, 0);
+}
+
 module.exports = {
   buildTree,
   getUplineChain,
@@ -220,4 +258,5 @@ module.exports = {
   getDownlineByLevel,
   getHierarchicalTree,
   getCompanyTree,
+  getMaxAssignableCap,
 };

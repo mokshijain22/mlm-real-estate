@@ -22,6 +22,11 @@ function FullTree() {
   const [treeResult, setTreeResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [zoom, setZoom] = useState(1);
+
+  const zoomIn = () => setZoom((z) => Math.min(z + 0.1, 1.6));
+  const zoomOut = () => setZoom((z) => Math.max(z - 0.1, 0.4));
+  const zoomReset = () => setZoom(1);
 
   useEffect(() => {
     api
@@ -79,8 +84,22 @@ function FullTree() {
         {!loading && treeResult?.treeData && (
           <>
             <OrgTreeStyles />
+            <div className="d-flex align-items-center gap-2 mb-2">
+              <button type="button" className="btn btn-sm btn-outline-secondary" onClick={zoomOut} title="Zoom out">
+                <iconify-icon icon="solar:minus-circle-bold"></iconify-icon>
+              </button>
+              <span className="text-muted small" style={{ minWidth: 40, textAlign: "center" }}>
+                {Math.round(zoom * 100)}%
+              </span>
+              <button type="button" className="btn btn-sm btn-outline-secondary" onClick={zoomIn} title="Zoom in">
+                <iconify-icon icon="solar:add-circle-bold"></iconify-icon>
+              </button>
+              <button type="button" className="btn btn-sm btn-outline-secondary" onClick={zoomReset} title="Reset zoom">
+                Reset
+              </button>
+            </div>
             <div className="org-tree-scroll mb-4" style={{ minHeight: 260 }}>
-              <div className="org-tree-wrap">
+              <div className="org-tree-wrap" style={{ transform: `scale(${zoom})` }}>
                 <OrgNode node={treeResult.treeData} isRoot />
               </div>
             </div>

@@ -270,6 +270,16 @@ function Sidebar() {
           )}
           {isSuperAdmin && (
             <li className="nav-item">
+              <NavLink className="nav-link" to="/admin/full-tree">
+                <span className="nav-icon">
+                  <iconify-icon icon="solar:diagram-up-bold-duotone"></iconify-icon>
+                </span>
+                <span className="nav-text"> Full Tree </span>
+              </NavLink>
+            </li>
+          )}
+          {isSuperAdmin && (
+            <li className="nav-item">
               <NavLink className="nav-link" to="/admin/banks">
                 <span className="nav-icon">
                   <iconify-icon icon="solar:card-bold-duotone"></iconify-icon>

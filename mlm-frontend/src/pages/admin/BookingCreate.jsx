@@ -141,6 +141,11 @@ function BookingCreate() {
 
   // Step 3 — commission
   const [commissionCap, setCommissionCap] = useState(0);
+  const sellerDefaultCap = agents.find((a) => a._id === agentId)?.slabPerSqft ?? 0;
+
+  useEffect(() => {
+    setCommissionCap(sellerDefaultCap);
+  }, [agentId, sellerDefaultCap]);
   const [execGaveDiscount, setExecGaveDiscount] = useState(false);
   const [commissionPreview, setCommissionPreview] = useState([]);
   const [commissionLoading, setCommissionLoading] = useState(false);
@@ -1323,7 +1328,7 @@ function BookingCreate() {
                                 value={commissionCap}
                                 onChange={(e) => setCommissionCap(Number(e.target.value) || 0)}
                               />
-                              <div className="text-muted small">default ₹0</div>
+                              <div className="text-muted small">default ₹{sellerDefaultCap}</div>
                             </>
                           ) : (
                             <span className="text-muted">—</span>

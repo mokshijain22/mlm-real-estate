@@ -32,6 +32,8 @@ function AccountLedger() {
   const [projects, setProjects] = useState([]);
   const [projectId, setProjectId] = useState("");
   const [period, setPeriod] = useState("this_month");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [tab, setTab] = useState("overview");
 
   const [data, setData] = useState(null);
@@ -56,6 +58,13 @@ function AccountLedger() {
       .then((res) => setProjects(res.data.projects || res.data.data || res.data || []))
       .catch(() => {});
   }, []);
+
+  const periodParams = () => ({
+    period,
+    project_id: projectId || undefined,
+    date_from: period === "custom" ? dateFrom || undefined : undefined,
+    date_to: period === "custom" ? dateTo || undefined : undefined,
+  });
 
   const load = () => {
     setLoading(true);
