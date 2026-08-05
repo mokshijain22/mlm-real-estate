@@ -30,6 +30,7 @@ router.get('/bookings/:id', bookingController.show);
 router.get('/customers', customerController.index);
 router.post('/customers', customerController.store);
 router.get('/customers/:id', customerController.show);
+router.put('/customers/:id', customerController.update);
 
 router.get('/projects', projectController.index);
 router.get('/projects/:id', projectController.show);
@@ -63,6 +64,7 @@ router.get('/referrals/team', referralController.team);
 router.get('/tickets', ticketController.index);
 router.post('/tickets', ticketController.store);
 router.get('/tickets/:id', ticketController.show);
+router.patch('/tickets/:id/reopen', ticketController.reopen);
 
 router.get('/wallet', walletController.index);
 router.post('/wallet/withdraw', walletController.withdraw);

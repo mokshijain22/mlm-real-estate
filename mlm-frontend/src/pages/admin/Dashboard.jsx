@@ -4,9 +4,10 @@ import api from "../../api/axios.js";
 import CountUp from "../../components/admin/charts/CountUp.jsx";
 import DonutChart from "../../components/admin/charts/DonutChart.jsx";
 import OverviewAreaChart from "../../components/admin/charts/OverviewAreaChart.jsx";
+import { getStoredUser } from "../../utils/userHelpers.js";
 
 function Dashboard() {
-  const adminUser = JSON.parse(localStorage.getItem("user") || "{}");
+  const adminUser = getStoredUser({});
   const isSuperAdmin = adminUser.role === "super_admin";
   const perms = adminUser.permissions || [];
   const can = (key) => isSuperAdmin || perms.includes(key);

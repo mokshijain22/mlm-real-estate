@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../../api/axios.js";
+import { getStoredUser } from "../../utils/userHelpers.js";
 
 function copyToClipboard(text) {
   navigator.clipboard.writeText(text).catch(() => {});
@@ -42,7 +43,7 @@ function Dashboard() {
     emis = {},
   } = data;
 
-  const agentUser = JSON.parse(localStorage.getItem("user") || "{}");
+  const agentUser = getStoredUser({});
   const isMaxRank = !rank.nextRank;
   const currentColor = rankColorMap[rank.currentRank?.abbreviation] || "primary";
   const tp = team.teamPerLevel || {};

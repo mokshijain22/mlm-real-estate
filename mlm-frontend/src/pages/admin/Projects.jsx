@@ -130,7 +130,7 @@ function Projects() {
                         <div className="col-6">
                           <div className="bg-light rounded p-2">
                             <small className="text-muted d-block text-uppercase fs-11">{unitLabel}</small>
-                            <span className="fw-bold fs-16">{project.totalPlots ?? project.plotsCount ?? 0}</span>
+                            <span className="fw-bold fs-16">{project.plotsCount ?? project.totalPlots ?? 0}</span>
                           </div>
                         </div>
                         <div className="col-6">

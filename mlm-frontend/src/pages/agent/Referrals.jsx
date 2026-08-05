@@ -9,6 +9,7 @@ function Referrals() {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     api
@@ -22,6 +23,12 @@ function Referrals() {
 
   const { agent, directReferrals, totalTeam, activeMembers, pendingKyc, eligibleRanks, kycVerified } = data;
   const referralLink = `${window.location.origin}/register?referral_code=${agent.referralCode}`;
+
+  const filteredReferrals = directReferrals.filter((r) => {
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    return (r.name || "").toLowerCase().includes(q) || (r.email || "").toLowerCase().includes(q);
+  });
 
   const handleCopy = () => {
     copyToClipboard(referralLink);
@@ -110,12 +117,26 @@ function Referrals() {
       </div>
 
       <div className="card border-0 shadow-sm">
-        <div className="card-body p-0">
-          <div className="p-4 pb-0">
-            <h6 className="fw-bold mb-0">Direct Referrals</h6>
+        <div className="card-body p-3 pb-0">
+          <h6 className="fw-bold mb-3">Direct Referrals</h6>
+          <div className="input-group" style={{ maxWidth: 320 }}>
+            <span className="input-group-text bg-light border-end-0">
+              <iconify-icon icon="solar:magnifer-linear"></iconify-icon>
+            </span>
+            <input
+              type="text"
+              className="form-control border-start-0"
+              placeholder="Search by name or email..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
           </div>
-          {directReferrals.length === 0 ? (
-            <div className="text-center py-5 text-muted">No direct referrals yet.</div>
+        </div>
+        <div className="card-body p-0">
+          {filteredReferrals.length === 0 ? (
+            <div className="text-center py-5 text-muted">
+              {directReferrals.length === 0 ? "No direct referrals yet." : "No referrals match your search."}
+            </div>
           ) : (
             <div className="table-responsive">
               <table className="table table-hover align-middle mb-0 mt-3">
@@ -129,7 +150,7 @@ function Referrals() {
                   </tr>
                 </thead>
                 <tbody>
-                  {directReferrals.map((r) => (
+                  {filteredReferrals.map((r) => (
                     <tr key={r._id}>
                       <td className="fw-semibold">{r.name}</td>
                       <td>{r.email}</td>

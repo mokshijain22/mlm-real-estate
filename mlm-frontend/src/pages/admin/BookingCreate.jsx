@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import api from "../../api/axios.js";
 import BookingPlotMap from "./BookingPlotMap.jsx";
+import { getStoredUser } from "../../utils/userHelpers.js";
 
 const STEPS = [
   { key: 1, label: "Customer & property" },
@@ -101,13 +102,7 @@ function BookingCreate() {
   const [paymentReference, setPaymentReference] = useState("");
   const [receiptId, setReceiptId] = useState("");
   const [amountInWords, setAmountInWords] = useState("");
-  const [collectedBy, setCollectedBy] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem("user") || "null")?.name || "";
-    } catch {
-      return "";
-    }
-  });
+  const [collectedBy, setCollectedBy] = useState(() => getStoredUser()?.name || "");
   const [remarks, setRemarks] = useState("");
   const [tokenCollected, setTokenCollected] = useState(true);
   const [step2Errors, setStep2Errors] = useState({});

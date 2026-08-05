@@ -20,9 +20,20 @@ async function show(req, res) {
   const project = await Project.findById(req.params.id);
   if (!project) return res.status(404).json({ message: 'Project not found.' });
 
-  const plots = await Plot.find({ project: project._id });
+  const page = parseInt(req.query.page) || 1;
+  const limit = 20;
+  const skip = (page - 1) * limit;
 
-  return res.json({ project, plots });
+  const [plots, total] = await Promise.all([
+    Plot.find({ project: project._id }).sort({ plotNumber: 1 }).skip(skip).limit(limit),
+    Plot.countDocuments({ project: project._id }),
+  ]);
+
+  return res.json({
+    project,
+    plots,
+    meta: { page, limit, total, lastPage: Math.ceil(total / limit) },
+  });
 }
 
 // GET /api/agent/projects/:id/map

@@ -19,8 +19,10 @@ function ProjectMapView() {
   const [plots, setPlots] = useState(null);
   const [error, setError] = useState(null);
   const [previewPlot, setPreviewPlot] = useState(null);
+  const [svgContent, setSvgContent] = useState(null);
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
+  const svgContainerRef = useRef(null);
 
   useEffect(() => {
     api
@@ -32,10 +34,11 @@ function ProjectMapView() {
       .catch((err) => setError(err.response?.data?.message || err.message));
   }, [id]);
 
+  const hasProfessionalLayout = plots ? plots.some((p) => p.mapCoordinates?.latlngs) : false;
+
+  // Leaflet real-image / traced view
   useEffect(() => {
-    if (!plots || !project || !mapRef.current || mapInstanceRef.current) return;
-    const hasLayout = plots.some((p) => p.mapCoordinates?.latlngs) || project?.mapData?.imageUrl;
-    if (!hasLayout) return;
+    if (!plots || !project || !hasProfessionalLayout || !mapRef.current || mapInstanceRef.current) return;
 
     const map = L.map(mapRef.current, {
       crs: L.CRS.Simple,
@@ -61,7 +64,7 @@ function ProjectMapView() {
           color: getStatusBorder(plot.status),
           fillColor: getStatusFill(plot.status),
           fillOpacity: 0.7,
-          interactive: true, // clickable — opens preview popup
+          interactive: true,
         }).addTo(map);
         group.addLayer(layer);
         layer.bindTooltip(`Plot #${plot.plotNumber} • ${plot.status.toUpperCase()}`, {
@@ -78,7 +81,28 @@ function ProjectMapView() {
       map.remove();
       mapInstanceRef.current = null;
     };
-  }, [plots, project]);
+  }, [plots, project, hasProfessionalLayout]);
+
+  // SVG grid fallback — used whenever nothing's been hand-traced yet
+  useEffect(() => {
+    if (!project || hasProfessionalLayout || !project.layoutSvg) return;
+    fetch(`${STORAGE_BASE}/storage/${project.layoutSvg}`)
+      .then((res) => res.text())
+      .then((text) => setSvgContent(text))
+      .catch(() => setSvgContent(null));
+  }, [project, hasProfessionalLayout]);
+
+  useEffect(() => {
+    if (!svgContent || !svgContainerRef.current || !plots) return;
+    plots.forEach((plot) => {
+      const el = svgContainerRef.current.querySelector(`#plot-${CSS.escape(plot.plotNumber)}`);
+      if (el) {
+        el.style.cursor = "pointer";
+        el.onclick = () => setPreviewPlot(plot);
+      }
+    });
+  }, [svgContent, plots]);
+
   if (error) return <div className="alert alert-danger">{error}</div>;
 
   return (
@@ -92,7 +116,28 @@ function ProjectMapView() {
       </div>
       <div className="card shadow-sm border-0 flex-grow-1 mb-0">
         <div className="card-body p-0">
-          <div ref={mapRef} style={{ minHeight: "calc(100vh - 235px)" }} />
+          {!plots || plots.length === 0 ? (
+            <div className="text-center py-5">
+              <iconify-icon icon="solar:map-point-linear" className="text-muted" style={{ fontSize: 64 }}></iconify-icon>
+              <p className="mt-3 text-muted">No plots found for this project.</p>
+            </div>
+          ) : hasProfessionalLayout ? (
+            <div ref={mapRef} style={{ minHeight: "calc(100vh - 235px)" }} />
+          ) : project?.layoutSvg ? (
+            <div className="plot-map-container p-3" style={{ background: "#f8fafc", borderRadius: 12, minHeight: 400 }}>
+              <div
+                ref={svgContainerRef}
+                className="svg-wrapper"
+                style={{ maxWidth: "100%", height: "auto" }}
+                dangerouslySetInnerHTML={{ __html: svgContent || "" }}
+              />
+            </div>
+          ) : (
+            <div className="text-center py-5">
+              <iconify-icon icon="solar:map-linear" className="text-muted" style={{ fontSize: 48 }}></iconify-icon>
+              <p className="text-muted">Layout not designed yet.</p>
+            </div>
+          )}
         </div>
       </div>
 

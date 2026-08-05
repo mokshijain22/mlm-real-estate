@@ -107,8 +107,63 @@ function ProjectMap() {
       }
     });
 
-    if (group.getLayers().length > 0) {
-      map.fitBounds(group.getBounds().pad(0.2));
+    // Untraced plots (added via CSV / Add Plot form but never drawn on the
+    // image) get laid out as a small grid strip below the image, so they
+    // stay visible/clickable instead of disappearing once tracing starts.
+    const untracedPlots = plots.filter((p) => !(p.mapCoordinates && p.mapCoordinates.latlngs));
+    const untracedGroup = L.featureGroup();
+    const cellSize = 40;
+    const gap = 10;
+    const cols = Math.max(1, Math.ceil(Math.sqrt(untracedPlots.length)));
+
+    untracedPlots.forEach((plot, index) => {
+      const row = Math.floor(index / cols);
+      const col = index % cols;
+      const top = -30 - row * (cellSize + gap);
+      const bottom = top - cellSize;
+      const left = col * (cellSize + gap);
+      const right = left + cellSize;
+
+      const layer = L.rectangle(
+        [
+          [top, left],
+          [bottom, right],
+        ],
+        {
+          color: getStatusBorder(plot.status),
+          fillColor: getStatusFill(plot.status),
+          fillOpacity: 0.8,
+          weight: 1.5,
+        }
+      ).addTo(map);
+      untracedGroup.addLayer(layer);
+
+      layer
+        .bindTooltip(`#${plot.plotNumber}`, { permanent: true, direction: "center", className: "plot-label" })
+        .openTooltip();
+
+      layer.on("click", () => openStatusModal(plot));
+
+      layer.on("add", () => {
+        const el = layer.getElement();
+        if (el) {
+          tippy(el, {
+            content: `<strong>Plot #${plot.plotNumber}</strong><br>Area: ${Number(plot.totalArea).toLocaleString()} sqft<br>Price: ₹${Number(plot.pricePerSqft).toLocaleString()}/sqft<br>Status: ${plot.status.toUpperCase()}<br><em>Not yet traced on map</em>`,
+            allowHTML: true,
+            theme: "plot",
+          });
+        }
+      });
+    });
+
+    const bounds = [];
+    if (group.getLayers().length > 0) bounds.push(group.getBounds());
+    if (untracedGroup.getLayers().length > 0) bounds.push(untracedGroup.getBounds());
+    if (bounds.length === 1) {
+      map.fitBounds(bounds[0].pad(0.2));
+    } else if (bounds.length > 1) {
+      const combined = bounds.reduce((acc, b) => acc.extend(b), L.latLngBounds(bounds[0].getSouthWest(), bounds[0].getNorthEast()));
+      map.fitBounds(combined.pad(0.1));
     }
 
     return () => {

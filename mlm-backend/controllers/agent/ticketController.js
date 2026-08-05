@@ -66,4 +66,21 @@ async function show(req, res) {
   });
 }
 
-module.exports = { index, store, show };
+// PATCH /api/agent/tickets/:id/reopen
+async function reopen(req, res) {
+  try {
+    const ticket = await SupportTicket.findById(req.params.id);
+    if (!ticket) return res.status(404).json({ message: 'Ticket not found.' });
+
+    if (ticket.agent.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Forbidden.' });
+    }
+
+    const updated = await supportTicketService.reopenTicket(ticket);
+    return res.json({ message: 'Ticket reopened successfully.', data: updated });
+  } catch (err) {
+    return res.status(400).json({ message: err.message });
+  }
+}
+
+module.exports = { index, store, show, reopen };

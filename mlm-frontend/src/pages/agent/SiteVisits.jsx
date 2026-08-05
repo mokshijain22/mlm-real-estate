@@ -10,6 +10,7 @@ function SiteVisits() {
   const [visits, setVisits] = useState(null);
   const [projects, setProjects] = useState([]);
   const [error, setError] = useState(null);
+  const [search, setSearch] = useState("");
 
   const [showForm, setShowForm] = useState(false);
   const [customerName, setCustomerName] = useState("");
@@ -193,7 +194,19 @@ function SiteVisits() {
         </div>
       )}
 
-      <div className="card-body">
+      <div className="card-body pb-0">
+        <div className="input-group mb-3" style={{ maxWidth: 320 }}>
+          <span className="input-group-text bg-light border-end-0">
+            <iconify-icon icon="solar:magnifer-linear"></iconify-icon>
+          </span>
+          <input
+            type="text"
+            className="form-control border-start-0"
+            placeholder="Search by customer, mobile, project..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
         <div className="table-responsive">
           <table className="table align-middle">
             <thead>
@@ -218,8 +231,32 @@ function SiteVisits() {
                     No site visits logged yet.
                   </td>
                 </tr>
+              ) : visits.filter((v) => {
+                  const q = search.trim().toLowerCase();
+                  if (!q) return true;
+                  return (
+                    (v.customerName || "").toLowerCase().includes(q) ||
+                    (v.mobile || "").toLowerCase().includes(q) ||
+                    (v.project?.name || "").toLowerCase().includes(q)
+                  );
+                }).length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="text-center py-4 text-muted">
+                    No visits match your search.
+                  </td>
+                </tr>
               ) : (
-                visits.map((v) => (
+                visits
+                  .filter((v) => {
+                    const q = search.trim().toLowerCase();
+                    if (!q) return true;
+                    return (
+                      (v.customerName || "").toLowerCase().includes(q) ||
+                      (v.mobile || "").toLowerCase().includes(q) ||
+                      (v.project?.name || "").toLowerCase().includes(q)
+                    );
+                  })
+                  .map((v) => (
                   <tr key={v._id}>
                     <td>
                       {v.photo ? (

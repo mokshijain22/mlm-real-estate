@@ -1,15 +1,12 @@
 import { useNavigate } from "react-router-dom";
+import { getStoredUser } from "../../utils/userHelpers.js";
 
 function Topbar() {
   const navigate = useNavigate();
 
   let userName = "Agent";
-  try {
-    const stored = JSON.parse(localStorage.getItem("user") || "null");
-    if (stored?.name) userName = stored.name;
-  } catch {
-    /* ignore */
-  }
+  const stored = getStoredUser();
+  if (stored?.name) userName = stored.name;
 
   function toggleSidebar() {
     const html = document.documentElement;

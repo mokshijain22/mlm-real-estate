@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg width="340" height="240" viewBox="0 0 340 240" xmlns="http://www.w3.org/2000/svg">
+<svg width="1880" height="1680" viewBox="0 0 1880 1680" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <style>
       .plot { cursor: pointer; stroke: #fff; stroke-width: 2; transition: filter 0.2s; }
@@ -12,15 +12,840 @@
     </style>
   </defs>
   <rect width="100%" height="100%" fill="#f8fafc" rx="12" />
-  <text x="170" y="35" text-anchor="middle" style="font-family: sans-serif; font-weight: bold; font-size: 18px; fill: #334155;">shree ram chandra vatika Site Layout</text>
+  <text x="940" y="35" text-anchor="middle" style="font-family: sans-serif; font-weight: bold; font-size: 18px; fill: #334155;">shree ram chandra vatika Site Layout</text>
+  <g class="plot-group" id="plot-group-6a71b90a65ab65374b450ba8" data-plot-id="6a71b90a65ab65374b450ba8" data-plot-number="2">
+    <rect id="plot-2" class="plot available" x="40" y="100" width="120" height="100" rx="8" />
+    <text x="100" y="145" class="plot-text">2</text>
+    <text x="100" y="165" class="plot-area">1,575 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90a65ab65374b450baa" data-plot-id="6a71b90a65ab65374b450baa" data-plot-number="3">
+    <rect id="plot-3" class="plot available" x="180" y="100" width="120" height="100" rx="8" />
+    <text x="240" y="145" class="plot-text">3</text>
+    <text x="240" y="165" class="plot-area">1,575 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90b65ab65374b450bac" data-plot-id="6a71b90b65ab65374b450bac" data-plot-number="4">
+    <rect id="plot-4" class="plot available" x="320" y="100" width="120" height="100" rx="8" />
+    <text x="380" y="145" class="plot-text">4</text>
+    <text x="380" y="165" class="plot-area">1,575 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90b65ab65374b450bae" data-plot-id="6a71b90b65ab65374b450bae" data-plot-number="5">
+    <rect id="plot-5" class="plot available" x="460" y="100" width="120" height="100" rx="8" />
+    <text x="520" y="145" class="plot-text">5</text>
+    <text x="520" y="165" class="plot-area">1,575 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90b65ab65374b450bb0" data-plot-id="6a71b90b65ab65374b450bb0" data-plot-number="6">
+    <rect id="plot-6" class="plot available" x="600" y="100" width="120" height="100" rx="8" />
+    <text x="660" y="145" class="plot-text">6</text>
+    <text x="660" y="165" class="plot-area">1,575 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90b65ab65374b450bb2" data-plot-id="6a71b90b65ab65374b450bb2" data-plot-number="7">
+    <rect id="plot-7" class="plot available" x="740" y="100" width="120" height="100" rx="8" />
+    <text x="800" y="145" class="plot-text">7</text>
+    <text x="800" y="165" class="plot-area">1,575 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90b65ab65374b450bb4" data-plot-id="6a71b90b65ab65374b450bb4" data-plot-number="8">
+    <rect id="plot-8" class="plot available" x="880" y="100" width="120" height="100" rx="8" />
+    <text x="940" y="145" class="plot-text">8</text>
+    <text x="940" y="165" class="plot-area">1,575 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90b65ab65374b450bb6" data-plot-id="6a71b90b65ab65374b450bb6" data-plot-number="9">
+    <rect id="plot-9" class="plot available" x="1020" y="100" width="120" height="100" rx="8" />
+    <text x="1080" y="145" class="plot-text">9</text>
+    <text x="1080" y="165" class="plot-area">1,600 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90b65ab65374b450bb8" data-plot-id="6a71b90b65ab65374b450bb8" data-plot-number="10">
+    <rect id="plot-10" class="plot available" x="1160" y="100" width="120" height="100" rx="8" />
+    <text x="1220" y="145" class="plot-text">10</text>
+    <text x="1220" y="165" class="plot-area">1,600 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90b65ab65374b450bba" data-plot-id="6a71b90b65ab65374b450bba" data-plot-number="11">
+    <rect id="plot-11" class="plot available" x="1300" y="100" width="120" height="100" rx="8" />
+    <text x="1360" y="145" class="plot-text">11</text>
+    <text x="1360" y="165" class="plot-area">1,600 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90b65ab65374b450bbc" data-plot-id="6a71b90b65ab65374b450bbc" data-plot-number="12">
+    <rect id="plot-12" class="plot available" x="1440" y="100" width="120" height="100" rx="8" />
+    <text x="1500" y="145" class="plot-text">12</text>
+    <text x="1500" y="165" class="plot-area">1,600 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90b65ab65374b450bbe" data-plot-id="6a71b90b65ab65374b450bbe" data-plot-number="13">
+    <rect id="plot-13" class="plot available" x="1580" y="100" width="120" height="100" rx="8" />
+    <text x="1640" y="145" class="plot-text">13</text>
+    <text x="1640" y="165" class="plot-area">1,600 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90b65ab65374b450bc0" data-plot-id="6a71b90b65ab65374b450bc0" data-plot-number="14">
+    <rect id="plot-14" class="plot available" x="1720" y="100" width="120" height="100" rx="8" />
+    <text x="1780" y="145" class="plot-text">14</text>
+    <text x="1780" y="165" class="plot-area">1,600 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90b65ab65374b450bc2" data-plot-id="6a71b90b65ab65374b450bc2" data-plot-number="15">
+    <rect id="plot-15" class="plot available" x="40" y="220" width="120" height="100" rx="8" />
+    <text x="100" y="265" class="plot-text">15</text>
+    <text x="100" y="285" class="plot-area">1,600 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90b65ab65374b450bc4" data-plot-id="6a71b90b65ab65374b450bc4" data-plot-number="16">
+    <rect id="plot-16" class="plot available" x="180" y="220" width="120" height="100" rx="8" />
+    <text x="240" y="265" class="plot-text">16</text>
+    <text x="240" y="285" class="plot-area">1,600 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90b65ab65374b450bc6" data-plot-id="6a71b90b65ab65374b450bc6" data-plot-number="17">
+    <rect id="plot-17" class="plot available" x="320" y="220" width="120" height="100" rx="8" />
+    <text x="380" y="265" class="plot-text">17</text>
+    <text x="380" y="285" class="plot-area">1,600 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90b65ab65374b450bc8" data-plot-id="6a71b90b65ab65374b450bc8" data-plot-number="18">
+    <rect id="plot-18" class="plot available" x="460" y="220" width="120" height="100" rx="8" />
+    <text x="520" y="265" class="plot-text">18</text>
+    <text x="520" y="285" class="plot-area">1,600 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90b65ab65374b450bca" data-plot-id="6a71b90b65ab65374b450bca" data-plot-number="19">
+    <rect id="plot-19" class="plot available" x="600" y="220" width="120" height="100" rx="8" />
+    <text x="660" y="265" class="plot-text">19</text>
+    <text x="660" y="285" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90b65ab65374b450bcc" data-plot-id="6a71b90b65ab65374b450bcc" data-plot-number="20">
+    <rect id="plot-20" class="plot available" x="740" y="220" width="120" height="100" rx="8" />
+    <text x="800" y="265" class="plot-text">20</text>
+    <text x="800" y="285" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90b65ab65374b450bce" data-plot-id="6a71b90b65ab65374b450bce" data-plot-number="21">
+    <rect id="plot-21" class="plot available" x="880" y="220" width="120" height="100" rx="8" />
+    <text x="940" y="265" class="plot-text">21</text>
+    <text x="940" y="285" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90b65ab65374b450bd0" data-plot-id="6a71b90b65ab65374b450bd0" data-plot-number="22">
+    <rect id="plot-22" class="plot available" x="1020" y="220" width="120" height="100" rx="8" />
+    <text x="1080" y="265" class="plot-text">22</text>
+    <text x="1080" y="285" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90b65ab65374b450bd2" data-plot-id="6a71b90b65ab65374b450bd2" data-plot-number="23">
+    <rect id="plot-23" class="plot available" x="1160" y="220" width="120" height="100" rx="8" />
+    <text x="1220" y="265" class="plot-text">23</text>
+    <text x="1220" y="285" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90b65ab65374b450bd4" data-plot-id="6a71b90b65ab65374b450bd4" data-plot-number="24">
+    <rect id="plot-24" class="plot available" x="1300" y="220" width="120" height="100" rx="8" />
+    <text x="1360" y="265" class="plot-text">24</text>
+    <text x="1360" y="285" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90b65ab65374b450bd6" data-plot-id="6a71b90b65ab65374b450bd6" data-plot-number="25">
+    <rect id="plot-25" class="plot available" x="1440" y="220" width="120" height="100" rx="8" />
+    <text x="1500" y="265" class="plot-text">25</text>
+    <text x="1500" y="285" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90c65ab65374b450bd8" data-plot-id="6a71b90c65ab65374b450bd8" data-plot-number="26">
+    <rect id="plot-26" class="plot available" x="1580" y="220" width="120" height="100" rx="8" />
+    <text x="1640" y="265" class="plot-text">26</text>
+    <text x="1640" y="285" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90c65ab65374b450bda" data-plot-id="6a71b90c65ab65374b450bda" data-plot-number="27">
+    <rect id="plot-27" class="plot available" x="1720" y="220" width="120" height="100" rx="8" />
+    <text x="1780" y="265" class="plot-text">27</text>
+    <text x="1780" y="285" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90c65ab65374b450bdc" data-plot-id="6a71b90c65ab65374b450bdc" data-plot-number="28">
+    <rect id="plot-28" class="plot available" x="40" y="340" width="120" height="100" rx="8" />
+    <text x="100" y="385" class="plot-text">28</text>
+    <text x="100" y="405" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90c65ab65374b450bde" data-plot-id="6a71b90c65ab65374b450bde" data-plot-number="29">
+    <rect id="plot-29" class="plot available" x="180" y="340" width="120" height="100" rx="8" />
+    <text x="240" y="385" class="plot-text">29</text>
+    <text x="240" y="405" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90c65ab65374b450be0" data-plot-id="6a71b90c65ab65374b450be0" data-plot-number="30">
+    <rect id="plot-30" class="plot available" x="320" y="340" width="120" height="100" rx="8" />
+    <text x="380" y="385" class="plot-text">30</text>
+    <text x="380" y="405" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90c65ab65374b450be2" data-plot-id="6a71b90c65ab65374b450be2" data-plot-number="31">
+    <rect id="plot-31" class="plot available" x="460" y="340" width="120" height="100" rx="8" />
+    <text x="520" y="385" class="plot-text">31</text>
+    <text x="520" y="405" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90c65ab65374b450be4" data-plot-id="6a71b90c65ab65374b450be4" data-plot-number="32">
+    <rect id="plot-32" class="plot available" x="600" y="340" width="120" height="100" rx="8" />
+    <text x="660" y="385" class="plot-text">32</text>
+    <text x="660" y="405" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90c65ab65374b450be6" data-plot-id="6a71b90c65ab65374b450be6" data-plot-number="33">
+    <rect id="plot-33" class="plot available" x="740" y="340" width="120" height="100" rx="8" />
+    <text x="800" y="385" class="plot-text">33</text>
+    <text x="800" y="405" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90c65ab65374b450be8" data-plot-id="6a71b90c65ab65374b450be8" data-plot-number="34">
+    <rect id="plot-34" class="plot available" x="880" y="340" width="120" height="100" rx="8" />
+    <text x="940" y="385" class="plot-text">34</text>
+    <text x="940" y="405" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90c65ab65374b450bea" data-plot-id="6a71b90c65ab65374b450bea" data-plot-number="35">
+    <rect id="plot-35" class="plot available" x="1020" y="340" width="120" height="100" rx="8" />
+    <text x="1080" y="385" class="plot-text">35</text>
+    <text x="1080" y="405" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90c65ab65374b450bec" data-plot-id="6a71b90c65ab65374b450bec" data-plot-number="36">
+    <rect id="plot-36" class="plot available" x="1160" y="340" width="120" height="100" rx="8" />
+    <text x="1220" y="385" class="plot-text">36</text>
+    <text x="1220" y="405" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90c65ab65374b450bee" data-plot-id="6a71b90c65ab65374b450bee" data-plot-number="37">
+    <rect id="plot-37" class="plot available" x="1300" y="340" width="120" height="100" rx="8" />
+    <text x="1360" y="385" class="plot-text">37</text>
+    <text x="1360" y="405" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90c65ab65374b450bf0" data-plot-id="6a71b90c65ab65374b450bf0" data-plot-number="38">
+    <rect id="plot-38" class="plot available" x="1440" y="340" width="120" height="100" rx="8" />
+    <text x="1500" y="385" class="plot-text">38</text>
+    <text x="1500" y="405" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90c65ab65374b450bf2" data-plot-id="6a71b90c65ab65374b450bf2" data-plot-number="39">
+    <rect id="plot-39" class="plot available" x="1580" y="340" width="120" height="100" rx="8" />
+    <text x="1640" y="385" class="plot-text">39</text>
+    <text x="1640" y="405" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90c65ab65374b450bf4" data-plot-id="6a71b90c65ab65374b450bf4" data-plot-number="40">
+    <rect id="plot-40" class="plot available" x="1720" y="340" width="120" height="100" rx="8" />
+    <text x="1780" y="385" class="plot-text">40</text>
+    <text x="1780" y="405" class="plot-area">800 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90c65ab65374b450bf6" data-plot-id="6a71b90c65ab65374b450bf6" data-plot-number="41">
+    <rect id="plot-41" class="plot available" x="40" y="460" width="120" height="100" rx="8" />
+    <text x="100" y="505" class="plot-text">41</text>
+    <text x="100" y="525" class="plot-area">800 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90c65ab65374b450bf8" data-plot-id="6a71b90c65ab65374b450bf8" data-plot-number="42">
+    <rect id="plot-42" class="plot available" x="180" y="460" width="120" height="100" rx="8" />
+    <text x="240" y="505" class="plot-text">42</text>
+    <text x="240" y="525" class="plot-area">800 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90c65ab65374b450bfa" data-plot-id="6a71b90c65ab65374b450bfa" data-plot-number="43">
+    <rect id="plot-43" class="plot available" x="320" y="460" width="120" height="100" rx="8" />
+    <text x="380" y="505" class="plot-text">43</text>
+    <text x="380" y="525" class="plot-area">800 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90c65ab65374b450bfc" data-plot-id="6a71b90c65ab65374b450bfc" data-plot-number="44">
+    <rect id="plot-44" class="plot available" x="460" y="460" width="120" height="100" rx="8" />
+    <text x="520" y="505" class="plot-text">44</text>
+    <text x="520" y="525" class="plot-area">800 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90c65ab65374b450bfe" data-plot-id="6a71b90c65ab65374b450bfe" data-plot-number="45">
+    <rect id="plot-45" class="plot available" x="600" y="460" width="120" height="100" rx="8" />
+    <text x="660" y="505" class="plot-text">45</text>
+    <text x="660" y="525" class="plot-area">800 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90c65ab65374b450c00" data-plot-id="6a71b90c65ab65374b450c00" data-plot-number="46">
+    <rect id="plot-46" class="plot available" x="740" y="460" width="120" height="100" rx="8" />
+    <text x="800" y="505" class="plot-text">46</text>
+    <text x="800" y="525" class="plot-area">800 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90c65ab65374b450c02" data-plot-id="6a71b90c65ab65374b450c02" data-plot-number="47">
+    <rect id="plot-47" class="plot available" x="880" y="460" width="120" height="100" rx="8" />
+    <text x="940" y="505" class="plot-text">47</text>
+    <text x="940" y="525" class="plot-area">800 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90d65ab65374b450c04" data-plot-id="6a71b90d65ab65374b450c04" data-plot-number="48">
+    <rect id="plot-48" class="plot available" x="1020" y="460" width="120" height="100" rx="8" />
+    <text x="1080" y="505" class="plot-text">48</text>
+    <text x="1080" y="525" class="plot-area">800 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90d65ab65374b450c06" data-plot-id="6a71b90d65ab65374b450c06" data-plot-number="49">
+    <rect id="plot-49" class="plot available" x="1160" y="460" width="120" height="100" rx="8" />
+    <text x="1220" y="505" class="plot-text">49</text>
+    <text x="1220" y="525" class="plot-area">800 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90d65ab65374b450c08" data-plot-id="6a71b90d65ab65374b450c08" data-plot-number="50">
+    <rect id="plot-50" class="plot available" x="1300" y="460" width="120" height="100" rx="8" />
+    <text x="1360" y="505" class="plot-text">50</text>
+    <text x="1360" y="525" class="plot-area">800 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90d65ab65374b450c0a" data-plot-id="6a71b90d65ab65374b450c0a" data-plot-number="51">
+    <rect id="plot-51" class="plot available" x="1440" y="460" width="120" height="100" rx="8" />
+    <text x="1500" y="505" class="plot-text">51</text>
+    <text x="1500" y="525" class="plot-area">800 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90d65ab65374b450c0c" data-plot-id="6a71b90d65ab65374b450c0c" data-plot-number="52">
+    <rect id="plot-52" class="plot available" x="1580" y="460" width="120" height="100" rx="8" />
+    <text x="1640" y="505" class="plot-text">52</text>
+    <text x="1640" y="525" class="plot-area">800 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90d65ab65374b450c0e" data-plot-id="6a71b90d65ab65374b450c0e" data-plot-number="53">
+    <rect id="plot-53" class="plot available" x="1720" y="460" width="120" height="100" rx="8" />
+    <text x="1780" y="505" class="plot-text">53</text>
+    <text x="1780" y="525" class="plot-area">800 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90d65ab65374b450c10" data-plot-id="6a71b90d65ab65374b450c10" data-plot-number="54">
+    <rect id="plot-54" class="plot available" x="40" y="580" width="120" height="100" rx="8" />
+    <text x="100" y="625" class="plot-text">54</text>
+    <text x="100" y="645" class="plot-area">800 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90d65ab65374b450c12" data-plot-id="6a71b90d65ab65374b450c12" data-plot-number="55">
+    <rect id="plot-55" class="plot available" x="180" y="580" width="120" height="100" rx="8" />
+    <text x="240" y="625" class="plot-text">55</text>
+    <text x="240" y="645" class="plot-area">800 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90d65ab65374b450c14" data-plot-id="6a71b90d65ab65374b450c14" data-plot-number="56">
+    <rect id="plot-56" class="plot available" x="320" y="580" width="120" height="100" rx="8" />
+    <text x="380" y="625" class="plot-text">56</text>
+    <text x="380" y="645" class="plot-area">800 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90d65ab65374b450c16" data-plot-id="6a71b90d65ab65374b450c16" data-plot-number="57">
+    <rect id="plot-57" class="plot available" x="460" y="580" width="120" height="100" rx="8" />
+    <text x="520" y="625" class="plot-text">57</text>
+    <text x="520" y="645" class="plot-area">800 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90d65ab65374b450c18" data-plot-id="6a71b90d65ab65374b450c18" data-plot-number="58">
+    <rect id="plot-58" class="plot available" x="600" y="580" width="120" height="100" rx="8" />
+    <text x="660" y="625" class="plot-text">58</text>
+    <text x="660" y="645" class="plot-area">800 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90d65ab65374b450c1a" data-plot-id="6a71b90d65ab65374b450c1a" data-plot-number="59">
+    <rect id="plot-59" class="plot available" x="740" y="580" width="120" height="100" rx="8" />
+    <text x="800" y="625" class="plot-text">59</text>
+    <text x="800" y="645" class="plot-area">800 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90d65ab65374b450c1c" data-plot-id="6a71b90d65ab65374b450c1c" data-plot-number="60">
+    <rect id="plot-60" class="plot available" x="880" y="580" width="120" height="100" rx="8" />
+    <text x="940" y="625" class="plot-text">60</text>
+    <text x="940" y="645" class="plot-area">800 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90d65ab65374b450c1e" data-plot-id="6a71b90d65ab65374b450c1e" data-plot-number="61">
+    <rect id="plot-61" class="plot available" x="1020" y="580" width="120" height="100" rx="8" />
+    <text x="1080" y="625" class="plot-text">61</text>
+    <text x="1080" y="645" class="plot-area">800 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90e65ab65374b450c20" data-plot-id="6a71b90e65ab65374b450c20" data-plot-number="62">
+    <rect id="plot-62" class="plot available" x="1160" y="580" width="120" height="100" rx="8" />
+    <text x="1220" y="625" class="plot-text">62</text>
+    <text x="1220" y="645" class="plot-area">800 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90e65ab65374b450c22" data-plot-id="6a71b90e65ab65374b450c22" data-plot-number="63">
+    <rect id="plot-63" class="plot available" x="1300" y="580" width="120" height="100" rx="8" />
+    <text x="1360" y="625" class="plot-text">63</text>
+    <text x="1360" y="645" class="plot-area">800 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90e65ab65374b450c24" data-plot-id="6a71b90e65ab65374b450c24" data-plot-number="64">
+    <rect id="plot-64" class="plot available" x="1440" y="580" width="120" height="100" rx="8" />
+    <text x="1500" y="625" class="plot-text">64</text>
+    <text x="1500" y="645" class="plot-area">800 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90e65ab65374b450c26" data-plot-id="6a71b90e65ab65374b450c26" data-plot-number="65">
+    <rect id="plot-65" class="plot available" x="1580" y="580" width="120" height="100" rx="8" />
+    <text x="1640" y="625" class="plot-text">65</text>
+    <text x="1640" y="645" class="plot-area">800 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90e65ab65374b450c28" data-plot-id="6a71b90e65ab65374b450c28" data-plot-number="66">
+    <rect id="plot-66" class="plot available" x="1720" y="580" width="120" height="100" rx="8" />
+    <text x="1780" y="625" class="plot-text">66</text>
+    <text x="1780" y="645" class="plot-area">675 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90e65ab65374b450c2a" data-plot-id="6a71b90e65ab65374b450c2a" data-plot-number="67">
+    <rect id="plot-67" class="plot available" x="40" y="700" width="120" height="100" rx="8" />
+    <text x="100" y="745" class="plot-text">67</text>
+    <text x="100" y="765" class="plot-area">675 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90e65ab65374b450c2c" data-plot-id="6a71b90e65ab65374b450c2c" data-plot-number="68">
+    <rect id="plot-68" class="plot available" x="180" y="700" width="120" height="100" rx="8" />
+    <text x="240" y="745" class="plot-text">68</text>
+    <text x="240" y="765" class="plot-area">675 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90e65ab65374b450c2e" data-plot-id="6a71b90e65ab65374b450c2e" data-plot-number="69">
+    <rect id="plot-69" class="plot available" x="320" y="700" width="120" height="100" rx="8" />
+    <text x="380" y="745" class="plot-text">69</text>
+    <text x="380" y="765" class="plot-area">675 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90e65ab65374b450c30" data-plot-id="6a71b90e65ab65374b450c30" data-plot-number="70">
+    <rect id="plot-70" class="plot available" x="460" y="700" width="120" height="100" rx="8" />
+    <text x="520" y="745" class="plot-text">70</text>
+    <text x="520" y="765" class="plot-area">675 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90e65ab65374b450c32" data-plot-id="6a71b90e65ab65374b450c32" data-plot-number="71">
+    <rect id="plot-71" class="plot available" x="600" y="700" width="120" height="100" rx="8" />
+    <text x="660" y="745" class="plot-text">71</text>
+    <text x="660" y="765" class="plot-area">675 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90e65ab65374b450c34" data-plot-id="6a71b90e65ab65374b450c34" data-plot-number="72">
+    <rect id="plot-72" class="plot available" x="740" y="700" width="120" height="100" rx="8" />
+    <text x="800" y="745" class="plot-text">72</text>
+    <text x="800" y="765" class="plot-area">675 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90e65ab65374b450c36" data-plot-id="6a71b90e65ab65374b450c36" data-plot-number="73">
+    <rect id="plot-73" class="plot available" x="880" y="700" width="120" height="100" rx="8" />
+    <text x="940" y="745" class="plot-text">73</text>
+    <text x="940" y="765" class="plot-area">675 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90e65ab65374b450c38" data-plot-id="6a71b90e65ab65374b450c38" data-plot-number="74">
+    <rect id="plot-74" class="plot available" x="1020" y="700" width="120" height="100" rx="8" />
+    <text x="1080" y="745" class="plot-text">74</text>
+    <text x="1080" y="765" class="plot-area">675 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90e65ab65374b450c3a" data-plot-id="6a71b90e65ab65374b450c3a" data-plot-number="75">
+    <rect id="plot-75" class="plot available" x="1160" y="700" width="120" height="100" rx="8" />
+    <text x="1220" y="745" class="plot-text">75</text>
+    <text x="1220" y="765" class="plot-area">675 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90e65ab65374b450c3c" data-plot-id="6a71b90e65ab65374b450c3c" data-plot-number="76">
+    <rect id="plot-76" class="plot available" x="1300" y="700" width="120" height="100" rx="8" />
+    <text x="1360" y="745" class="plot-text">76</text>
+    <text x="1360" y="765" class="plot-area">675 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90e65ab65374b450c3e" data-plot-id="6a71b90e65ab65374b450c3e" data-plot-number="77">
+    <rect id="plot-77" class="plot available" x="1440" y="700" width="120" height="100" rx="8" />
+    <text x="1500" y="745" class="plot-text">77</text>
+    <text x="1500" y="765" class="plot-area">675 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90e65ab65374b450c40" data-plot-id="6a71b90e65ab65374b450c40" data-plot-number="78">
+    <rect id="plot-78" class="plot available" x="1580" y="700" width="120" height="100" rx="8" />
+    <text x="1640" y="745" class="plot-text">78</text>
+    <text x="1640" y="765" class="plot-area">675 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90e65ab65374b450c42" data-plot-id="6a71b90e65ab65374b450c42" data-plot-number="79">
+    <rect id="plot-79" class="plot available" x="1720" y="700" width="120" height="100" rx="8" />
+    <text x="1780" y="745" class="plot-text">79</text>
+    <text x="1780" y="765" class="plot-area">675 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90e65ab65374b450c44" data-plot-id="6a71b90e65ab65374b450c44" data-plot-number="80">
+    <rect id="plot-80" class="plot available" x="40" y="820" width="120" height="100" rx="8" />
+    <text x="100" y="865" class="plot-text">80</text>
+    <text x="100" y="885" class="plot-area">675 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90e65ab65374b450c46" data-plot-id="6a71b90e65ab65374b450c46" data-plot-number="81">
+    <rect id="plot-81" class="plot available" x="180" y="820" width="120" height="100" rx="8" />
+    <text x="240" y="865" class="plot-text">81</text>
+    <text x="240" y="885" class="plot-area">675 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90e65ab65374b450c48" data-plot-id="6a71b90e65ab65374b450c48" data-plot-number="82">
+    <rect id="plot-82" class="plot available" x="320" y="820" width="120" height="100" rx="8" />
+    <text x="380" y="865" class="plot-text">82</text>
+    <text x="380" y="885" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90e65ab65374b450c4a" data-plot-id="6a71b90e65ab65374b450c4a" data-plot-number="83">
+    <rect id="plot-83" class="plot available" x="460" y="820" width="120" height="100" rx="8" />
+    <text x="520" y="865" class="plot-text">83</text>
+    <text x="520" y="885" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90e65ab65374b450c4c" data-plot-id="6a71b90e65ab65374b450c4c" data-plot-number="84">
+    <rect id="plot-84" class="plot available" x="600" y="820" width="120" height="100" rx="8" />
+    <text x="660" y="865" class="plot-text">84</text>
+    <text x="660" y="885" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90e65ab65374b450c4e" data-plot-id="6a71b90e65ab65374b450c4e" data-plot-number="85">
+    <rect id="plot-85" class="plot available" x="740" y="820" width="120" height="100" rx="8" />
+    <text x="800" y="865" class="plot-text">85</text>
+    <text x="800" y="885" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90f65ab65374b450c50" data-plot-id="6a71b90f65ab65374b450c50" data-plot-number="86">
+    <rect id="plot-86" class="plot available" x="880" y="820" width="120" height="100" rx="8" />
+    <text x="940" y="865" class="plot-text">86</text>
+    <text x="940" y="885" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90f65ab65374b450c52" data-plot-id="6a71b90f65ab65374b450c52" data-plot-number="87">
+    <rect id="plot-87" class="plot available" x="1020" y="820" width="120" height="100" rx="8" />
+    <text x="1080" y="865" class="plot-text">87</text>
+    <text x="1080" y="885" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90f65ab65374b450c54" data-plot-id="6a71b90f65ab65374b450c54" data-plot-number="88">
+    <rect id="plot-88" class="plot available" x="1160" y="820" width="120" height="100" rx="8" />
+    <text x="1220" y="865" class="plot-text">88</text>
+    <text x="1220" y="885" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90f65ab65374b450c56" data-plot-id="6a71b90f65ab65374b450c56" data-plot-number="89">
+    <rect id="plot-89" class="plot available" x="1300" y="820" width="120" height="100" rx="8" />
+    <text x="1360" y="865" class="plot-text">89</text>
+    <text x="1360" y="885" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90f65ab65374b450c58" data-plot-id="6a71b90f65ab65374b450c58" data-plot-number="90">
+    <rect id="plot-90" class="plot available" x="1440" y="820" width="120" height="100" rx="8" />
+    <text x="1500" y="865" class="plot-text">90</text>
+    <text x="1500" y="885" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90f65ab65374b450c5a" data-plot-id="6a71b90f65ab65374b450c5a" data-plot-number="91">
+    <rect id="plot-91" class="plot available" x="1580" y="820" width="120" height="100" rx="8" />
+    <text x="1640" y="865" class="plot-text">91</text>
+    <text x="1640" y="885" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90f65ab65374b450c5c" data-plot-id="6a71b90f65ab65374b450c5c" data-plot-number="92">
+    <rect id="plot-92" class="plot available" x="1720" y="820" width="120" height="100" rx="8" />
+    <text x="1780" y="865" class="plot-text">92</text>
+    <text x="1780" y="885" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90f65ab65374b450c5e" data-plot-id="6a71b90f65ab65374b450c5e" data-plot-number="93">
+    <rect id="plot-93" class="plot available" x="40" y="940" width="120" height="100" rx="8" />
+    <text x="100" y="985" class="plot-text">93</text>
+    <text x="100" y="1005" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90f65ab65374b450c60" data-plot-id="6a71b90f65ab65374b450c60" data-plot-number="94">
+    <rect id="plot-94" class="plot available" x="180" y="940" width="120" height="100" rx="8" />
+    <text x="240" y="985" class="plot-text">94</text>
+    <text x="240" y="1005" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90f65ab65374b450c62" data-plot-id="6a71b90f65ab65374b450c62" data-plot-number="95">
+    <rect id="plot-95" class="plot available" x="320" y="940" width="120" height="100" rx="8" />
+    <text x="380" y="985" class="plot-text">95</text>
+    <text x="380" y="1005" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90f65ab65374b450c64" data-plot-id="6a71b90f65ab65374b450c64" data-plot-number="96">
+    <rect id="plot-96" class="plot available" x="460" y="940" width="120" height="100" rx="8" />
+    <text x="520" y="985" class="plot-text">96</text>
+    <text x="520" y="1005" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90f65ab65374b450c66" data-plot-id="6a71b90f65ab65374b450c66" data-plot-number="97">
+    <rect id="plot-97" class="plot available" x="600" y="940" width="120" height="100" rx="8" />
+    <text x="660" y="985" class="plot-text">97</text>
+    <text x="660" y="1005" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90f65ab65374b450c68" data-plot-id="6a71b90f65ab65374b450c68" data-plot-number="98">
+    <rect id="plot-98" class="plot available" x="740" y="940" width="120" height="100" rx="8" />
+    <text x="800" y="985" class="plot-text">98</text>
+    <text x="800" y="1005" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90f65ab65374b450c6a" data-plot-id="6a71b90f65ab65374b450c6a" data-plot-number="99">
+    <rect id="plot-99" class="plot available" x="880" y="940" width="120" height="100" rx="8" />
+    <text x="940" y="985" class="plot-text">99</text>
+    <text x="940" y="1005" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90f65ab65374b450c6c" data-plot-id="6a71b90f65ab65374b450c6c" data-plot-number="100">
+    <rect id="plot-100" class="plot available" x="1020" y="940" width="120" height="100" rx="8" />
+    <text x="1080" y="985" class="plot-text">100</text>
+    <text x="1080" y="1005" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90f65ab65374b450c6e" data-plot-id="6a71b90f65ab65374b450c6e" data-plot-number="101">
+    <rect id="plot-101" class="plot available" x="1160" y="940" width="120" height="100" rx="8" />
+    <text x="1220" y="985" class="plot-text">101</text>
+    <text x="1220" y="1005" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90f65ab65374b450c70" data-plot-id="6a71b90f65ab65374b450c70" data-plot-number="102">
+    <rect id="plot-102" class="plot available" x="1300" y="940" width="120" height="100" rx="8" />
+    <text x="1360" y="985" class="plot-text">102</text>
+    <text x="1360" y="1005" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90f65ab65374b450c72" data-plot-id="6a71b90f65ab65374b450c72" data-plot-number="103">
+    <rect id="plot-103" class="plot available" x="1440" y="940" width="120" height="100" rx="8" />
+    <text x="1500" y="985" class="plot-text">103</text>
+    <text x="1500" y="1005" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90f65ab65374b450c74" data-plot-id="6a71b90f65ab65374b450c74" data-plot-number="104">
+    <rect id="plot-104" class="plot available" x="1580" y="940" width="120" height="100" rx="8" />
+    <text x="1640" y="985" class="plot-text">104</text>
+    <text x="1640" y="1005" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90f65ab65374b450c76" data-plot-id="6a71b90f65ab65374b450c76" data-plot-number="105">
+    <rect id="plot-105" class="plot available" x="1720" y="940" width="120" height="100" rx="8" />
+    <text x="1780" y="985" class="plot-text">105</text>
+    <text x="1780" y="1005" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90f65ab65374b450c78" data-plot-id="6a71b90f65ab65374b450c78" data-plot-number="106">
+    <rect id="plot-106" class="plot available" x="40" y="1060" width="120" height="100" rx="8" />
+    <text x="100" y="1105" class="plot-text">106</text>
+    <text x="100" y="1125" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90f65ab65374b450c7a" data-plot-id="6a71b90f65ab65374b450c7a" data-plot-number="107">
+    <rect id="plot-107" class="plot available" x="180" y="1060" width="120" height="100" rx="8" />
+    <text x="240" y="1105" class="plot-text">107</text>
+    <text x="240" y="1125" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90f65ab65374b450c7c" data-plot-id="6a71b90f65ab65374b450c7c" data-plot-number="108">
+    <rect id="plot-108" class="plot available" x="320" y="1060" width="120" height="100" rx="8" />
+    <text x="380" y="1105" class="plot-text">108</text>
+    <text x="380" y="1125" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90f65ab65374b450c7e" data-plot-id="6a71b90f65ab65374b450c7e" data-plot-number="109">
+    <rect id="plot-109" class="plot available" x="460" y="1060" width="120" height="100" rx="8" />
+    <text x="520" y="1105" class="plot-text">109</text>
+    <text x="520" y="1125" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90f65ab65374b450c80" data-plot-id="6a71b90f65ab65374b450c80" data-plot-number="110">
+    <rect id="plot-110" class="plot available" x="600" y="1060" width="120" height="100" rx="8" />
+    <text x="660" y="1105" class="plot-text">110</text>
+    <text x="660" y="1125" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91065ab65374b450c82" data-plot-id="6a71b91065ab65374b450c82" data-plot-number="111">
+    <rect id="plot-111" class="plot available" x="740" y="1060" width="120" height="100" rx="8" />
+    <text x="800" y="1105" class="plot-text">111</text>
+    <text x="800" y="1125" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91065ab65374b450c84" data-plot-id="6a71b91065ab65374b450c84" data-plot-number="112">
+    <rect id="plot-112" class="plot available" x="880" y="1060" width="120" height="100" rx="8" />
+    <text x="940" y="1105" class="plot-text">112</text>
+    <text x="940" y="1125" class="plot-area">800 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91065ab65374b450c86" data-plot-id="6a71b91065ab65374b450c86" data-plot-number="113">
+    <rect id="plot-113" class="plot available" x="1020" y="1060" width="120" height="100" rx="8" />
+    <text x="1080" y="1105" class="plot-text">113</text>
+    <text x="1080" y="1125" class="plot-area">800 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91065ab65374b450c88" data-plot-id="6a71b91065ab65374b450c88" data-plot-number="114">
+    <rect id="plot-114" class="plot available" x="1160" y="1060" width="120" height="100" rx="8" />
+    <text x="1220" y="1105" class="plot-text">114</text>
+    <text x="1220" y="1125" class="plot-area">800 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91065ab65374b450c8a" data-plot-id="6a71b91065ab65374b450c8a" data-plot-number="115">
+    <rect id="plot-115" class="plot available" x="1300" y="1060" width="120" height="100" rx="8" />
+    <text x="1360" y="1105" class="plot-text">115</text>
+    <text x="1360" y="1125" class="plot-area">800 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91065ab65374b450c8c" data-plot-id="6a71b91065ab65374b450c8c" data-plot-number="116">
+    <rect id="plot-116" class="plot available" x="1440" y="1060" width="120" height="100" rx="8" />
+    <text x="1500" y="1105" class="plot-text">116</text>
+    <text x="1500" y="1125" class="plot-area">800 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91065ab65374b450c8e" data-plot-id="6a71b91065ab65374b450c8e" data-plot-number="117">
+    <rect id="plot-117" class="plot available" x="1580" y="1060" width="120" height="100" rx="8" />
+    <text x="1640" y="1105" class="plot-text">117</text>
+    <text x="1640" y="1125" class="plot-area">800 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91065ab65374b450c90" data-plot-id="6a71b91065ab65374b450c90" data-plot-number="118">
+    <rect id="plot-118" class="plot available" x="1720" y="1060" width="120" height="100" rx="8" />
+    <text x="1780" y="1105" class="plot-text">118</text>
+    <text x="1780" y="1125" class="plot-area">800 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91065ab65374b450c92" data-plot-id="6a71b91065ab65374b450c92" data-plot-number="119">
+    <rect id="plot-119" class="plot available" x="40" y="1180" width="120" height="100" rx="8" />
+    <text x="100" y="1225" class="plot-text">119</text>
+    <text x="100" y="1245" class="plot-area">800 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91065ab65374b450c94" data-plot-id="6a71b91065ab65374b450c94" data-plot-number="120">
+    <rect id="plot-120" class="plot available" x="180" y="1180" width="120" height="100" rx="8" />
+    <text x="240" y="1225" class="plot-text">120</text>
+    <text x="240" y="1245" class="plot-area">800 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91065ab65374b450c96" data-plot-id="6a71b91065ab65374b450c96" data-plot-number="121">
+    <rect id="plot-121" class="plot available" x="320" y="1180" width="120" height="100" rx="8" />
+    <text x="380" y="1225" class="plot-text">121</text>
+    <text x="380" y="1245" class="plot-area">800 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91065ab65374b450c98" data-plot-id="6a71b91065ab65374b450c98" data-plot-number="122">
+    <rect id="plot-122" class="plot available" x="460" y="1180" width="120" height="100" rx="8" />
+    <text x="520" y="1225" class="plot-text">122</text>
+    <text x="520" y="1245" class="plot-area">800 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91065ab65374b450c9a" data-plot-id="6a71b91065ab65374b450c9a" data-plot-number="123">
+    <rect id="plot-123" class="plot available" x="600" y="1180" width="120" height="100" rx="8" />
+    <text x="660" y="1225" class="plot-text">123</text>
+    <text x="660" y="1245" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91065ab65374b450c9c" data-plot-id="6a71b91065ab65374b450c9c" data-plot-number="124">
+    <rect id="plot-124" class="plot available" x="740" y="1180" width="120" height="100" rx="8" />
+    <text x="800" y="1225" class="plot-text">124</text>
+    <text x="800" y="1245" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91065ab65374b450c9e" data-plot-id="6a71b91065ab65374b450c9e" data-plot-number="125">
+    <rect id="plot-125" class="plot available" x="880" y="1180" width="120" height="100" rx="8" />
+    <text x="940" y="1225" class="plot-text">125</text>
+    <text x="940" y="1245" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91065ab65374b450ca0" data-plot-id="6a71b91065ab65374b450ca0" data-plot-number="126">
+    <rect id="plot-126" class="plot available" x="1020" y="1180" width="120" height="100" rx="8" />
+    <text x="1080" y="1225" class="plot-text">126</text>
+    <text x="1080" y="1245" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91065ab65374b450ca2" data-plot-id="6a71b91065ab65374b450ca2" data-plot-number="127">
+    <rect id="plot-127" class="plot available" x="1160" y="1180" width="120" height="100" rx="8" />
+    <text x="1220" y="1225" class="plot-text">127</text>
+    <text x="1220" y="1245" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91065ab65374b450ca4" data-plot-id="6a71b91065ab65374b450ca4" data-plot-number="128">
+    <rect id="plot-128" class="plot available" x="1300" y="1180" width="120" height="100" rx="8" />
+    <text x="1360" y="1225" class="plot-text">128</text>
+    <text x="1360" y="1245" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91065ab65374b450ca6" data-plot-id="6a71b91065ab65374b450ca6" data-plot-number="129">
+    <rect id="plot-129" class="plot available" x="1440" y="1180" width="120" height="100" rx="8" />
+    <text x="1500" y="1225" class="plot-text">129</text>
+    <text x="1500" y="1245" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91065ab65374b450ca8" data-plot-id="6a71b91065ab65374b450ca8" data-plot-number="130">
+    <rect id="plot-130" class="plot available" x="1580" y="1180" width="120" height="100" rx="8" />
+    <text x="1640" y="1225" class="plot-text">130</text>
+    <text x="1640" y="1245" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91065ab65374b450caa" data-plot-id="6a71b91065ab65374b450caa" data-plot-number="131">
+    <rect id="plot-131" class="plot available" x="1720" y="1180" width="120" height="100" rx="8" />
+    <text x="1780" y="1225" class="plot-text">131</text>
+    <text x="1780" y="1245" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91065ab65374b450cac" data-plot-id="6a71b91065ab65374b450cac" data-plot-number="132">
+    <rect id="plot-132" class="plot available" x="40" y="1300" width="120" height="100" rx="8" />
+    <text x="100" y="1345" class="plot-text">132</text>
+    <text x="100" y="1365" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91065ab65374b450cae" data-plot-id="6a71b91065ab65374b450cae" data-plot-number="133">
+    <rect id="plot-133" class="plot available" x="180" y="1300" width="120" height="100" rx="8" />
+    <text x="240" y="1345" class="plot-text">133</text>
+    <text x="240" y="1365" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91165ab65374b450cb0" data-plot-id="6a71b91165ab65374b450cb0" data-plot-number="134">
+    <rect id="plot-134" class="plot available" x="320" y="1300" width="120" height="100" rx="8" />
+    <text x="380" y="1345" class="plot-text">134</text>
+    <text x="380" y="1365" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91165ab65374b450cb2" data-plot-id="6a71b91165ab65374b450cb2" data-plot-number="135">
+    <rect id="plot-135" class="plot available" x="460" y="1300" width="120" height="100" rx="8" />
+    <text x="520" y="1345" class="plot-text">135</text>
+    <text x="520" y="1365" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91165ab65374b450cb4" data-plot-id="6a71b91165ab65374b450cb4" data-plot-number="136">
+    <rect id="plot-136" class="plot available" x="600" y="1300" width="120" height="100" rx="8" />
+    <text x="660" y="1345" class="plot-text">136</text>
+    <text x="660" y="1365" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91165ab65374b450cb6" data-plot-id="6a71b91165ab65374b450cb6" data-plot-number="137">
+    <rect id="plot-137" class="plot available" x="740" y="1300" width="120" height="100" rx="8" />
+    <text x="800" y="1345" class="plot-text">137</text>
+    <text x="800" y="1365" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91165ab65374b450cb8" data-plot-id="6a71b91165ab65374b450cb8" data-plot-number="138">
+    <rect id="plot-138" class="plot available" x="880" y="1300" width="120" height="100" rx="8" />
+    <text x="940" y="1345" class="plot-text">138</text>
+    <text x="940" y="1365" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91165ab65374b450cba" data-plot-id="6a71b91165ab65374b450cba" data-plot-number="SR-1">
+    <rect id="plot-SR-1" class="plot available" x="1020" y="1300" width="120" height="100" rx="8" />
+    <text x="1080" y="1345" class="plot-text">SR-1</text>
+    <text x="1080" y="1365" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91165ab65374b450cbc" data-plot-id="6a71b91165ab65374b450cbc" data-plot-number="SR-2">
+    <rect id="plot-SR-2" class="plot available" x="1160" y="1300" width="120" height="100" rx="8" />
+    <text x="1220" y="1345" class="plot-text">SR-2</text>
+    <text x="1220" y="1365" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91165ab65374b450cbe" data-plot-id="6a71b91165ab65374b450cbe" data-plot-number="SR-3">
+    <rect id="plot-SR-3" class="plot available" x="1300" y="1300" width="120" height="100" rx="8" />
+    <text x="1360" y="1345" class="plot-text">SR-3</text>
+    <text x="1360" y="1365" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91165ab65374b450cc0" data-plot-id="6a71b91165ab65374b450cc0" data-plot-number="SR-4">
+    <rect id="plot-SR-4" class="plot available" x="1440" y="1300" width="120" height="100" rx="8" />
+    <text x="1500" y="1345" class="plot-text">SR-4</text>
+    <text x="1500" y="1365" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91165ab65374b450cc2" data-plot-id="6a71b91165ab65374b450cc2" data-plot-number="SR-5">
+    <rect id="plot-SR-5" class="plot available" x="1580" y="1300" width="120" height="100" rx="8" />
+    <text x="1640" y="1345" class="plot-text">SR-5</text>
+    <text x="1640" y="1365" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91165ab65374b450cc4" data-plot-id="6a71b91165ab65374b450cc4" data-plot-number="SR-6">
+    <rect id="plot-SR-6" class="plot available" x="1720" y="1300" width="120" height="100" rx="8" />
+    <text x="1780" y="1345" class="plot-text">SR-6</text>
+    <text x="1780" y="1365" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91165ab65374b450cc6" data-plot-id="6a71b91165ab65374b450cc6" data-plot-number="SR-7">
+    <rect id="plot-SR-7" class="plot available" x="40" y="1420" width="120" height="100" rx="8" />
+    <text x="100" y="1465" class="plot-text">SR-7</text>
+    <text x="100" y="1485" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91165ab65374b450cc8" data-plot-id="6a71b91165ab65374b450cc8" data-plot-number="SR-8">
+    <rect id="plot-SR-8" class="plot available" x="180" y="1420" width="120" height="100" rx="8" />
+    <text x="240" y="1465" class="plot-text">SR-8</text>
+    <text x="240" y="1485" class="plot-area">900 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91165ab65374b450cca" data-plot-id="6a71b91165ab65374b450cca" data-plot-number="E-1">
+    <rect id="plot-E-1" class="plot available" x="320" y="1420" width="120" height="100" rx="8" />
+    <text x="380" y="1465" class="plot-text">E-1</text>
+    <text x="380" y="1485" class="plot-area">525 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91165ab65374b450ccc" data-plot-id="6a71b91165ab65374b450ccc" data-plot-number="E-2">
+    <rect id="plot-E-2" class="plot available" x="460" y="1420" width="120" height="100" rx="8" />
+    <text x="520" y="1465" class="plot-text">E-2</text>
+    <text x="520" y="1485" class="plot-area">525 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91165ab65374b450cce" data-plot-id="6a71b91165ab65374b450cce" data-plot-number="E-3">
+    <rect id="plot-E-3" class="plot available" x="600" y="1420" width="120" height="100" rx="8" />
+    <text x="660" y="1465" class="plot-text">E-3</text>
+    <text x="660" y="1485" class="plot-area">525 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91165ab65374b450cd0" data-plot-id="6a71b91165ab65374b450cd0" data-plot-number="E-4">
+    <rect id="plot-E-4" class="plot available" x="740" y="1420" width="120" height="100" rx="8" />
+    <text x="800" y="1465" class="plot-text">E-4</text>
+    <text x="800" y="1485" class="plot-area">525 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91165ab65374b450cd2" data-plot-id="6a71b91165ab65374b450cd2" data-plot-number="E-5">
+    <rect id="plot-E-5" class="plot available" x="880" y="1420" width="120" height="100" rx="8" />
+    <text x="940" y="1465" class="plot-text">E-5</text>
+    <text x="940" y="1485" class="plot-area">525 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91165ab65374b450cd4" data-plot-id="6a71b91165ab65374b450cd4" data-plot-number="E-6">
+    <rect id="plot-E-6" class="plot available" x="1020" y="1420" width="120" height="100" rx="8" />
+    <text x="1080" y="1465" class="plot-text">E-6</text>
+    <text x="1080" y="1485" class="plot-area">525 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91265ab65374b450cd6" data-plot-id="6a71b91265ab65374b450cd6" data-plot-number="E-7">
+    <rect id="plot-E-7" class="plot available" x="1160" y="1420" width="120" height="100" rx="8" />
+    <text x="1220" y="1465" class="plot-text">E-7</text>
+    <text x="1220" y="1485" class="plot-area">525 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91265ab65374b450cd8" data-plot-id="6a71b91265ab65374b450cd8" data-plot-number="E-8">
+    <rect id="plot-E-8" class="plot available" x="1300" y="1420" width="120" height="100" rx="8" />
+    <text x="1360" y="1465" class="plot-text">E-8</text>
+    <text x="1360" y="1485" class="plot-area">525 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91265ab65374b450cda" data-plot-id="6a71b91265ab65374b450cda" data-plot-number="E-9">
+    <rect id="plot-E-9" class="plot available" x="1440" y="1420" width="120" height="100" rx="8" />
+    <text x="1500" y="1465" class="plot-text">E-9</text>
+    <text x="1500" y="1485" class="plot-area">525 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91265ab65374b450cdc" data-plot-id="6a71b91265ab65374b450cdc" data-plot-number="E-10">
+    <rect id="plot-E-10" class="plot available" x="1580" y="1420" width="120" height="100" rx="8" />
+    <text x="1640" y="1465" class="plot-text">E-10</text>
+    <text x="1640" y="1485" class="plot-area">525 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91265ab65374b450cde" data-plot-id="6a71b91265ab65374b450cde" data-plot-number="E-11">
+    <rect id="plot-E-11" class="plot available" x="1720" y="1420" width="120" height="100" rx="8" />
+    <text x="1780" y="1465" class="plot-text">E-11</text>
+    <text x="1780" y="1485" class="plot-area">525 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91265ab65374b450ce0" data-plot-id="6a71b91265ab65374b450ce0" data-plot-number="L-1">
+    <rect id="plot-L-1" class="plot available" x="40" y="1540" width="120" height="100" rx="8" />
+    <text x="100" y="1585" class="plot-text">L-1</text>
+    <text x="100" y="1605" class="plot-area">570 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91265ab65374b450ce2" data-plot-id="6a71b91265ab65374b450ce2" data-plot-number="L-2">
+    <rect id="plot-L-2" class="plot available" x="180" y="1540" width="120" height="100" rx="8" />
+    <text x="240" y="1585" class="plot-text">L-2</text>
+    <text x="240" y="1605" class="plot-area">570 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91265ab65374b450ce4" data-plot-id="6a71b91265ab65374b450ce4" data-plot-number="L-3">
+    <rect id="plot-L-3" class="plot available" x="320" y="1540" width="120" height="100" rx="8" />
+    <text x="380" y="1585" class="plot-text">L-3</text>
+    <text x="380" y="1605" class="plot-area">570 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91265ab65374b450ce6" data-plot-id="6a71b91265ab65374b450ce6" data-plot-number="L-4">
+    <rect id="plot-L-4" class="plot available" x="460" y="1540" width="120" height="100" rx="8" />
+    <text x="520" y="1585" class="plot-text">L-4</text>
+    <text x="520" y="1605" class="plot-area">570 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91265ab65374b450ce8" data-plot-id="6a71b91265ab65374b450ce8" data-plot-number="L-5">
+    <rect id="plot-L-5" class="plot available" x="600" y="1540" width="120" height="100" rx="8" />
+    <text x="660" y="1585" class="plot-text">L-5</text>
+    <text x="660" y="1605" class="plot-area">570 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91265ab65374b450cea" data-plot-id="6a71b91265ab65374b450cea" data-plot-number="L-6">
+    <rect id="plot-L-6" class="plot available" x="740" y="1540" width="120" height="100" rx="8" />
+    <text x="800" y="1585" class="plot-text">L-6</text>
+    <text x="800" y="1605" class="plot-area">570 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91265ab65374b450cec" data-plot-id="6a71b91265ab65374b450cec" data-plot-number="L-7">
+    <rect id="plot-L-7" class="plot available" x="880" y="1540" width="120" height="100" rx="8" />
+    <text x="940" y="1585" class="plot-text">L-7</text>
+    <text x="940" y="1605" class="plot-area">570 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b91265ab65374b450cee" data-plot-id="6a71b91265ab65374b450cee" data-plot-number="L-8">
+    <rect id="plot-L-8" class="plot available" x="1020" y="1540" width="120" height="100" rx="8" />
+    <text x="1080" y="1585" class="plot-text">L-8</text>
+    <text x="1080" y="1605" class="plot-area">570 sqft</text>
+  </g>
   <g class="plot-group" id="plot-group-6a71918c92f360705e1042a5" data-plot-id="6a71918c92f360705e1042a5" data-plot-number="p1">
-    <rect id="plot-p1" class="plot sold" x="40" y="100" width="120" height="100" rx="8" />
-    <text x="100" y="145" class="plot-text">p1</text>
-    <text x="100" y="165" class="plot-area">1,000 sqft</text>
+    <rect id="plot-p1" class="plot sold" x="1160" y="1540" width="120" height="100" rx="8" />
+    <text x="1220" y="1585" class="plot-text">p1</text>
+    <text x="1220" y="1605" class="plot-area">1,000 sqft</text>
   </g>
   <g class="plot-group" id="plot-group-6a719f7f1124c5ec87faa4fd" data-plot-id="6a719f7f1124c5ec87faa4fd" data-plot-number="p2">
-    <rect id="plot-p2" class="plot sold" x="180" y="100" width="120" height="100" rx="8" />
-    <text x="240" y="145" class="plot-text">p2</text>
-    <text x="240" y="165" class="plot-area">100 sqft</text>
+    <rect id="plot-p2" class="plot sold" x="1300" y="1540" width="120" height="100" rx="8" />
+    <text x="1360" y="1585" class="plot-text">p2</text>
+    <text x="1360" y="1605" class="plot-area">100 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a71b90a65ab65374b450ba6" data-plot-id="6a71b90a65ab65374b450ba6" data-plot-number="1">
+    <rect id="plot-1" class="plot sold" x="1440" y="1540" width="120" height="100" rx="8" />
+    <text x="1500" y="1585" class="plot-text">1</text>
+    <text x="1500" y="1605" class="plot-area">1,575 sqft</text>
   </g>
 </svg>

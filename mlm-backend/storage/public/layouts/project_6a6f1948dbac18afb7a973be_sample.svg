@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg width="340" height="360" viewBox="0 0 340 360" xmlns="http://www.w3.org/2000/svg">
+<svg width="480" height="360" viewBox="0 0 480 360" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <style>
       .plot { cursor: pointer; stroke: #fff; stroke-width: 2; transition: filter 0.2s; }
@@ -12,20 +12,30 @@
     </style>
   </defs>
   <rect width="100%" height="100%" fill="#f8fafc" rx="12" />
-  <text x="170" y="35" text-anchor="middle" style="font-family: sans-serif; font-weight: bold; font-size: 18px; fill: #334155;">crown city Site Layout</text>
+  <text x="240" y="35" text-anchor="middle" style="font-family: sans-serif; font-weight: bold; font-size: 18px; fill: #334155;">crown city Site Layout</text>
+  <g class="plot-group" id="plot-group-6a7190cb92f360705e104251" data-plot-id="6a7190cb92f360705e104251" data-plot-number="p6">
+    <rect id="plot-p6" class="plot available" x="40" y="100" width="120" height="100" rx="8" />
+    <text x="100" y="145" class="plot-text">p6</text>
+    <text x="100" y="165" class="plot-area">100 sqft</text>
+  </g>
   <g class="plot-group" id="plot-group-6a6f30193e14125dd41809e2" data-plot-id="6a6f30193e14125dd41809e2" data-plot-number="p1">
-    <rect id="plot-p1" class="plot sold" x="40" y="100" width="120" height="100" rx="8" />
-    <text x="100" y="145" class="plot-text">p1</text>
-    <text x="100" y="165" class="plot-area">1 sqft</text>
+    <rect id="plot-p1" class="plot sold" x="180" y="100" width="120" height="100" rx="8" />
+    <text x="240" y="145" class="plot-text">p1</text>
+    <text x="240" y="165" class="plot-area">1 sqft</text>
   </g>
   <g class="plot-group" id="plot-group-6a7062b9a6397d080d480f90" data-plot-id="6a7062b9a6397d080d480f90" data-plot-number="p2">
-    <rect id="plot-p2" class="plot sold" x="180" y="100" width="120" height="100" rx="8" />
-    <text x="240" y="145" class="plot-text">p2</text>
-    <text x="240" y="165" class="plot-area">100 sqft</text>
+    <rect id="plot-p2" class="plot sold" x="320" y="100" width="120" height="100" rx="8" />
+    <text x="380" y="145" class="plot-text">p2</text>
+    <text x="380" y="165" class="plot-area">100 sqft</text>
   </g>
   <g class="plot-group" id="plot-group-6a7064c3a6397d080d4813a4" data-plot-id="6a7064c3a6397d080d4813a4" data-plot-number="p3">
-    <rect id="plot-p3" class="plot available" x="40" y="220" width="120" height="100" rx="8" />
+    <rect id="plot-p3" class="plot sold" x="40" y="220" width="120" height="100" rx="8" />
     <text x="100" y="265" class="plot-text">p3</text>
     <text x="100" y="285" class="plot-area">100 sqft</text>
+  </g>
+  <g class="plot-group" id="plot-group-6a718efe92f360705e103e99" data-plot-id="6a718efe92f360705e103e99" data-plot-number="p5">
+    <rect id="plot-p5" class="plot sold" x="180" y="220" width="120" height="100" rx="8" />
+    <text x="240" y="265" class="plot-text">p5</text>
+    <text x="240" y="285" class="plot-area">50 sqft</text>
   </g>
 </svg>

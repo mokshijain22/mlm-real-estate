@@ -1,9 +1,10 @@
 import { NavLink } from "react-router-dom";
 import useAdminCounts from "../../hooks/useAdminCounts.js";
+import { getStoredUser } from "../../utils/userHelpers.js";
 
 function Sidebar() {
   const counts = useAdminCounts();
-  const adminUser = JSON.parse(localStorage.getItem("user") || "{}");
+  const adminUser = getStoredUser({});
   const isSuperAdmin = adminUser.role === "super_admin";
   const perms = adminUser.permissions || [];
   const can = (key) => isSuperAdmin || perms.includes(key);

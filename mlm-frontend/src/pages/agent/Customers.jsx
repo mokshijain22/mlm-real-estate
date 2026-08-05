@@ -19,6 +19,7 @@ function Customers() {
   const [customers, setCustomers] = useState(null);
   const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [fieldErrors, setFieldErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
@@ -37,15 +38,44 @@ function Customers() {
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
+  const openAddForm = () => {
+    setEditingId(null);
+    setForm(emptyForm);
+    setFieldErrors({});
+    setShowForm(true);
+  };
+
+  const openEditForm = (c) => {
+    setEditingId(c._id);
+    setForm({
+      name: c.name || "",
+      email: c.email || "",
+      phone: c.phone || "",
+      alternate_phone: c.alternatePhone || "",
+      address: c.address || "",
+      city: c.city || "",
+      state: c.state || "",
+      pincode: c.pincode || "",
+      aadhaar_number: c.aadhaarNumber || "",
+      pan_number: c.panNumber || "",
+    });
+    setFieldErrors({});
+    setShowForm(true);
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     setSubmitting(true);
     setFieldErrors({});
 
-    api
-      .post("/agent/customers", form)
+    const request = editingId
+      ? api.put(`/agent/customers/${editingId}`, form)
+      : api.post("/agent/customers", form);
+
+    request
       .then(() => {
         setForm(emptyForm);
+        setEditingId(null);
         setShowForm(false);
         load();
       })
@@ -80,7 +110,10 @@ function Customers() {
           <h4 className="fw-bold mb-1">My Customers</h4>
           <p className="text-muted mb-0 fs-13">Customers you've added.</p>
         </div>
-        <button className="btn btn-primary fw-bold" onClick={() => setShowForm((v) => !v)}>
+        <button
+          className="btn btn-primary fw-bold"
+          onClick={() => (showForm ? setShowForm(false) : openAddForm())}
+        >
           <iconify-icon icon="solar:add-circle-bold-duotone" className="me-1"></iconify-icon>
           {showForm ? "Close Form" : "Add Customer"}
         </button>
@@ -181,7 +214,7 @@ function Customers() {
                 </div>
               </div>
               <button type="submit" className="btn btn-primary fw-bold" disabled={submitting}>
-                {submitting ? "Saving..." : "Save Customer"}
+                {submitting ? "Saving..." : editingId ? "Update Customer" : "Save Customer"}
               </button>
             </form>
           </div>
@@ -242,6 +275,13 @@ function Customers() {
                           >
                             <iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>
                           </Link>
+                          <button
+                            className="btn btn-sm btn-light border"
+                            title="Edit customer"
+                            onClick={() => openEditForm(c)}
+                          >
+                            <iconify-icon icon="solar:pen-bold-duotone"></iconify-icon>
+                          </button>
                           <Link
                             to={`/agent/bookings/new?customer_id=${c._id}`}
                             className="btn btn-sm btn-success-subtle text-success border-0"

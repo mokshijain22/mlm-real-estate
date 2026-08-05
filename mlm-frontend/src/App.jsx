@@ -17,7 +17,8 @@ import TicketDetail from "./pages/agent/TicketDetail.jsx";
 import Team from "./pages/agent/Team.jsx";
 import Projects from "./pages/agent/Projects.jsx";
 import ProjectDetail from "./pages/agent/ProjectDetail.jsx";
-import ProjectMapView from "./pages/agent/ProjectMapView.jsx";import Profile from "./pages/agent/Profile.jsx";
+import ProjectMapView from "./pages/agent/ProjectMapView.jsx";
+import Profile from "./pages/agent/Profile.jsx";
 import Login from "./pages/auth/Login.jsx";
 import ProtectedRoute from "./components/auth/ProtectedRoute.jsx";
 import Register from "./pages/auth/Register.jsx";
@@ -26,6 +27,7 @@ import PermissionRoute from "./components/auth/PermissionRoute.jsx";
 import AdminDashboard from "./pages/admin/Dashboard.jsx";
 import Agents from "./pages/admin/Agents.jsx";
 import AgentDetail from "./pages/admin/AgentDetail.jsx";
+import AgentCreate from "./pages/admin/AgentCreate.jsx";
 import AdminKyc from "./pages/admin/Kyc.jsx";
 import AdminKycDetail from "./pages/admin/KycDetail.jsx";
 import Ranks from "./pages/admin/Ranks.jsx";
@@ -41,7 +43,8 @@ import AdminInstallmentDues from "./pages/admin/InstallmentDues.jsx";
 import AdminInstallmentSchedules from "./pages/admin/InstallmentSchedules.jsx";
 import AdminBookingDetail from "./pages/admin/BookingDetail.jsx";
 import AdminBookingCreate from "./pages/admin/BookingCreate.jsx";
-import AdminBookingsPending from "./pages/admin/BookingsPending.jsx";import EmiManagement from "./pages/admin/EmiManagement.jsx";
+import AdminBookingsPending from "./pages/admin/BookingsPending.jsx";
+import EmiManagement from "./pages/admin/EmiManagement.jsx";
 import SubAdmins from "./pages/admin/SubAdmins.jsx";
 import SubAdminCreate from "./pages/admin/SubAdminCreate.jsx";
 import SubAdminEdit from "./pages/admin/SubAdminEdit.jsx";
@@ -122,6 +125,7 @@ function App() {
         <Route path="/admin/dashboard" element={<PermissionRoute permission="dashboard"><AdminDashboard /></PermissionRoute>} />
 
         <Route path="/admin/agents" element={<PermissionRoute permission="agents"><Agents /></PermissionRoute>} />
+        <Route path="/admin/agents/create" element={<PermissionRoute permission="agents"><AgentCreate /></PermissionRoute>} />
         <Route path="/admin/agents/:id" element={<PermissionRoute permission="agents"><AgentDetail /></PermissionRoute>} />
 
         <Route path="/admin/kyc" element={<PermissionRoute permission="kyc"><AdminKyc /></PermissionRoute>} />

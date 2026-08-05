@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../../api/axios.js";
+import { getStoredUser } from "../../utils/userHelpers.js";
 
 function initials(name) {
   return (name || "?").trim().charAt(0).toUpperCase();
@@ -13,6 +14,7 @@ function avatarColor(name) {
 }
 
 function Agents() {
+  const adminUser = getStoredUser({});
   const [agents, setAgents] = useState(null);
   const [meta, setMeta] = useState(null);
   const [error, setError] = useState(null);
@@ -75,7 +77,7 @@ function Agents() {
             <h3 className="fw-bold mb-1">Executives</h3>
             <p className="text-muted mb-0">View, approve, and manage all executives.</p>
           </div>
-          <Link to="/admin/agents/create" className="btn btn-warning fw-semibold">
+          <Link to={adminUser.role === "super_admin" ? "/admin/referrals" : "/admin/agents/create"} className="btn btn-warning fw-semibold">
             <iconify-icon icon="solar:add-circle-bold" className="me-1 align-middle"></iconify-icon>
             Add Executive
           </Link>

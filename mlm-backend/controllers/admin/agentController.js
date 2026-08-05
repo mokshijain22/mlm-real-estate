@@ -6,6 +6,9 @@ const KycVerification = require('../../models/KycVerification');
 const treeBuilderService = require('../../services/treeBuilderService');
 const Project = require('../../models/Project');
 const auditService = require('../../services/auditService');
+const bcrypt = require('bcryptjs');
+const { buildTree } = require('../../services/treeBuilderService');
+const { checkAndUpgradeRank } = require('../../services/rankService');
 
 // GET /api/admin/agents?status=&kyc_status=&search=&page=
 async function index(req, res) {
@@ -48,6 +51,110 @@ async function index(req, res) {
     });
   } catch (err) {
     return res.status(500).json({ message: 'Failed to fetch agents.', error: err.message });
+  }
+}
+async function generateReferralCode() {
+  const PREFIX = 'GK-';
+  const START = 1001;
+  const lastUser = await User.findOne({ referralCode: new RegExp(`^${PREFIX}\\d+$`) })
+    .sort({ referralCode: -1 })
+    .collation({ locale: 'en_US', numericOrdering: true });
+  let nextNumber = START;
+  if (lastUser) {
+    const lastNumber = parseInt(lastUser.referralCode.replace(PREFIX, ''), 10);
+    if (!isNaN(lastNumber)) nextNumber = lastNumber + 1;
+  }
+  return `${PREFIX}${nextNumber}`;
+}
+
+// POST /api/admin/agents
+async function store(req, res) {
+  try {
+    const { name, email, phone, password, pan_or_aadhaar, referral_code, rank_id } = req.body;
+
+    const errors = {};
+    if (!name) errors.name = 'Name is required.';
+    if (!email) errors.email = 'Email is required.';
+    if (!phone || !/^\d{10,15}$/.test(phone)) errors.phone = 'Valid phone (10-15 digits) is required.';
+    if (!password || password.length < 8) errors.password = 'Password must be at least 8 characters.';
+
+    const isPan = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(String(pan_or_aadhaar || '').toUpperCase());
+    const isAadhaar = /^\d{12}$/.test(String(pan_or_aadhaar || ''));
+    if (!pan_or_aadhaar || (!isPan && !isAadhaar)) {
+      errors.pan_or_aadhaar = 'Enter a valid PAN (ABCDE1234F) or Aadhaar number (12 digits).';
+    }
+    if (Object.keys(errors).length) return res.status(422).json({ errors });
+
+    const [emailTaken, phoneTaken] = await Promise.all([
+      User.findOne({ email }),
+      User.findOne({ phone }),
+    ]);
+    if (emailTaken) return res.status(422).json({ errors: { email: 'Email already registered.' } });
+    if (phoneTaken) return res.status(422).json({ errors: { phone: 'Phone already registered.' } });
+
+    const idQuery = isPan
+      ? { panNumber: String(pan_or_aadhaar).toUpperCase() }
+      : { aadhaarNumber: String(pan_or_aadhaar) };
+    const idTaken = await KycVerification.findOne(idQuery);
+    if (idTaken) return res.status(422).json({ errors: { pan_or_aadhaar: (isPan ? 'PAN' : 'Aadhaar') + ' already registered.' } });
+
+    let referrer = null;
+    let mlmLevel = 1;
+    const providedReferralCode = referral_code || '112233';
+    referrer = await User.findOne({ referralCode: providedReferralCode });
+    if (referrer) mlmLevel = (referrer.mlmLevel || 1) + 1;
+
+    const agentRole = await Role.findOne({ slug: 'agent' });
+
+    let targetRankId = rank_id || null;
+    if (!targetRankId) {
+      const defaultRank = await Rank.findOne({ abbreviation: 'B.EX' });
+      if (defaultRank) targetRankId = defaultRank._id;
+    }
+
+    let newReferralCode;
+    do {
+      newReferralCode = await generateReferralCode();
+      // eslint-disable-next-line no-await-in-loop
+    } while (await User.findOne({ referralCode: newReferralCode }));
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Admin-created agents are trusted — active immediately, no approval wait.
+    const user = await User.create({
+      name,
+      email,
+      phone,
+      password: hashedPassword,
+      role: agentRole ? agentRole._id : null,
+      rank: targetRankId,
+      status: 'active',
+      isKycVerified: false,
+      referralCode: newReferralCode,
+      referredBy: referrer ? referrer._id : null,
+      mlmLevel,
+    });
+
+    await KycVerification.create({
+      user: user._id,
+      panNumber: isPan ? String(pan_or_aadhaar).toUpperCase() : null,
+      aadhaarNumber: !isPan ? String(pan_or_aadhaar) : null,
+      status: 'pending',
+    });
+
+    await buildTree(user);
+    await checkAndUpgradeRank(user);
+
+    await auditService.log(
+      req,
+      'agent.created',
+      `Agent ${user.name} created directly by admin ${req.user.name}`,
+      user
+    );
+
+    return res.status(201).json({ message: 'Executive created successfully.', data: user });
+  } catch (err) {
+    return res.status(500).json({ message: 'Failed to create executive.', error: err.message });
   }
 }
 
@@ -249,5 +356,4 @@ async function updateDetails(req, res) {
     return res.status(500).json({ message: 'Failed to update agent details.', error: err.message });
   }
 }
-
-module.exports = { index, show, tree, approve, deactivate, activate, rankHistory, updateReferralCode, updateDetails };
+module.exports = { index, show, tree, approve, deactivate, activate, rankHistory, updateReferralCode, updateDetails, store };

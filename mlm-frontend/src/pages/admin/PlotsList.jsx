@@ -26,8 +26,8 @@ function parseCsv(text) {
     });
     return {
       number: row.number || row.plot_number || "",
-      total_area: row.total_area || row.area || "",
-      price_per_sqft: row.price_per_sqft || "",
+      total_area: row.total_area || row.area || row.size || "",
+      price_per_sqft: row.price_per_sqft || row.base_price || row.final_price || "",
       status: row.status || "available",
       plc_amount: row.plc_amount || "",
     };

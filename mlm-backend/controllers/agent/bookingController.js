@@ -6,13 +6,52 @@ const auditService = require('../../services/auditService');
 const { PAYMENT_MODES } = require('../../utils/paymentModes');
 // GET /api/agent/bookings
 async function index(req, res) {
-  const bookings = await Booking.find({ agent: req.user._id })
-    .populate('customer')
-    .populate('plot')
-    .populate('project')
-    .sort({ createdAt: -1 });
+  const filter = { agent: req.user._id };
+  const { status, approval_status, project_id, date_from, date_to, search } = req.query;
 
-  return res.json({ bookings });
+  if (status) filter.status = status;
+  if (approval_status) filter.approvalStatus = approval_status;
+  if (project_id) filter.project = project_id;
+  if (date_from || date_to) {
+    filter.bookingDate = {};
+    if (date_from) filter.bookingDate.$gte = new Date(date_from);
+    if (date_to) filter.bookingDate.$lte = new Date(date_to);
+  }
+  if (search && search.trim()) {
+    const re = new RegExp(search.trim(), 'i');
+    const matchedCustomers = await Customer.find({ name: re, addedBy: req.user._id }).select('_id');
+    filter.$or = [
+      { bookingNumber: re },
+      { customer: { $in: matchedCustomers.map((c) => c._id) } },
+    ];
+  }
+
+  const page = parseInt(req.query.page) || 1;
+  const limit = 20;
+  const skip = (page - 1) * limit;
+
+  const Project = require('../../models/Project');
+
+  const [bookings, total, projects, pendingCount] = await Promise.all([
+    Booking.find(filter)
+      .populate('customer')
+      .populate('plot')
+      .populate('project')
+      .populate('agentRank')
+      .sort({ bookingDate: -1 })
+      .skip(skip)
+      .limit(limit),
+    Booking.countDocuments(filter),
+    Project.find(),
+    Booking.countDocuments({ agent: req.user._id, approvalStatus: 'pending' }),
+  ]);
+
+  return res.json({
+    data: bookings,
+    meta: { page, limit, total, lastPage: Math.ceil(total / limit) },
+    projects,
+    pendingCount,
+  });
 }
 
 // GET /api/agent/bookings/create-data  (data needed to render the create form)

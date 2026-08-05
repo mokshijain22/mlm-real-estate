@@ -6,13 +6,25 @@ function TicketDetail() {
   const { id } = useParams();
   const [ticket, setTicket] = useState(null);
   const [error, setError] = useState(null);
+  const [reopening, setReopening] = useState(false);
 
-  useEffect(() => {
+  const load = () => {
     api
       .get(`/agent/tickets/${id}`)
       .then((res) => setTicket(res.data.ticket))
       .catch((err) => setError(err.response?.data?.message || err.message));
-  }, [id]);
+  };
+
+  useEffect(load, [id]);
+
+  const handleReopen = () => {
+    setReopening(true);
+    api
+      .patch(`/agent/tickets/${id}/reopen`)
+      .then(() => load())
+      .catch((err) => setError(err.response?.data?.message || err.message))
+      .finally(() => setReopening(false));
+  };
 
   if (error) return <div className="alert alert-danger border-0 shadow-sm">{error}</div>;
   if (!ticket) return <div className="text-center py-5">Loading...</div>;
@@ -54,10 +66,16 @@ function TicketDetail() {
               </h6>
               <p className="mb-2">{ticket.adminReply}</p>
               {ticket.repliedAt && (
-                <small className="text-muted">
+                <small className="text-muted d-block mb-3">
                   Replied on {new Date(ticket.repliedAt).toLocaleDateString("en-IN")}
                   {ticket.repliedBy?.name ? ` by ${ticket.repliedBy.name}` : ""}
                 </small>
+              )}
+              {ticket.status === "closed" && (
+                <button className="btn btn-outline-warning btn-sm fw-bold" onClick={handleReopen} disabled={reopening}>
+                  <iconify-icon icon="solar:refresh-bold-duotone" className="me-1"></iconify-icon>
+                  {reopening ? "Reopening..." : "Issue not resolved? Reopen Ticket"}
+                </button>
               )}
             </div>
           </div>

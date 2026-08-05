@@ -76,6 +76,7 @@ router.patch('/plots/:plotId/status', plotController.updateStatus);
 // Agents
 router.use('/agents', requirePermission('agents'));
 router.get('/agents', agentController.index);
+router.post('/agents', agentController.store);
 router.get('/agents/:id', agentController.show);
 router.get('/agents/:id/tree', agentController.tree);
 router.patch('/agents/:id/approve', agentController.approve);
