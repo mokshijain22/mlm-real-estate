@@ -37,6 +37,20 @@ function ProjectEdit() {
   const [landmarkDistance, setLandmarkDistance] = useState("");
   const [landmarks, setLandmarks] = useState([]);
 
+  const [availableBanks, setAvailableBanks] = useState([]);
+  const [bankIds, setBankIds] = useState([]);
+
+  useEffect(() => {
+    api
+      .get("/admin/banks")
+      .then((res) => setAvailableBanks((res.data.data || []).filter((b) => b.isActive !== false)))
+      .catch(() => {});
+  }, []);
+
+  const toggleBank = (id) => {
+    setBankIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  };
+
   const toggleFacility = (f) => {
     setFacilities((prev) => (prev.includes(f) ? prev.filter((x) => x !== f) : [...prev, f]));
   };
@@ -69,6 +83,7 @@ function ProjectEdit() {
         setDefaultOwnerMinimum(p.defaultOwnerMinimum || "");
         setFacilities(p.facilities || []);
         setLandmarks(p.nearbyLandmarks || []);
+        setBankIds((p.banks || []).map((b) => (typeof b === "string" ? b : b._id)));
       })
       .catch((err) => setError(err.response?.data?.message || err.message))
       .finally(() => setLoading(false));
@@ -92,6 +107,7 @@ function ProjectEdit() {
     formData.append("default_owner_minimum", defaultOwnerMinimum);
     formData.append("facilities", JSON.stringify(facilities));
     formData.append("nearby_landmarks", JSON.stringify(landmarks));
+    formData.append("bank_ids", JSON.stringify(bankIds));
     if (layoutSvg) formData.append("layout_svg", layoutSvg);
 
     api
@@ -297,6 +313,35 @@ function ProjectEdit() {
                     </div>
                   ))}
                 </div>
+              </div>
+
+              <div className="mb-3">
+                <label className="form-label">Receiving Bank Accounts (Optional)</label>
+                {availableBanks.length === 0 ? (
+                  <div className="text-muted small">
+                    No banks set up yet — add some in <Link to="/admin/banks">Bank Management</Link> first.
+                  </div>
+                ) : (
+                  <div className="row">
+                    {availableBanks.map((b) => (
+                      <div className="col-md-4 col-6" key={b._id}>
+                        <div className="form-check mb-2">
+                          <input
+                            type="checkbox"
+                            className="form-check-input"
+                            id={`bank-edit-${b._id}`}
+                            checked={bankIds.includes(b._id)}
+                            onChange={() => toggleBank(b._id)}
+                          />
+                          <label className="form-check-label" htmlFor={`bank-edit-${b._id}`}>
+                            {b.name}
+                          </label>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="form-text">Selected banks will show up as receiving-account options when booking on this project.</div>
               </div>
 
               <div className="mb-3">

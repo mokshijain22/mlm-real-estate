@@ -2,6 +2,15 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import api from "../../api/axios.js";
 
+function computePlc({ isGarden, isCorner, is40ftRoad }) {
+  if (isCorner && isGarden && is40ftRoad) return 20;
+  if (isGarden && isCorner) return 15;
+  if (isCorner) return 10;
+  if (is40ftRoad) return 10;
+  if (isGarden) return 5;
+  return 0;
+}
+
 function PlotCreate() {
   const { projectId } = useParams();
   const navigate = useNavigate();
@@ -19,6 +28,18 @@ function PlotCreate() {
    const [pricePerSqft, setPricePerSqft] = useState("0");
   const [plcPercent, setPlcPercent] = useState("0");
   const [status, setStatus] = useState("");
+  const [length, setLength] = useState("");
+  const [width, setWidth] = useState("");
+  const [facing, setFacing] = useState("");
+  const [isGarden, setIsGarden] = useState(false);
+  const [isCorner, setIsCorner] = useState(false);
+  const [is40ftRoad, setIs40ftRoad] = useState(false);
+
+  function toggleFlag(setter, current, key, others) {
+    const next = { ...others, [key]: !current };
+    setter(!current);
+    setPlcPercent(String(computePlc(next)));
+  }
 
   useEffect(() => {
     api
@@ -49,6 +70,9 @@ function PlotCreate() {
          price_per_sqft: pricePerSqft,
         plc_percent: plcPercent,
         status,
+        length,
+        width,
+        facing,
       })
       .then(() => {
         navigate(`/admin/projects/${projectId}/plots`);
@@ -139,25 +163,90 @@ function PlotCreate() {
                 </div>
                 <div className="col-md-6">
                   <div className="mb-3">
-                    <label htmlFor="plc_percent" className="form-label">
-                      PLC (%) <span className="text-muted fs-12">(if any)</span>
-                    </label>
-                    <div className="input-group">
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        max="100"
-                        id="plc_percent"
-                        className={`form-control ${errors.plc_percent ? "is-invalid" : ""}`}
-                        value={plcPercent}
-                        onChange={(e) => setPlcPercent(e.target.value)}
-                      />
-                      <span className="input-group-text">%</span>
-                    </div>
-                    {errors.plc_percent && <div className="invalid-feedback d-block">{errors.plc_percent}</div>}
+                    <label className="form-label">Facing</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={facing}
+                      onChange={(e) => setFacing(e.target.value)}
+                    />
                   </div>
                 </div>
+              </div>
+
+              <div className="row">
+                <div className="col-md-6">
+                  <div className="mb-3">
+                    <label className="form-label">Length (ft)</label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      value={length}
+                      onChange={(e) => setLength(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="col-md-6">
+                  <div className="mb-3">
+                    <label className="form-label">Width (ft)</label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      value={width}
+                      onChange={(e) => setWidth(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="mb-3">
+                <label className="form-label d-block">PLC (auto-calculated, still editable)</label>
+                <div className="d-flex gap-3 flex-wrap mb-2">
+                  <div className="form-check">
+                    <input
+                      type="checkbox"
+                      className="form-check-input"
+                      id="isGarden"
+                      checked={isGarden}
+                      onChange={() => toggleFlag(setIsGarden, isGarden, "isGarden", { isGarden, isCorner, is40ftRoad })}
+                    />
+                    <label className="form-check-label" htmlFor="isGarden">Garden facing</label>
+                  </div>
+                  <div className="form-check">
+                    <input
+                      type="checkbox"
+                      className="form-check-input"
+                      id="isCorner"
+                      checked={isCorner}
+                      onChange={() => toggleFlag(setIsCorner, isCorner, "isCorner", { isGarden, isCorner, is40ftRoad })}
+                    />
+                    <label className="form-check-label" htmlFor="isCorner">Corner plot</label>
+                  </div>
+                  <div className="form-check">
+                    <input
+                      type="checkbox"
+                      className="form-check-input"
+                      id="is40ftRoad"
+                      checked={is40ftRoad}
+                      onChange={() => toggleFlag(setIs40ftRoad, is40ftRoad, "is40ftRoad", { isGarden, isCorner, is40ftRoad })}
+                    />
+                    <label className="form-check-label" htmlFor="is40ftRoad">On 40ft road</label>
+                  </div>
+                </div>
+                <div className="input-group" style={{ maxWidth: 160 }}>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    id="plc_percent"
+                    className={`form-control ${errors.plc_percent ? "is-invalid" : ""}`}
+                    value={plcPercent}
+                    onChange={(e) => setPlcPercent(e.target.value)}
+                  />
+                  <span className="input-group-text">%</span>
+                </div>
+                {errors.plc_percent && <div className="invalid-feedback d-block">{errors.plc_percent}</div>}
               </div>
 
               <div className="mb-3">

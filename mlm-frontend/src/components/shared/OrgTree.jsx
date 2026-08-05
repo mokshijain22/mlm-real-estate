@@ -44,13 +44,13 @@ export function OrgNode({ node, isRoot, onNodeClick }) {
               color: isRoot ? "#fff" : c.badge,
             }}
           >
-            {node.rank_name || "N/A"}
+            {node.isCompany ? "Company" : (node.rank_name || "N/A")}
           </span>
           {(node.pool != null || node.cap != null) && (
             <div className={`fs-11 mt-1 d-flex gap-2 ${isRoot ? "text-white-50" : "text-muted"}`}>
               {isRoot ? <span>POOL ₹{node.pool}</span> : <span>CAP ₹{node.cap}</span>}
-              {hasChildren && node.own != null && <span>OWN ₹{node.own}</span>}
-              {hasChildren && node.team != null && <span>TEAM ₹{node.team}</span>}
+              {node.own != null && <span>OWN ₹{node.own}</span>}
+              {node.team != null && <span>TEAM ₹{node.team}</span>}
             </div>
           )}
         </div>

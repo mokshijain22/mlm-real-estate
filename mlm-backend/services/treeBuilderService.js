@@ -94,13 +94,20 @@ async function getDownlineByLevel(agent) {
 
 /**
  * Returns a recursive hierarchical tree for the agent (for tree visualization UI).
+ *
+ * Cap  = the ₹/sqft rate specifically assigned to that person (their own slabPerSqft),
+ *        or — for a true top-of-chain agent with no cap assigned yet — the project's
+ *        full pool as a fallback.
+ * Team = the sum of the Caps this person has assigned to their direct reports.
+ * Own  = Cap minus Team — what's left over for this person once their reports are covered.
  */
 async function getHierarchicalTree(agent, maxLevel = 7, poolPerSqft = null) {
   await agent.populate(['role', 'rank']);
 
-  const own = agent.slabPerSqft ?? 0;
-  const cap = poolPerSqft; // root's cap = the project's full pool
-  const team = cap != null ? Math.max(cap - own, 0) : null;
+  const cap = agent.slabPerSqft != null ? agent.slabPerSqft : (agent.referredBy ? 0 : poolPerSqft);
+  const children = await getChildrenRecursive(agent._id, 1, maxLevel);
+  const team = children.reduce((sum, c) => sum + (Number(c.cap) || 0), 0);
+  const own = cap != null ? Math.max(cap - team, 0) : null;
 
   return {
     id: agent._id,
@@ -112,24 +119,26 @@ async function getHierarchicalTree(agent, maxLevel = 7, poolPerSqft = null) {
     position: agent.position || null,
     slab_per_sqft: agent.slabPerSqft ?? null,
     pool: cap,
+    cap,
     own,
     team,
     status: agent.status,
     created_at: agent.createdAt,
-    children: await getChildrenRecursive(agent._id, 1, maxLevel, team),
+    children,
   };
 }
 
-async function getChildrenRecursive(parentId, currentLevel, maxLevel, parentCap) {
+async function getChildrenRecursive(parentId, currentLevel, maxLevel) {
   if (currentLevel > maxLevel) return [];
 
-  const children = await User.find({ referredBy: parentId }).populate('rank').populate('role');
+  const childUsers = await User.find({ referredBy: parentId }).populate('rank').populate('role');
 
   const branch = [];
-  for (const child of children) {
-    const own = child.slabPerSqft ?? 0;
-    const cap = parentCap; // this agent's cap = what the upline passed down
-    const team = cap != null ? Math.max(cap - own, 0) : null;
+  for (const child of childUsers) {
+    const cap = child.slabPerSqft ?? 0; // the rate specifically assigned to this person by their upline
+    const grandChildren = await getChildrenRecursive(child._id, currentLevel + 1, maxLevel);
+    const team = grandChildren.reduce((sum, c) => sum + (Number(c.cap) || 0), 0);
+    const own = Math.max(cap - team, 0);
 
     branch.push({
       id: child._id,
@@ -145,10 +154,63 @@ async function getChildrenRecursive(parentId, currentLevel, maxLevel, parentCap)
       team,
       status: child.status,
       created_at: child.createdAt,
-      children: await getChildrenRecursive(child._id, currentLevel + 1, maxLevel, team),
+      children: grandChildren,
     });
   }
   return branch;
+}
+
+/**
+ * Returns the full company tree for a project: a synthetic "Company" root
+ * holding every top-level agent (no upline) as children, each with their
+ * own recursive downline. Company's Own = Pool minus what's been assigned
+ * to those top-level agents; Company's Team = what's been assigned to them.
+ */
+async function getCompanyTree(poolPerSqft, maxLevel = 7) {
+  const topLevelAgents = await User.find({
+    $or: [{ referredBy: null }, { referredBy: { $exists: false } }],
+  }).populate(['role', 'rank']);
+
+  const children = [];
+  for (const agent of topLevelAgents) {
+    const cap = agent.slabPerSqft ?? 0;
+    const grandChildren = await getChildrenRecursive(agent._id, 1, maxLevel);
+    const team = grandChildren.reduce((sum, c) => sum + (Number(c.cap) || 0), 0);
+    const own = Math.max(cap - team, 0);
+
+    children.push({
+      id: agent._id,
+      name: agent.name,
+      email: agent.email,
+      photo: agent.profilePhoto || '/images/users/avatar-1.jpg',
+      role: agent.role?.name || 'Agent',
+      rank_name: agent.rank?.name || 'N/A',
+      position: agent.position || null,
+      slab_per_sqft: agent.slabPerSqft ?? null,
+      cap,
+      own,
+      team,
+      status: agent.status,
+      created_at: agent.createdAt,
+      children: grandChildren,
+    });
+  }
+
+  const teamTotal = children.reduce((sum, c) => sum + (Number(c.cap) || 0), 0);
+  const companyOwn = poolPerSqft != null ? Math.max(poolPerSqft - teamTotal, 0) : null;
+
+  return {
+    id: 'company',
+    name: 'Company',
+    isCompany: true,
+    role: 'Company',
+    rank_name: null,
+    cap: poolPerSqft,
+    pool: poolPerSqft,
+    own: companyOwn,
+    team: teamTotal,
+    children,
+  };
 }
 
 module.exports = {
@@ -157,4 +219,5 @@ module.exports = {
   getDownlineIds,
   getDownlineByLevel,
   getHierarchicalTree,
+  getCompanyTree,
 };

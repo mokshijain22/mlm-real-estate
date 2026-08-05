@@ -72,7 +72,7 @@ async function store(req, res) {
     const {
       name, description, location, total_area, status,
       project_type, total_plots, default_rate, default_owner_minimum,
-      facilities, nearby_landmarks,
+      facilities, nearby_landmarks, bank_ids,
     } = req.body;
 
     const errors = {};
@@ -98,6 +98,7 @@ async function store(req, res) {
       commissionPool: defaultRate - defaultOwnerMinimum,
       facilities: parseJsonField(facilities, []).filter((f) => FACILITY_OPTIONS.includes(f)),
       nearbyLandmarks: parseJsonField(nearby_landmarks, []),
+      banks: parseJsonField(bank_ids, []),
       createdBy: req.user._id,
     };
 
@@ -118,9 +119,16 @@ async function store(req, res) {
   }
 }
 
+// GET /api/admin/projects/:id/banks
+async function banks(req, res) {
+  const project = await Project.findById(req.params.id).populate('banks');
+  if (!project) return res.status(404).json({ message: 'Project not found.' });
+  res.json({ data: project.banks || [] });
+}
+
 // GET /api/admin/projects/:id
 async function show(req, res) {
-  const project = await Project.findById(req.params.id);
+  const project = await Project.findById(req.params.id).populate('banks');
   if (!project) return res.status(404).json({ message: 'Project not found.' });
 
   const page = parseInt(req.query.page) || 1;
@@ -147,7 +155,7 @@ async function update(req, res) {
     const {
       name, description, location, total_area, status,
       project_type, total_plots, default_rate, default_owner_minimum,
-      facilities, nearby_landmarks,
+      facilities, nearby_landmarks, bank_ids,
     } = req.body;
 
     const errors = {};
@@ -172,6 +180,7 @@ async function update(req, res) {
     project.commissionPool = defaultRate - defaultOwnerMinimum;
     project.facilities = parseJsonField(facilities, project.facilities).filter((f) => FACILITY_OPTIONS.includes(f));
     project.nearbyLandmarks = parseJsonField(nearby_landmarks, project.nearbyLandmarks);
+    project.banks = parseJsonField(bank_ids, project.banks);
 
     if (req.file) {
       // delete old layout file if it exists on disk
@@ -272,4 +281,4 @@ async function uploadMapImage(req, res) {
   return res.json({ message: 'Map image uploaded.', project });
 }
 
-module.exports = { index, store, show, update, destroy, builder, saveLayout, map, uploadMapImage };
+module.exports = { index, store, show, update, destroy, builder, saveLayout, map, uploadMapImage, banks };

@@ -64,6 +64,7 @@ async function store(req, res) {
    const {
       plot_number, total_area, price_per_sqft, plc_percent, status,
       facing, zone_type, corner_plot, boundary_n, boundary_s, boundary_e, boundary_w,
+      length, width,
     } = req.body;
     const remainingArea = await getRemainingArea(project);
 
@@ -90,6 +91,8 @@ async function store(req, res) {
       pricePerSqft: price_per_sqft,
       plcPercent: plc_percent || 0,
       status,      
+      length: length || null,
+      width: width || null,
       facing: facing || '',
       zoneType: zone_type || '',
       cornerPlot: corner_plot || '',
@@ -141,6 +144,7 @@ async function update(req, res) {
    const {
       plot_number, total_area, price_per_sqft, plc_percent, status,
       facing, zone_type, corner_plot, boundary_n, boundary_s, boundary_e, boundary_w,
+      length, width,
     } = req.body;
     const remainingArea = await getRemainingArea(project, plot._id);
 

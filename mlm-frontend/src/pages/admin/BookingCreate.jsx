@@ -225,11 +225,16 @@ function BookingCreate() {
   }, [plotId, plots]);
 
   useEffect(() => {
+    if (!projectId) {
+      setBanks([]);
+      setBankId("");
+      return;
+    }
     api
-      .get("/admin/banks")
+      .get(`/admin/projects/${projectId}/banks`)
       .then((res) => setBanks((res.data.data || []).filter((b) => b.isActive !== false)))
       .catch(() => {});
-  }, []);
+  }, [projectId]);
 
   // ---- derived values (declared once, used everywhere below) ----
   const baseAmount = selectedPlot ? Number(plotArea || 0) * Number(plotRate || 0) : 0;
@@ -238,10 +243,12 @@ function BookingCreate() {
   const emiPercent = sellingPrice > 0 ? Math.round(((emiAmountEach / sellingPrice) * 100) * 100) / 100 : 0; // display-only
   const totalSqftForToggle = Number(selectedPlot?.totalArea) || 0;
 
+  const dpBase = Math.max(sellingPrice - (Number(bookingAmount) || 0), 0);
+
   const downPaymentDisplayValue =
     downPaymentMode === "percent"
-      ? sellingPrice > 0
-        ? Math.round((downPaymentAmount / sellingPrice) * 10000) / 100
+      ? dpBase > 0
+        ? Math.round((downPaymentAmount / dpBase) * 10000) / 100
         : 0
       : totalSqftForToggle > 0
       ? Math.round((downPaymentAmount / totalSqftForToggle) * 100) / 100
@@ -259,7 +266,7 @@ function BookingCreate() {
   function handleDownPaymentInput(value) {
     const v = Number(value) || 0;
     setDownPaymentAmount(
-      downPaymentMode === "percent" ? Math.round((sellingPrice * v) / 100) : Math.round(v * totalSqftForToggle)
+      downPaymentMode === "percent" ? Math.round((dpBase * v) / 100) : Math.round(v * totalSqftForToggle)
     );
   }
 
@@ -892,7 +899,10 @@ function BookingCreate() {
                 value={downPaymentDisplayValue}
                 onChange={(e) => handleDownPaymentInput(e.target.value)}
               />
-              <p className="text-muted small mb-0 mt-1">= {money(downPaymentAmount)}</p>
+              <p className="text-muted small mb-0 mt-1">
+                = {money(downPaymentAmount)}
+                {downPaymentMode === "percent" ? ` (of ${money(dpBase)} after token)` : ""}
+              </p>
             </div>
             <div className="col-md-3">
               <div className="d-flex justify-content-between align-items-center mb-1">

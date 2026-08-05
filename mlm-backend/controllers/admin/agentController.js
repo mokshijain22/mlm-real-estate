@@ -191,6 +191,22 @@ async function show(req, res) {
 }
 
 // GET /api/admin/agents/:id/tree
+// GET /api/admin/tree/company?projectId=...
+async function companyTree(req, res) {
+  try {
+    if (!req.query.projectId) {
+      return res.status(422).json({ message: 'projectId is required.' });
+    }
+    const project = await Project.findById(req.query.projectId).select('commissionPool name');
+    if (!project) return res.status(404).json({ message: 'Project not found.' });
+
+    const treeData = await treeBuilderService.getCompanyTree(project.commissionPool, 7);
+    return res.json({ project, treeData });
+  } catch (err) {
+    return res.status(500).json({ message: 'Failed to fetch company tree.', error: err.message });
+  }
+}
+
 async function tree(req, res) {
   try {
     const agent = await User.findById(req.params.id).populate('referredBy').populate('role');
@@ -356,4 +372,4 @@ async function updateDetails(req, res) {
     return res.status(500).json({ message: 'Failed to update agent details.', error: err.message });
   }
 }
-module.exports = { index, show, tree, approve, deactivate, activate, rankHistory, updateReferralCode, updateDetails, store };
+module.exports = { index, show, tree, companyTree, approve, deactivate, activate, rankHistory, updateReferralCode, updateDetails, store };

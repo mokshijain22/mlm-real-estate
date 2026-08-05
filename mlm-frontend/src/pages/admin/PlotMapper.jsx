@@ -9,6 +9,15 @@ function statusColor(status) {
   return status === "available" ? "#10b981" : status === "booked" ? "#f59e0b" : "#ef4444";
 }
 
+function computePlc({ is_garden, is_corner, is_40ft_road }) {
+  if (is_corner && is_garden && is_40ft_road) return 20;
+  if (is_garden && is_corner) return 15;
+  if (is_corner) return 10;
+  if (is_40ft_road) return 10;
+  if (is_garden) return 5;
+  return 0;
+}
+
 function latLngsToRect(latlngs, imgW, imgH) {
   const lats = latlngs.map((p) => p[0]);
   const lngs = latlngs.map((p) => p[1]);
@@ -83,6 +92,7 @@ function PlotMapper() {
   const [pendingRect, setPendingRect] = useState(null); // rect awaiting form
   const [form, setForm] = useState({
     number: "", total_area: "", price_per_sqft: "", status: "available", plc_percent: "",
+    length: "", width: "", is_garden: false, is_corner: false, is_40ft_road: false,
     facing: "", zone_type: "", corner_plot: "", boundary_n: "", boundary_s: "", boundary_e: "", boundary_w: "",
   });
 
@@ -162,6 +172,7 @@ function PlotMapper() {
     setPendingRect({ x, y, w, h });
    setForm({
       number: "", total_area: "", price_per_sqft: "", status: "available", plc_percent: "",
+      length: "", width: "", is_garden: false, is_corner: false, is_40ft_road: false,
       facing: "", zone_type: "", corner_plot: "", boundary_n: "", boundary_s: "", boundary_e: "", boundary_w: "",
     });
   };
@@ -254,6 +265,8 @@ function PlotMapper() {
           price_per_sqft: form.price_per_sqft || 0,
           plc_percent: form.plc_percent || 0,
           status: form.status || "available",
+          length: form.length || null,
+          width: form.width || null,
           facing: form.facing,
           zone_type: form.zone_type,
           corner_plot: form.corner_plot,
@@ -506,34 +519,80 @@ function PlotMapper() {
                 </div>
                 <div className="row">
                   <div className="col-6 mb-2">
-                    <label className="form-label">Facing</label>
-                    <input className="form-control" value={form.facing} onChange={(e) => setForm((f) => ({ ...f, facing: e.target.value }))} />
+                    <label className="form-label">Length (ft)</label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      value={form.length}
+                      onChange={(e) => setForm((f) => ({ ...f, length: e.target.value }))}
+                    />
                   </div>
                   <div className="col-6 mb-2">
-                    <label className="form-label">Zone Type</label>
-                    <input className="form-control" value={form.zone_type} onChange={(e) => setForm((f) => ({ ...f, zone_type: e.target.value }))} />
+                    <label className="form-label">Width (ft)</label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      value={form.width}
+                      onChange={(e) => setForm((f) => ({ ...f, width: e.target.value }))}
+                    />
                   </div>
                 </div>
                 <div className="mb-2">
-                  <label className="form-label">Corner Plot</label>
-                  <input className="form-control" value={form.corner_plot} onChange={(e) => setForm((f) => ({ ...f, corner_plot: e.target.value }))} placeholder="yes / no" />
+                  <label className="form-label">Facing</label>
+                  <input className="form-control" value={form.facing} onChange={(e) => setForm((f) => ({ ...f, facing: e.target.value }))} />
                 </div>
-                <div className="row">
-                  <div className="col-6 mb-2">
-                    <label className="form-label">Boundary N</label>
-                    <input className="form-control" value={form.boundary_n} onChange={(e) => setForm((f) => ({ ...f, boundary_n: e.target.value }))} />
+                <div className="mb-2">
+                  <label className="form-label d-block">PLC (auto-calculated, still editable)</label>
+                  <div className="d-flex gap-3 flex-wrap mb-2">
+                    <div className="form-check">
+                      <input
+                        type="checkbox"
+                        className="form-check-input"
+                        id="is_garden"
+                        checked={form.is_garden}
+                        onChange={(e) => {
+                          const next = { ...form, is_garden: e.target.checked };
+                          setForm({ ...next, plc_percent: computePlc(next) });
+                        }}
+                      />
+                      <label className="form-check-label" htmlFor="is_garden">Garden facing</label>
+                    </div>
+                    <div className="form-check">
+                      <input
+                        type="checkbox"
+                        className="form-check-input"
+                        id="is_corner"
+                        checked={form.is_corner}
+                        onChange={(e) => {
+                          const next = { ...form, is_corner: e.target.checked };
+                          setForm({ ...next, plc_percent: computePlc(next) });
+                        }}
+                      />
+                      <label className="form-check-label" htmlFor="is_corner">Corner plot</label>
+                    </div>
+                    <div className="form-check">
+                      <input
+                        type="checkbox"
+                        className="form-check-input"
+                        id="is_40ft_road"
+                        checked={form.is_40ft_road}
+                        onChange={(e) => {
+                          const next = { ...form, is_40ft_road: e.target.checked };
+                          setForm({ ...next, plc_percent: computePlc(next) });
+                        }}
+                      />
+                      <label className="form-check-label" htmlFor="is_40ft_road">On 40ft road</label>
+                    </div>
                   </div>
-                  <div className="col-6 mb-2">
-                    <label className="form-label">Boundary S</label>
-                    <input className="form-control" value={form.boundary_s} onChange={(e) => setForm((f) => ({ ...f, boundary_s: e.target.value }))} />
-                  </div>
-                  <div className="col-6 mb-2">
-                    <label className="form-label">Boundary E</label>
-                    <input className="form-control" value={form.boundary_e} onChange={(e) => setForm((f) => ({ ...f, boundary_e: e.target.value }))} />
-                  </div>
-                  <div className="col-6 mb-2">
-                    <label className="form-label">Boundary W</label>
-                    <input className="form-control" value={form.boundary_w} onChange={(e) => setForm((f) => ({ ...f, boundary_w: e.target.value }))} />
+                  <div className="input-group" style={{ maxWidth: 160 }}>
+                    <input
+                      type="number"
+                      step="0.01"
+                      className="form-control"
+                      value={form.plc_percent}
+                      onChange={(e) => setForm((f) => ({ ...f, plc_percent: e.target.value }))}
+                    />
+                    <span className="input-group-text">%</span>
                   </div>
                 </div>
               </div>
