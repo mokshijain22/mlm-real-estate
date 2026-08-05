@@ -50,6 +50,9 @@ function BookingCreate() {
   const [plotsLoading, setPlotsLoading] = useState(false);
   const [plotId, setPlotId] = useState("");
   const [selectedPlot, setSelectedPlot] = useState(null);
+  const [plotArea, setPlotArea] = useState(0);
+  const [plotRate, setPlotRate] = useState(0);
+  const [plotPlcPercent, setPlotPlcPercent] = useState(0);
 
   // Step 1 — executive (mandatory)
   const [agentId, setAgentId] = useState("");
@@ -216,6 +219,9 @@ function BookingCreate() {
   useEffect(() => {
     const plot = plots.find((p) => p._id === plotId) || null;
     setSelectedPlot(plot);
+    setPlotArea(plot?.totalArea || 0);
+    setPlotRate(plot?.pricePerSqft || 0);
+    setPlotPlcPercent(plot?.plcPercent || 0);
   }, [plotId, plots]);
 
   useEffect(() => {
@@ -226,8 +232,8 @@ function BookingCreate() {
   }, []);
 
   // ---- derived values (declared once, used everywhere below) ----
-  const baseAmount = selectedPlot ? Number(selectedPlot.totalArea || 0) * Number(selectedPlot.pricePerSqft || 0) : 0;
-  const plcAmount = selectedPlot ? Math.round((baseAmount * Number(selectedPlot.plcPercent || 0)) / 100) : 0;
+  const baseAmount = selectedPlot ? Number(plotArea || 0) * Number(plotRate || 0) : 0;
+  const plcAmount = selectedPlot ? Math.round((baseAmount * Number(plotPlcPercent || 0)) / 100) : 0;
   const sellingPrice = baseAmount + plcAmount;
   const emiPercent = sellingPrice > 0 ? Math.round(((emiAmountEach / sellingPrice) * 100) * 100) / 100 : 0; // display-only
   const totalSqftForToggle = Number(selectedPlot?.totalArea) || 0;
@@ -341,7 +347,7 @@ function BookingCreate() {
     api
       .post("/admin/bookings/commission-preview", {
         agent_id: agentId || undefined,
-        price_per_sqft: selectedPlot?.pricePerSqft || 0,
+        price_per_sqft: Number(plotRate) || 0,
         emi_amount: emiAmount,
         emi_months: emiMonths,
         payment_mode: paymentMode,
@@ -426,7 +432,9 @@ function BookingCreate() {
         lead_id: leadId || undefined,
         plot_id: plotId,
         agent_id: agentId || undefined,
-        price_per_sqft: selectedPlot?.pricePerSqft || 0,
+        price_per_sqft: Number(plotRate) || 0,
+        plot_area: Number(plotArea) || 0,
+        plc_percent: Number(plotPlcPercent) || 0,
         booking_amount: Number(bookingAmount) || 0,
         down_payment_amount: Number(downPaymentAmount) || 0,
         down_payment_due_date: scheduleDates.find((r) => r.key === "dp1")?.date,
@@ -743,23 +751,42 @@ function BookingCreate() {
               <div className="card-body py-3">
                 <h6 className="mb-3">Plot {selectedPlot.plotNumber}</h6>
                 <div className="row g-3">
-                  <div className="col-md-4">
+                  <div className="col-md-3">
                     <label className="form-label small text-muted">Area (sqft)</label>
-                    <input type="text" className="form-control" value={selectedPlot.totalArea} disabled />
+                    <input
+                      type="number"
+                      className="form-control"
+                      value={plotArea}
+                      onChange={(e) => setPlotArea(e.target.value)}
+                    />
                   </div>
-                  <div className="col-md-4">
+                  <div className="col-md-3">
                     <label className="form-label small text-muted">Rate (₹/sqft)</label>
-                    <input type="text" className="form-control" value={selectedPlot.pricePerSqft} disabled />
+                    <input
+                      type="number"
+                      className="form-control"
+                      value={plotRate}
+                      onChange={(e) => setPlotRate(e.target.value)}
+                    />
                   </div>
-                  <div className="col-md-4">
+                  <div className="col-md-3">
+                    <label className="form-label small text-muted">PLC (%)</label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      value={plotPlcPercent}
+                      onChange={(e) => setPlotPlcPercent(e.target.value)}
+                    />
+                  </div>
+                  <div className="col-md-3">
                     <label className="form-label small text-muted">Selling price</label>
                     <input type="text" className="form-control fw-bold" value={money(sellingPrice)} disabled />
                   </div>
                 </div>
                 <p className="text-muted small mb-0 mt-2">
                   <iconify-icon icon="solar:info-circle-linear" className="align-middle me-1"></iconify-icon>
-                  Selling price = Rate × Area{Number(selectedPlot.plcAmount) > 0 ? " + PLC" : ""}. Final price is
-                  confirmed on the next step.
+                  Selling price = Rate × Area{Number(plotPlcPercent) > 0 ? " + PLC" : ""}. Editing these updates the
+                  plot's saved values once the booking is created.
                 </p>
               </div>
             </div>

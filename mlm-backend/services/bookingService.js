@@ -39,10 +39,10 @@ async function createBooking(data, actingUser) {
         throw new Error('Plot is not available for booking');
       }
 
-      const totalArea = plot.totalArea;
+      const totalArea = data.plot_area !== undefined && data.plot_area !== '' ? Number(data.plot_area) : plot.totalArea;
       const pricePerSqft = Number(data.price_per_sqft);
       const baseAmount = Number(totalArea) * pricePerSqft;
-      const plcPercent = Number(plot.plcPercent) || 0;
+      const plcPercent = data.plc_percent !== undefined && data.plc_percent !== '' ? Number(data.plc_percent) : (Number(plot.plcPercent) || 0);
       const plcAmount = Math.round((baseAmount * plcPercent) / 100);
       const totalAmount = baseAmount + plcAmount;
       const bookingAmount = Number(data.booking_amount);
@@ -147,6 +147,9 @@ async function createBooking(data, actingUser) {
       );
 
       const plotStatus = actingIsAdmin ? 'sold' : 'booked';
+      plot.totalArea = totalArea;
+      plot.pricePerSqft = pricePerSqft;
+      plot.plcPercent = plcPercent;
       plot.status = plotStatus;
       await plot.save({ session });
 
