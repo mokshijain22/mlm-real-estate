@@ -66,7 +66,7 @@ async function processEmiCommission(emi) {
 
       const sellerPoints = pointsType === 'BV' ? Number(bookingRank?.bvPoints || 0) : Number(bookingRank?.pvPoints || 0);
       const cap = Number(booking.commissionCapPerSqft) || 0;
-      const sellerEarning = cap > 0 ? Math.min(sqftPortion * sellerPoints * multiplier, sqftPortion * cap) : sqftPortion * sellerPoints * multiplier;
+      const sellerEarning = cap > 0 ? sqftPortion * cap : sqftPortion * sellerPoints * multiplier;
 
       await walletService.credit(
         sellingAgent,
@@ -97,7 +97,7 @@ async function processEmiCommission(emi) {
         if (difference > 0) {
           const rawCommission = sqftPortion * difference * multiplier;
           const uplineCap = Number(uplineCaps[uplineRowIndex]) || 0;
-          const commission = uplineCap > 0 ? Math.min(rawCommission, sqftPortion * uplineCap) : rawCommission;
+          const commission = uplineCap > 0 ? sqftPortion * uplineCap : rawCommission;
 
           await walletService.credit(
             uplineAgent,

@@ -377,13 +377,13 @@ async function updateDetails(req, res) {
 
       const childrenAgg = await User.aggregate([
         { $match: { referredBy: agent._id } },
-        { $group: { _id: null, total: { $sum: '$slabPerSqft' } } },
+        { $group: { _id: null, max: { $max: '$slabPerSqft' } } },
       ]);
-      const alreadyAssignedToDownline = childrenAgg[0]?.total || 0;
+      const alreadyAssignedToDownline = childrenAgg[0]?.max || 0;
       if (newCap < alreadyAssignedToDownline) {
         return res.status(422).json({
           errors: {
-            slab_per_sqft: `Cap can't be lowered below ₹${alreadyAssignedToDownline}/sqft — that's already assigned to ${agent.name}'s direct downline. Reduce their downline's caps first.`,
+            slab_per_sqft: `Cap can't be lowered below ₹${alreadyAssignedToDownline}/sqft — that's the highest cap already assigned to ${agent.name}'s direct downline. Reduce that downline's cap first.`,
           },
         });
       }

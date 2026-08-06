@@ -389,7 +389,7 @@ function BookingCreate() {
       const cap = commissionCap || 0;
       return {
         ...row,
-        cappedTotal: cap > 0 ? Math.min(row.total_commission, cap * totalSqft) : row.total_commission,
+        cappedTotal: cap > 0 ? cap * totalSqft : row.total_commission,
         capEditable: true,
         capValue: cap,
         uplineIndex: null,
@@ -403,7 +403,7 @@ function BookingCreate() {
     const cap = Number(uplineCaps[uplineIndex]) || 0;
     return {
       ...row,
-      cappedTotal: cap > 0 ? Math.min(row.total_commission, cap * totalSqft) : row.total_commission,
+      cappedTotal: cap > 0 ? cap * totalSqft : row.total_commission,
       capEditable: true,
       capValue: cap,
       uplineIndex,

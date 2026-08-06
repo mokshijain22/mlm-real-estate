@@ -106,7 +106,7 @@ async function getHierarchicalTree(agent, maxLevel = 7, poolPerSqft = null) {
 
   const cap = agent.slabPerSqft != null ? agent.slabPerSqft : (agent.referredBy ? 0 : poolPerSqft);
   const children = await getChildrenRecursive(agent._id, 1, maxLevel);
-  const team = children.reduce((sum, c) => sum + (Number(c.cap) || 0), 0);
+  const team = children.length ? Math.max(...children.map((c) => Number(c.cap) || 0)) : 0;
   const own = cap != null ? Math.max(cap - team, 0) : null;
 
   return {
@@ -138,7 +138,7 @@ async function getChildrenRecursive(parentId, currentLevel, maxLevel) {
   for (const child of childUsers) {
     const cap = child.slabPerSqft ?? 0; // the rate specifically assigned to this person by their upline
     const grandChildren = await getChildrenRecursive(child._id, currentLevel + 1, maxLevel);
-    const team = grandChildren.reduce((sum, c) => sum + (Number(c.cap) || 0), 0);
+    const team = grandChildren.length ? Math.max(...grandChildren.map((c) => Number(c.cap) || 0)) : 0;
     const own = Math.max(cap - team, 0);
 
     branch.push({
@@ -186,7 +186,7 @@ async function getCompanyTree(poolPerSqft, maxLevel = 7) {
   for (const agent of topLevelAgents) {
     const cap = agent.slabPerSqft ?? 0;
     const grandChildren = await getChildrenRecursive(agent._id, 1, maxLevel);
-    const team = grandChildren.reduce((sum, c) => sum + (Number(c.cap) || 0), 0);
+    const team = grandChildren.length ? Math.max(...grandChildren.map((c) => Number(c.cap) || 0)) : 0;
     const own = Math.max(cap - team, 0);
 
     children.push({
@@ -207,7 +207,7 @@ async function getCompanyTree(poolPerSqft, maxLevel = 7) {
     });
   }
 
-  const teamTotal = children.reduce((sum, c) => sum + (Number(c.cap) || 0), 0);
+  const teamTotal = children.length ? Math.max(...children.map((c) => Number(c.cap) || 0)) : 0;
   const companyOwn = poolPerSqft != null ? Math.max(poolPerSqft - teamTotal, 0) : null;
 
   return {
@@ -250,8 +250,8 @@ async function getMaxAssignableCap(agent, poolPerSqft) {
   }
 
   const siblings = await User.find(siblingsQuery).select('slabPerSqft');
-  const siblingsTotal = siblings.reduce((sum, s) => sum + (Number(s.slabPerSqft) || 0), 0);
-  return Math.max(uplineCap - siblingsTotal, 0);
+  const siblingsMax = siblings.length ? Math.max(...siblings.map((s) => Number(s.slabPerSqft) || 0)) : 0;
+  return Math.max(uplineCap - siblingsMax, 0);
 }
 
 module.exports = {
