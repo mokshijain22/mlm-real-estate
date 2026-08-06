@@ -56,14 +56,54 @@ export async function fetchCsvForPreview(api, url, params) {
   return { blob, headers, rows };
 }
 
-export function downloadPdfTable(title, headers, rows, filename) {
+// Display-only label mapping — keeps CSV/backend data untouched, only changes
+// what's shown in the PDF, matching the "Online"/"Cash" convention used
+// elsewhere in the app (Withdrawals, PayoutsReport, Dashboard, etc).
+function mapHeaderLabel(h) {
+  const map = {
+    "BV Amount": "Online Amount",
+    "PV Amount": "Cash Amount",
+    "BV": "Online",
+    "PV": "Cash",
+  };
+  return map[h] || h;
+}
+
+function computeAmountSummary(headers, rows) {
+  const amountIdx = headers.findIndex((h) => /amount/i.test(h));
+  const statusIdx = headers.findIndex((h) => /status/i.test(h));
+  if (amountIdx === -1 || statusIdx === -1) return null;
+
+  const toNum = (v) => {
+    const n = parseFloat(String(v ?? "").replace(/[^0-9.-]/g, ""));
+    return Number.isFinite(n) ? n : 0;
+  };
+
+  let total = 0, pending = 0, paid = 0;
+  rows.forEach((r) => {
+    const amt = toNum(r[amountIdx]);
+    const status = String(r[statusIdx] ?? "").trim().toLowerCase();
+    total += amt;
+    if (status === "pending") pending += amt;
+    else if (status === "paid" || status === "approved") paid += amt;
+  });
+  return { total, pending, paid };
+}
+
+const formatInr = (n) =>
+  "\u20B9" + n.toLocaleString("en-IN", { maximumFractionDigits: 2 });
+
+export function downloadPdfTable(title, headers, rows, filename, periodLabel) {
+  const displayHeaders = headers.map(mapHeaderLabel);
   const doc = new jsPDF({ orientation: headers.length > 6 ? "landscape" : "portrait", unit: "pt", format: "a4" });
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 32;
 
   // ---- Header band ----
+  const summary = computeAmountSummary(headers, rows);
+  const bandHeight = periodLabel || summary ? 84 : 64;
   doc.setFillColor(79, 70, 229);
-  doc.rect(0, 0, pageWidth, 64, "F");
+  doc.rect(0, 0, pageWidth, bandHeight, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(16);
   doc.setFont(undefined, "bold");
@@ -72,12 +112,21 @@ export function downloadPdfTable(title, headers, rows, filename) {
   doc.setFont(undefined, "normal");
   const generatedOn = new Date().toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
   doc.text(`Generated on ${generatedOn}   \u00B7   Total Records: ${rows.length}`, margin, 48);
+  if (periodLabel) {
+    doc.text(periodLabel, margin, 62);
+  }
+  if (summary) {
+    const summaryText = `Total Amount: ${formatInr(summary.total)}   |   Pending: ${formatInr(summary.pending)}   |   Paid: ${formatInr(summary.paid)}`;
+    doc.setFont(undefined, "bold");
+    doc.text(summaryText, margin, periodLabel ? 76 : 62);
+    doc.setFont(undefined, "normal");
+  }
 
   // ---- Table ----
   autoTable(doc, {
-    startY: 80,
+    startY: bandHeight + 16,
     margin: { left: margin, right: margin },
-    head: [headers],
+    head: [displayHeaders],
     body: rows,
     theme: "striped",
     styles: { fontSize: 8, cellPadding: 6, overflow: "linebreak", lineColor: [230, 230, 230], lineWidth: 0.5 },

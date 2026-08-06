@@ -2,6 +2,16 @@ import { useState } from "react";
 import api from "../../api/axios.js";
 import { fetchCsvForPreview, downloadBlob, downloadPdfTable } from "../../utils/exportUtils.js";
 
+// Display-only label mapping — matches "Online"/"Cash" convention used across the app
+// (Withdrawals, PayoutsReport, Dashboard, etc). CSV download keeps raw backend headers.
+const HEADER_LABEL_MAP = {
+  "BV Amount": "Online Amount",
+  "PV Amount": "Cash Amount",
+  "BV": "Online",
+  "PV": "Cash",
+};
+const mapHeaderLabel = (h) => HEADER_LABEL_MAP[h] || h;
+
 function ExportButton({ url, params, title, filenamePrefix, className = "btn btn-success", label = "Export" }) {
   const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState(null);
@@ -22,12 +32,36 @@ function ExportButton({ url, params, title, filenamePrefix, className = "btn btn
 
   const close = () => setShow(false);
   const handleDownloadCsv = () => preview && downloadBlob(preview.blob, `${filenamePrefix}_${Date.now()}.csv`);
-  const handleDownloadPdf = () => preview && downloadPdfTable(title || filenamePrefix, preview.headers, preview.rows, `${filenamePrefix}_${Date.now()}.pdf`);
+  const handleDownloadPdf = () =>
+    preview &&
+    downloadPdfTable(title || filenamePrefix, preview.headers, preview.rows, `${filenamePrefix}_${Date.now()}.pdf`, dateRangeLabel);
 
   const formatDate = (d) => new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
   const dateRangeLabel = params?.date_from || params?.date_to
     ? `Period: ${params?.date_from ? formatDate(params.date_from) : "Beginning"} — ${params?.date_to ? formatDate(params.date_to) : "Today"}`
     : "Period: All time";
+
+  const toNum = (v) => {
+    const n = parseFloat(String(v ?? "").replace(/[^0-9.-]/g, ""));
+    return Number.isFinite(n) ? n : 0;
+  };
+  const amountIdx = preview ? preview.headers.findIndex((h) => /amount/i.test(h)) : -1;
+  const statusIdx = preview ? preview.headers.findIndex((h) => /status/i.test(h)) : -1;
+  const amountSummary =
+    preview && amountIdx !== -1 && statusIdx !== -1
+      ? preview.rows.reduce(
+          (acc, r) => {
+            const amt = toNum(r[amountIdx]);
+            const status = String(r[statusIdx] ?? "").trim().toLowerCase();
+            acc.total += amt;
+            if (status === "pending") acc.pending += amt;
+            else if (status === "paid" || status === "approved") acc.paid += amt;
+            return acc;
+          },
+          { total: 0, pending: 0, paid: 0 }
+        )
+      : null;
+  const formatInr = (n) => "\u20B9" + n.toLocaleString("en-IN", { maximumFractionDigits: 2 });
 
   return (
     <>
@@ -52,6 +86,11 @@ function ExportButton({ url, params, title, filenamePrefix, className = "btn btn
                   Generated on {new Date().toLocaleDateString("en-IN")} &nbsp;·&nbsp; Total Records: {preview.rows.length}
                 </p>
                 <p className="mb-0 small text-muted text-center fst-italic">{dateRangeLabel}</p>
+                {amountSummary && (
+                  <p className="mb-0 small fw-bold text-center mt-1" style={{ color: "#1e1b4b" }}>
+                    Total Amount: {formatInr(amountSummary.total)} &nbsp;|&nbsp; Pending: {formatInr(amountSummary.pending)} &nbsp;|&nbsp; Paid: {formatInr(amountSummary.paid)}
+                  </p>
+                )}
               </div>
               <div className="modal-body p-0" style={{ maxHeight: "60vh", overflow: "auto" }}>
                 {preview.rows.length === 0 ? (
@@ -67,7 +106,7 @@ function ExportButton({ url, params, title, filenamePrefix, className = "btn btn
                               className="text-uppercase small fw-bold"
                               style={{ whiteSpace: "nowrap", background: "#eef0ff", color: "#4338ca", padding: "10px 14px" }}
                             >
-                              {h}
+                              {mapHeaderLabel(h)}
                             </th>
                           ))}
                         </tr>
