@@ -237,7 +237,11 @@ function AgentDetail() {
         setEditingDetails(false);
         loadProfile();
       })
-      .catch((err) => setDetailsError(err.response?.data?.message || err.message))
+      .catch((err) => {
+        const fieldErrors = err.response?.data?.errors;
+        const firstFieldError = fieldErrors && Object.values(fieldErrors)[0];
+        setDetailsError(firstFieldError || err.response?.data?.message || err.message);
+      })
       .finally(() => setSavingDetails(false));
   };
 
@@ -941,17 +945,20 @@ function AgentDetail() {
           <div className="modal-dialog modal-dialog-centered modal-xl" style={{ maxWidth: "95vw" }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-content border-0 shadow-lg overflow-hidden">
               <div
-                className="modal-header border-0 text-white"
-                style={{ background: "linear-gradient(135deg, #4f46e5, #6366f1)" }}
+                className="modal-header border-0 flex-column position-relative py-4"
+                style={{ background: "#fff", borderBottom: "1px solid #e5e7eb" }}
               >
-                <div>
-                  <h5 className="modal-title fw-bold mb-1">Executive Tree — {treeData.agent.name}</h5>
-                  <p className="mb-0 small opacity-75">
-                    {flattenTree(treeData.treeData).length} record(s) \u00B7 Generated{" "}
-                    {new Date().toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
-                  </p>
-                </div>
-                <button className="btn-close btn-close-white" onClick={() => setTreePreview(false)}></button>
+                <button className="btn-close position-absolute top-0 end-0 m-3" onClick={() => setTreePreview(false)}></button>
+                <h5 className="modal-title fw-bold mb-1 text-uppercase text-center" style={{ letterSpacing: "0.5px", color: "#1e1b4b" }}>
+                  Executive Tree
+                </h5>
+                <p className="mb-0 small text-muted text-center fst-italic">
+                  Full tree of {treeData.agent.name}
+                </p>
+                <p className="mb-0 small text-muted text-center mt-1">
+                  {flattenTree(treeData.treeData).length} record(s) &nbsp;·&nbsp; Generated{" "}
+                  {new Date().toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
+                </p>
               </div>
               <div className="modal-body p-0" style={{ maxHeight: "60vh", overflow: "auto" }}>
                 <div className="table-responsive">
@@ -984,14 +991,14 @@ function AgentDetail() {
                 </div>
               </div>
               <div className="modal-footer bg-light border-0">
-                <button className="btn btn-light" onClick={() => setTreePreview(false)}>
-                  Cancel
+                <button className="btn" style={{ background: "#1e293b", color: "#fff" }} onClick={() => setTreePreview(false)}>
+                  Close
                 </button>
                 <button className="btn btn-success" onClick={handleDownloadTreeCsv}>
                   <iconify-icon icon="solar:file-text-bold-duotone" className="align-middle me-1"></iconify-icon>
                   Download CSV
                 </button>
-                <button className="btn btn-primary" onClick={generateTreePdf}>
+                <button className="btn" style={{ background: "#f59e0b", color: "#fff" }} onClick={generateTreePdf}>
                   <iconify-icon icon="solar:file-download-bold-duotone" className="align-middle me-1"></iconify-icon>
                   Download PDF
                 </button>

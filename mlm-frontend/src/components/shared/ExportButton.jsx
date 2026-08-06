@@ -24,6 +24,11 @@ function ExportButton({ url, params, title, filenamePrefix, className = "btn btn
   const handleDownloadCsv = () => preview && downloadBlob(preview.blob, `${filenamePrefix}_${Date.now()}.csv`);
   const handleDownloadPdf = () => preview && downloadPdfTable(title || filenamePrefix, preview.headers, preview.rows, `${filenamePrefix}_${Date.now()}.pdf`);
 
+  const formatDate = (d) => new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  const dateRangeLabel = params?.date_from || params?.date_to
+    ? `Period: ${params?.date_from ? formatDate(params.date_from) : "Beginning"} — ${params?.date_to ? formatDate(params.date_to) : "Today"}`
+    : "Period: All time";
+
   return (
     <>
       <button type="button" className={className} onClick={openPreview} disabled={loading}>
@@ -36,17 +41,17 @@ function ExportButton({ url, params, title, filenamePrefix, className = "btn btn
           <div className="modal-dialog modal-dialog-centered modal-xl" style={{ maxWidth: "95vw" }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-content border-0 shadow-lg overflow-hidden">
               <div
-                className="modal-header border-0 text-white"
-                style={{ background: "linear-gradient(135deg, #4f46e5, #6366f1)" }}
+                className="modal-header border-0 flex-column position-relative py-4"
+                style={{ background: "#fff", borderBottom: "1px solid #e5e7eb" }}
               >
-                <div>
-                  <h5 className="modal-title fw-bold mb-1">{title || "Export Preview"}</h5>
-                  <p className="mb-0 small opacity-75">
-                    {preview.rows.length} record{preview.rows.length === 1 ? "" : "s"} \u00B7 Generated{" "}
-                    {new Date().toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
-                  </p>
-                </div>
-                <button className="btn-close btn-close-white" onClick={close}></button>
+                <button className="btn-close position-absolute top-0 end-0 m-3" onClick={close}></button>
+                <h5 className="modal-title fw-bold mb-1 text-uppercase text-center" style={{ letterSpacing: "0.5px", color: "#1e1b4b" }}>
+                  {title || "Export Preview"}
+                </h5>
+                <p className="mb-0 small text-muted text-center">
+                  Generated on {new Date().toLocaleDateString("en-IN")} &nbsp;·&nbsp; Total Records: {preview.rows.length}
+                </p>
+                <p className="mb-0 small text-muted text-center fst-italic">{dateRangeLabel}</p>
               </div>
               <div className="modal-body p-0" style={{ maxHeight: "60vh", overflow: "auto" }}>
                 {preview.rows.length === 0 ? (
@@ -70,11 +75,26 @@ function ExportButton({ url, params, title, filenamePrefix, className = "btn btn
                       <tbody>
                         {preview.rows.slice(0, 100).map((row, ri) => (
                           <tr key={ri} style={{ background: ri % 2 ? "#fafaff" : "#fff" }}>
-                            {row.map((cell, ci) => (
-                              <td key={ci} className="px-3 py-2">
-                                {cell}
-                              </td>
-                            ))}
+                            {row.map((cell, ci) => {
+                              const isStatus = /^(PENDING|PAID|APPROVED|REJECTED|CANCELLED|ACTIVE|INACTIVE)$/i.test(String(cell).trim());
+                              return (
+                                <td key={ci} className="px-3 py-2">
+                                  {isStatus ? (
+                                    <span
+                                      className="badge rounded-pill fw-semibold px-2 py-1"
+                                      style={{
+                                        background: /^paid|approved|active$/i.test(cell) ? "#dcfce7" : /^pending$/i.test(cell) ? "#ffedd5" : "#fee2e2",
+                                        color: /^paid|approved|active$/i.test(cell) ? "#166534" : /^pending$/i.test(cell) ? "#c2410c" : "#991b1b",
+                                      }}
+                                    >
+                                      {cell}
+                                    </span>
+                                  ) : (
+                                    cell
+                                  )}
+                                </td>
+                              );
+                            })}
                           </tr>
                         ))}
                       </tbody>
@@ -88,14 +108,14 @@ function ExportButton({ url, params, title, filenamePrefix, className = "btn btn
                 )}
               </div>
               <div className="modal-footer bg-light border-0">
-                <button className="btn btn-light" onClick={close}>
-                  Cancel
+                <button className="btn" style={{ background: "#1e293b", color: "#fff" }} onClick={close}>
+                  Close
                 </button>
                 <button className="btn btn-success" onClick={handleDownloadCsv} disabled={!preview.rows.length}>
                   <iconify-icon icon="solar:file-text-bold-duotone" className="align-middle me-1"></iconify-icon>
                   Download CSV
                 </button>
-                <button className="btn btn-primary" onClick={handleDownloadPdf} disabled={!preview.rows.length}>
+                <button className="btn" style={{ background: "#f59e0b", color: "#fff" }} onClick={handleDownloadPdf} disabled={!preview.rows.length}>
                   <iconify-icon icon="solar:file-download-bold-duotone" className="align-middle me-1"></iconify-icon>
                   Download PDF
                 </button>

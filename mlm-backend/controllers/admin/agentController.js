@@ -375,6 +375,19 @@ async function updateDetails(req, res) {
         });
       }
 
+      const childrenAgg = await User.aggregate([
+        { $match: { referredBy: agent._id } },
+        { $group: { _id: null, total: { $sum: '$slabPerSqft' } } },
+      ]);
+      const alreadyAssignedToDownline = childrenAgg[0]?.total || 0;
+      if (newCap < alreadyAssignedToDownline) {
+        return res.status(422).json({
+          errors: {
+            slab_per_sqft: `Cap can't be lowered below ₹${alreadyAssignedToDownline}/sqft — that's already assigned to ${agent.name}'s direct downline. Reduce their downline's caps first.`,
+          },
+        });
+      }
+
       agent.slabPerSqft = newCap;
     }
     if (gender !== undefined && ['male', 'female', 'other', ''].includes(gender)) {

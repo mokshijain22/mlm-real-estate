@@ -232,16 +232,17 @@ async function getMaxAssignableCap(agent, poolPerSqft) {
   let uplineCap;
   let siblingsQuery;
 
-  if (agent.referredBy) {
-    const upline = await User.findById(agent.referredBy);
-    if (!upline) return null;
+  const upline = agent.referredBy ? await User.findById(agent.referredBy).populate('role') : null;
+  const uplineIsAgent = upline && upline.role && upline.role.slug === 'agent';
+
+  if (uplineIsAgent) {
     uplineCap = upline.slabPerSqft ?? 0;
     siblingsQuery = { referredBy: agent.referredBy, _id: { $ne: agent._id } };
   } else {
     if (poolPerSqft == null) return null;
     uplineCap = poolPerSqft;
     siblingsQuery = {
-      $or: [{ referredBy: null }, { referredBy: { $exists: false } }],
+      referredBy: agent.referredBy ?? null,
       _id: { $ne: agent._id },
     };
   }

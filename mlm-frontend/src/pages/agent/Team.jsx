@@ -84,7 +84,7 @@ if (treeData) flatten(treeData, 0);
           </div>
           <div className="org-tree-scroll" style={{ minHeight: 320 }}>
             <div className="org-tree-wrap" style={{ transform: `scale(${scale})` }}>
-              {treeData ? <OrgNode node={treeData} isRoot /> : <p className="text-muted mb-0">No team data available.</p>}
+              {treeData ? <OrgNode node={treeData} isRoot hideCommission /> : <p className="text-muted mb-0">No team data available.</p>}
             </div>
           </div>
         </div>
@@ -118,7 +118,6 @@ if (treeData) flatten(treeData, 0);
                       <th>Level</th>
                       <th>Rank</th>
                       <th>Position</th>
-                      <th>Slab / sqft</th>
                       <th>Created Date</th>
                       <th>Status</th>
                     </tr>

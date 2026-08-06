@@ -150,9 +150,12 @@ function CommissionsReport() {
         <div className="col-12">
           <div className="card">
             <div className="card-body">
-              <div className="row g-2 align-items-end border-bottom pb-3 mb-3">
-                <div className="col-md-2">
-                  <label className="form-label">Search</label>
+              <div
+                className="row g-3 align-items-end p-4 mb-3"
+                style={{ background: "linear-gradient(135deg, #1e3a8a, #3730a3)", borderRadius: "12px" }}
+              >
+                <div className="col-md-3">
+                  <label className="form-label text-white-50 text-uppercase small fw-bold">Search</label>
                   <input
                     type="text"
                     className="form-control"
@@ -161,8 +164,27 @@ function CommissionsReport() {
                     onChange={(e) => setSearchInput(e.target.value)}
                   />
                 </div>
+                <div className="col-md-2">
+                  <label className="form-label text-white-50 text-uppercase small fw-bold">Category</label>
+                  <select className="form-select" value={category} onChange={(e) => resetToPage1(setCategory)(e.target.value)}>
+                    <option value="all">All</option>
+                    <option value="emi_commission">EMI Commission</option>
+                    <option value="rank_difference">Rank Difference</option>
+                  </select>
+                </div>
+                <div className="col-md-2">
+                  <label className="form-label text-white-50 text-uppercase small fw-bold">Agent</label>
+                  <select className="form-select" value={agentId} onChange={(e) => resetToPage1(setAgentId)(e.target.value)}>
+                    <option value="">All Agents</option>
+                    {agents.map((a) => (
+                      <option key={a._id} value={a._id}>
+                        {a.name} {a.referralCode ? `(${a.referralCode})` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <div className="col-md-3">
-                  <label className="form-label">Date Range</label>
+                  <label className="form-label text-white-50 text-uppercase small fw-bold">Date</label>
                   <div className="input-group">
                     <input
                       type="date"
@@ -179,38 +201,19 @@ function CommissionsReport() {
                   </div>
                 </div>
                 <div className="col-md-2">
-                  <label className="form-label">Agent</label>
-                  <select className="form-select" value={agentId} onChange={(e) => resetToPage1(setAgentId)(e.target.value)}>
-                    <option value="">All Agents</option>
-                    {agents.map((a) => (
-                      <option key={a._id} value={a._id}>
-                        {a.name} {a.referralCode ? `(${a.referralCode})` : ""}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="col-md-2">
-                  <label className="form-label">Category</label>
-                  <select className="form-select" value={category} onChange={(e) => resetToPage1(setCategory)(e.target.value)}>
-                    <option value="all">All</option>
-                    <option value="emi_commission">EMI Commission</option>
-                    <option value="rank_difference">Rank Difference</option>
-                  </select>
-                </div>
-                <div className="col-md-2">
-                  <label className="form-label">Points Type</label>
+                  <label className="form-label text-white-50 text-uppercase small fw-bold">Points Type</label>
                   <select className="form-select" value={pointsType} onChange={(e) => resetToPage1(setPointsType)(e.target.value)}>
                     <option value="all">All</option>
                     <option value="BV">Online</option>
                     <option value="PV">Cash</option>
                   </select>
                 </div>
-                <div className="col-md-3">
-                  <button type="button" className="btn btn-primary w-100 mb-1" onClick={() => setPage(1)}>
-                    Apply Filters
-                  </button>
-                  <button type="button" className="btn btn-light w-100" onClick={resetFilters}>
+                <div className="col-md-12 d-flex gap-2 justify-content-end">
+                  <button type="button" className="btn btn-light" onClick={resetFilters}>
                     Reset
+                  </button>
+                  <button type="button" className="btn btn-warning fw-bold" onClick={() => setPage(1)}>
+                    Apply Filters
                   </button>
                 </div>
               </div>

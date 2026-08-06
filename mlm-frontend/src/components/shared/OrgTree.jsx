@@ -14,7 +14,7 @@ function colorFor(rankName) {
   return RANK_COLORS[Math.abs(hash) % RANK_COLORS.length];
 }
 
-export function OrgNode({ node, isRoot, onNodeClick }) {
+export function OrgNode({ node, isRoot, onNodeClick, hideCommission }) {
   const hasChildren = node.children && node.children.length > 0;
   const c = isRoot ? { bg: "#4f46e5", border: "#4f46e5", badge: "#fff" } : colorFor(node.rank_name);
 
@@ -55,7 +55,7 @@ export function OrgNode({ node, isRoot, onNodeClick }) {
           >
             {node.isCompany ? "Company" : (node.rank_name || "N/A")}
           </span>
-          {(node.pool != null || node.cap != null) && (
+          {!hideCommission && (node.pool != null || node.cap != null) && (
             <div className={`fs-11 mt-1 d-flex gap-2 ${isRoot ? "text-white-50" : "text-muted"}`}>
               {isRoot ? <span>POOL ₹{node.pool}</span> : <span>CAP ₹{node.cap}</span>}
               {node.own != null && <span>OWN ₹{node.own}</span>}
@@ -68,7 +68,7 @@ export function OrgNode({ node, isRoot, onNodeClick }) {
       {hasChildren && (
         <div className="org-children">
           {node.children.map((child) => (
-            <OrgNode key={child.id} node={child} onNodeClick={onNodeClick} />
+            <OrgNode key={child.id} node={child} onNodeClick={onNodeClick} hideCommission={hideCommission} />
           ))}
         </div>
       )}

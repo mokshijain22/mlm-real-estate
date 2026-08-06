@@ -401,7 +401,14 @@ async function commissionsExport(req, res) {
       (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
     );
 
-    const headers = ['Date', 'Agent', 'Rank', 'Category', 'Booking#', 'Plot', 'EMI Month', 'BV Amount', 'PV Amount', 'Remark'];
+    const headers = ['Date', 'Agent', 'Rank', 'Category', 'Booking#', 'Plot', 'Source', 'BV Amount', 'PV Amount', 'Remark'];
+    const describeSource = (t) => {
+      const n = t.emi?.emiNumber;
+      if (n === -1) return 'Down Payment';
+      if (n === 0) return 'Booking Deposit';
+      if (n != null) return `EMI #${n}`;
+      return 'N/A';
+    };
     const rows = mergedData.map((t) => [
       new Date(t.createdAt).toISOString().slice(0, 16).replace('T', ' '),
       t.agent?.name || 'N/A',
@@ -409,7 +416,7 @@ async function commissionsExport(req, res) {
       t.category,
       t.booking?.bookingNumber || 'N/A',
       t.booking?.plot?.plotNumber || 'N/A',
-      t.emi?.emiNumber || 'N/A',
+      describeSource(t),
       t.pointsType === 'BV' ? t.amount : 0,
       t.pointsType === 'PV' ? t.amount : 0,
       t.remark,
