@@ -98,23 +98,23 @@ export function downloadPdfTable(title, headers, rows, filename, periodLabel) {
   // ---- Header band ----
   const summary = computeAmountSummary(headers, rows);
   const bandHeight = periodLabel || summary ? 84 : 64;
-  doc.setFillColor(79, 70, 229);
-  doc.rect(0, 0, pageWidth, bandHeight, "F");
-  doc.setTextColor(255, 255, 255);
+  doc.setTextColor(20, 20, 20);
   doc.setFontSize(16);
   doc.setFont(undefined, "bold");
-  doc.text(title.toUpperCase(), margin, 30);
+  doc.text(title.toUpperCase(), pageWidth / 2, 30, { align: "center" });
   doc.setFontSize(9);
   doc.setFont(undefined, "normal");
+  doc.setTextColor(90, 90, 90);
   const generatedOn = new Date().toLocaleDateString("en-IN");
   const headerLine = periodLabel
     ? `Generated on: ${generatedOn}   ${periodLabel}   Total Records: ${rows.length}`
     : `Generated on: ${generatedOn}   Total Records: ${rows.length}`;
-  doc.text(headerLine, margin, 48);
+  doc.text(headerLine, pageWidth / 2, 48, { align: "center" });
   if (summary) {
     const summaryText = `Total Amount: ${formatInr(summary.total)}   |   Pending: ${formatInr(summary.pending)}   |   Paid: ${formatInr(summary.paid)}`;
     doc.setFont(undefined, "bold");
-    doc.text(summaryText, margin, 64);
+    doc.setTextColor(20, 20, 20);
+    doc.text(summaryText, pageWidth / 2, 64, { align: "center" });
     doc.setFont(undefined, "normal");
   }
 
@@ -124,10 +124,9 @@ export function downloadPdfTable(title, headers, rows, filename, periodLabel) {
     margin: { left: margin, right: margin },
     head: [displayHeaders],
     body: rows,
-    theme: "striped",
-    styles: { fontSize: 8, cellPadding: 6, overflow: "linebreak", lineColor: [230, 230, 230], lineWidth: 0.5 },
-    headStyles: { fillColor: [79, 70, 229], textColor: 255, fontStyle: "bold", halign: "left" },
-    alternateRowStyles: { fillColor: [247, 247, 252] },
+    theme: "grid",
+    styles: { fontSize: 8, cellPadding: 6, overflow: "linebreak", lineColor: [0, 0, 0], lineWidth: 0.4, textColor: [20, 20, 20] },
+    headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: "bold", halign: "left", lineColor: [0, 0, 0], lineWidth: 0.4 },
     didDrawPage: () => {
       const pageCount = doc.internal.getNumberOfPages();
       const pageHeight = doc.internal.pageSize.getHeight();

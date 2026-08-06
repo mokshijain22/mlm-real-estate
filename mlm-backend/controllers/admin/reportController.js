@@ -350,8 +350,8 @@ async function commissions(req, res) {
 
     const [transactions, total] = await Promise.all([
       WalletTransaction.find(query)
-        .populate({ path: 'agent', select: 'name', populate: { path: 'rank' } })
-        .populate({ path: 'booking', populate: { path: 'plot' } })
+        .populate({ path: 'agent', select: 'name referralCode', populate: { path: 'rank' } })
+        .populate({ path: 'booking', populate: [{ path: 'plot' }, { path: 'project', select: 'name' }] })
         .populate('emi')
         .sort({ createdAt: -1 })
         .skip(skip)
@@ -391,8 +391,8 @@ async function commissionsExport(req, res) {
     const query = await buildCommissionsQuery(req.query);
 
     const transactions = await WalletTransaction.find(query)
-      .populate({ path: 'agent', select: 'name', populate: { path: 'rank' } })
-      .populate({ path: 'booking', populate: { path: 'plot' } })
+      .populate({ path: 'agent', select: 'name referralCode', populate: { path: 'rank' } })
+      .populate({ path: 'booking', populate: [{ path: 'plot' }, { path: 'project', select: 'name' }] })
       .populate('emi')
       .sort({ createdAt: -1 });
 
@@ -401,26 +401,34 @@ async function commissionsExport(req, res) {
       (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
     );
 
-    const headers = ['Date', 'Agent', 'Rank', 'Category', 'Booking#', 'Plot', 'Source', 'BV Amount', 'PV Amount', 'Remark'];
-    const describeSource = (t) => {
-      const n = t.emi?.emiNumber;
-      if (n === -1) return 'Down Payment';
-      if (n === 0) return 'Booking Deposit';
-      if (n != null) return `EMI #${n}`;
-      return 'N/A';
-    };
-    const rows = mergedData.map((t) => [
-      new Date(t.createdAt).toISOString().slice(0, 16).replace('T', ' '),
-      t.agent?.name || 'N/A',
-      t.isCompany ? 'Company' : (t.agent?.rank?.abbreviation || 'N/A'),
-      t.category,
-      t.booking?.bookingNumber || 'N/A',
-      t.booking?.plot?.plotNumber || 'N/A',
-      describeSource(t),
-      t.pointsType === 'BV' ? t.amount : 0,
-      t.pointsType === 'PV' ? t.amount : 0,
-      t.remark,
-    ]);
+    const headers = ['Executive', 'Project / Plot', 'Plot Area', 'Rate Value', 'Rate Type', 'Formatted Rate', 'Amount (INR)', 'Status', 'Date'];
+    const fmtNum = (n) => Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 });
+
+    const rows = mergedData.map((t) => {
+      const executive = t.isCompany
+        ? 'Company'
+        : `${t.agent?.name || 'N/A'}${t.agent?.referralCode ? `(${t.agent.referralCode})` : ''}`;
+      const projectName = t.booking?.project?.name || 'N/A';
+      const plotNumber = t.booking?.plot?.plotNumber || 'N/A';
+      const plotArea = t.booking?.totalArea ? `${t.booking.totalArea} sq.ft` : 'N/A';
+      const sqft = t.sqftPortion != null ? Number(t.sqftPortion) : Number(t.emi?.sqftPortion) || 0;
+      const rateValue = sqft > 0 ? Math.round((t.amount / sqft) * 100) / 100 : 0;
+      const formattedRate = `\u20B9${fmtNum(rateValue)}/sq.ft`;
+      const status = (t.emi?.status || 'pending').toUpperCase();
+      const date = new Date(t.createdAt).toLocaleDateString('en-IN');
+
+      return [
+        executive,
+        `${projectName}\nPlot ${plotNumber}`,
+        plotArea,
+        rateValue,
+        'Per Sq.Ft',
+        formattedRate,
+        fmtNum(t.amount),
+        status,
+        date,
+      ];
+    });
 
     return sendCsv(res, `commissions_${timestamp()}.csv`, toCsv(headers, rows));
   } catch (err) {

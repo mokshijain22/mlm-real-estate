@@ -222,25 +222,27 @@ function CommissionsReport() {
                 <table className="table table-centered table-nowrap table-hover mb-0">
                   <thead className="table-light">
                     <tr>
+                      <th>Executive</th>
+                      <th>Project / Plot</th>
+                      <th>Plot Area</th>
+                      <th>Rate Value</th>
+                      <th>Rate Type</th>
+                      <th>Formatted Rate</th>
+                      <th>Amount (INR)</th>
+                      <th>Status</th>
                       <th>Date</th>
-                      <th>Agent / Rank</th>
-                      <th>Category</th>
-                      <th>Booking # / Plot</th>
-                      <th>EMI #</th>
-                      <th>Online / Cash Amount</th>
-                      <th>Remark</th>
                     </tr>
                   </thead>
                   <tbody>
                     {!transactions ? (
                       <tr>
-                        <td colSpan="7" className="text-center py-4">
+                        <td colSpan="9" className="text-center py-4">
                           Loading...
                         </td>
                       </tr>
                     ) : transactions.length === 0 ? (
                       <tr>
-                        <td colSpan="7" className="text-center py-4">
+                        <td colSpan="9" className="text-center py-4">
                           <div className="my-3">
                             <iconify-icon icon="solar:document-text-line-duotone" className="text-muted fs-32"></iconify-icon>
                             <h5 className="mt-2">No Commission Records</h5>
@@ -249,77 +251,54 @@ function CommissionsReport() {
                         </td>
                       </tr>
                     ) : (
-                      transactions.map((t) => (
-                        <tr key={t._id} className={t.isCompany ? "table-dark bg-opacity-10" : ""}>
-                          <td>
-                            {new Date(t.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
-                            <br />
-                            <span className="text-muted fs-12">
-                              {new Date(t.createdAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true })}
-                            </span>
-                          </td>
-                          <td>
-                            <span className="fw-bold">{t.agent?.name || "N/A"}</span>
-                            <br />
-                            {t.isCompany ? (
-                              <span className="badge bg-dark">Company</span>
-                            ) : (
-                              <span className="badge bg-light text-dark border">{t.agent?.rank?.name || "No Rank"}</span>
-                            )}
-                          </td>
-                          <td>
-                            {t.isCompany ? (
-                              <span className="badge bg-dark-subtle text-dark border border-dark border-opacity-25">
-                                Company Share
+                      transactions.map((t) => {
+                        const sqft = t.sqftPortion != null ? Number(t.sqftPortion) : Number(t.emi?.sqftPortion) || 0;
+                        const rateValue = sqft > 0 ? Math.round((t.amount / sqft) * 100) / 100 : 0;
+                        const status = (t.emi?.status || "pending").toUpperCase();
+                        return (
+                          <tr key={t._id} className={t.isCompany ? "table-dark bg-opacity-10" : ""}>
+                            <td>
+                              <span className="fw-bold">
+                                {t.isCompany ? "Company" : `${t.agent?.name || "N/A"}${t.agent?.referralCode ? `(${t.agent.referralCode})` : ""}`}
                               </span>
-                            ) : t.category === "emi_commission" ? (
-                              <span className="badge bg-primary-subtle text-primary border border-primary border-opacity-25">
-                                EMI Commission
+                            </td>
+                            <td>
+                              {t.booking ? (
+                                <>
+                                  <Link to={`/admin/bookings/${t.booking._id}`} className="fw-bold">
+                                    {t.booking.project?.name || "N/A"}
+                                  </Link>
+                                  <br />
+                                  <span className="text-muted fs-12">Plot {t.booking.plot?.plotNumber || "N/A"}</span>
+                                </>
+                              ) : (
+                                <span className="text-muted">-</span>
+                              )}
+                            </td>
+                            <td>{t.booking?.totalArea ? `${t.booking.totalArea} sq.ft` : "N/A"}</td>
+                            <td>{rateValue}</td>
+                            <td>Per Sq.Ft</td>
+                            <td>₹{fmt(rateValue)}/sq.ft</td>
+                            <td className="fw-bold">
+                              {t.pointsType === "BV" ? (
+                                <span className="text-success">{fmt(t.amount)}</span>
+                              ) : (
+                                <span className="text-info">{fmt(t.amount)}</span>
+                              )}
+                            </td>
+                            <td>
+                              <span
+                                className={`badge ${
+                                  status === "PAID" ? "bg-success-subtle text-success" : status === "PENDING" ? "bg-warning-subtle text-warning" : "bg-danger-subtle text-danger"
+                                }`}
+                              >
+                                {status}
                               </span>
-                            ) : t.category === "rank_difference" ? (
-                              <span className="badge bg-warning-subtle text-warning border border-warning border-opacity-25">
-                                Rank Difference
-                              </span>
-                            ) : (
-                              <span className="badge bg-light text-muted">
-                                {t.category?.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase())}
-                              </span>
-                            )}
-                          </td>
-                          <td>
-                            {t.booking ? (
-                              <>
-                                <Link to={`/admin/bookings/${t.booking._id}`} className="fw-bold">
-                                  {t.booking.bookingNumber}
-                                </Link>
-                                <br />
-                                <span className="text-muted fs-12">Plot: {t.booking.plot?.plotNumber || "N/A"}</span>
-                              </>
-                            ) : (
-                              <span className="text-muted">-</span>
-                            )}
-                          </td>
-                          <td>{t.emi ? `Month ${t.emi.emiNumber}` : <span className="text-muted">-</span>}</td>
-                          <td className="fw-bold">
-                            {t.pointsType === "BV" ? (
-                              <span className="text-success">
-                                <iconify-icon icon="solar:star-bold" className="fs-14 align-middle me-1"></iconify-icon>
-                                {fmt(t.amount)} Online
-                              </span>
-                            ) : (
-                              <span className="text-info">
-                                <iconify-icon icon="solar:star-ring-bold" className="fs-14 align-middle me-1"></iconify-icon>
-                                {fmt(t.amount)} Cash
-                              </span>
-                            )}
-                          </td>
-                          <td>
-                            <span className="text-truncate d-inline-block" style={{ maxWidth: 250 }} title={t.remark}>
-                              {t.remark}
-                            </span>
-                          </td>
-                        </tr>
-                      ))
+                            </td>
+                            <td>{new Date(t.createdAt).toLocaleDateString("en-IN")}</td>
+                          </tr>
+                        );
+                      })
                     )}
                   </tbody>
                 </table>
