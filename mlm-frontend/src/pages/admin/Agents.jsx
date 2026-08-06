@@ -219,24 +219,30 @@ function Agents() {
                     </td>
                     <td className="text-end pe-3">
                       <div className="d-flex gap-1 justify-content-end">
-                        <Link to={`/admin/agents/${agent._id}`} className="btn btn-sm btn-soft-primary">
-                          View
+                        <Link
+                          to={`/admin/agents/${agent._id}`}
+                          className="btn btn-sm btn-icon btn-soft-secondary"
+                          title="View"
+                        >
+                          <iconify-icon icon="solar:eye-linear"></iconify-icon>
                         </Link>
                         {agent.status === "active" ? (
                           <button
-                            className="btn btn-sm btn-soft-danger"
+                            className="btn btn-sm btn-icon btn-soft-danger"
                             disabled={actionLoading === agent._id + "deactivate"}
                             onClick={() => handleAction(agent._id, "deactivate")}
+                            title="Deactivate"
                           >
-                            {actionLoading === agent._id + "deactivate" ? "..." : "Deactivate"}
+                            <iconify-icon icon="solar:user-cross-linear"></iconify-icon>
                           </button>
                         ) : (
                           <button
-                            className="btn btn-sm btn-soft-success"
+                            className="btn btn-sm btn-icon btn-soft-success"
                             disabled={actionLoading === agent._id + "activate"}
                             onClick={() => handleAction(agent._id, "activate")}
+                            title="Activate"
                           >
-                            {actionLoading === agent._id + "activate" ? "..." : "Activate"}
+                            <iconify-icon icon="solar:user-check-linear"></iconify-icon>
                           </button>
                         )}
                       </div>

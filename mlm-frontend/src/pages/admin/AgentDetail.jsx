@@ -35,6 +35,7 @@ function AgentDetail() {
     rows.push({
       level,
       name: node.name,
+      referralCode: node.referralCode,
       designation: node.rank_name || "-",
       status: node.status || "-",
       cap: level === 1 ? node.pool : node.cap,
@@ -44,6 +45,8 @@ function AgentDetail() {
     (node.children || []).forEach((child) => flattenTree(child, level + 1, rows));
     return rows;
   };
+
+  const displayName = (r) => `${r.name}${r.referralCode ? ` (${r.referralCode})` : ""}`;
 
   const treeHeaders = ["Level", "Name", "Designation", "Status", "Cap/Pool (\u20B9)", "Own (\u20B9)", "Team (\u20B9)"];
 
@@ -84,27 +87,20 @@ function AgentDetail() {
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(18);
     doc.setFont(undefined, "bold");
-    doc.text(
-      selectedProject ? `${selectedProject.name.toUpperCase()} — EXECUTIVE TREE REPORT` : "EXECUTIVE TREE REPORT",
-      margin,
-      30
-    );
-    doc.setFontSize(9);
+    doc.text("EXECUTIVE TREE", pageWidth / 2, 26, { align: "center" });
+    doc.setFontSize(10);
     doc.setFont(undefined, "normal");
-    const generatedOn = new Date().toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
-    doc.text(`Generated on ${generatedOn}   ·   Total Records: ${rows.length}`, margin, 48);
+    const rootLabel = `the crown city — ${treeData.agent.name?.toUpperCase()}${
+      treeData.agent.referralCode ? ` (${treeData.agent.referralCode})` : ""
+    }'s line (uplines + downline)`;
+    doc.text(rootLabel, pageWidth / 2, 46, { align: "center" });
 
     // ---- Summary strip ----
     doc.setTextColor(60, 60, 60);
     doc.setFontSize(9);
     const summaryY = 80;
-    doc.text(`Root Executive: ${treeData.agent.name}`, margin, summaryY);
-    doc.text(
-      selectedProject ? `Pool Rate: ₹${selectedProject.commissionPool}/sqft` : "Pool Rate: —",
-      margin + 220,
-      summaryY
-    );
-    doc.text(`Total Own Committed: ₹${totalOwn}`, margin + 400, summaryY);
+    doc.text(`Members: ${rows.length}`, margin, summaryY);
+    doc.text("Commission unit: per sq ft", pageWidth - margin, summaryY, { align: "right" });
     doc.setDrawColor(220, 220, 220);
     doc.line(margin, summaryY + 8, pageWidth - margin, summaryY + 8);
 
@@ -112,28 +108,26 @@ function AgentDetail() {
     autoTable(doc, {
       startY: summaryY + 20,
       margin: { left: margin, right: margin },
-      head: [["Level", "Executive Name", "Designation", "Status", "Cap / Pool (₹)", "Own (₹)", "Team (₹)"]],
+      head: [["Name", "Designation", "Status", "Cap", "Team"]],
       body: rows.map((r) => [
-        `L${r.level}`,
-        r.name,
+        `${r.level > 1 ? "  ".repeat(r.level - 1) + "\u2514 " : ""}${r.name}${
+          r.referralCode ? ` (${r.referralCode})` : ""
+        }`,
         r.designation,
         r.status?.charAt(0).toUpperCase() + r.status?.slice(1),
-        r.cap != null ? r.cap.toLocaleString("en-IN") : "—",
-        r.own != null ? r.own.toLocaleString("en-IN") : "—",
-        r.team != null ? r.team.toLocaleString("en-IN") : "—",
+        r.cap != null ? `₹${r.cap.toLocaleString("en-IN")}` : "—",
+        r.team != null ? `₹${r.team.toLocaleString("en-IN")}` : "—",
       ]),
       theme: "striped",
       styles: { fontSize: 9, cellPadding: 6, lineColor: [230, 230, 230], lineWidth: 0.5 },
-      headStyles: { fillColor: [79, 70, 229], textColor: 255, fontStyle: "bold", halign: "left" },
+      headStyles: { fillColor: [30, 27, 75], textColor: 255, fontStyle: "bold", halign: "left" },
       alternateRowStyles: { fillColor: [247, 247, 252] },
       columnStyles: {
-        0: { halign: "center", cellWidth: 45 },
+        3: { halign: "right" },
         4: { halign: "right" },
-        5: { halign: "right" },
-        6: { halign: "right" },
       },
       didParseCell: (data) => {
-        if (data.section === "body" && data.column.index === 3) {
+        if (data.section === "body" && data.column.index === 2) {
           const val = String(data.cell.raw).toLowerCase();
           data.cell.styles.textColor = val === "active" ? [22, 163, 74] : [107, 114, 128];
           data.cell.styles.fontStyle = "bold";
@@ -952,24 +946,29 @@ function AgentDetail() {
                 <h5 className="modal-title fw-bold mb-1 text-uppercase text-center" style={{ letterSpacing: "0.5px", color: "#1e1b4b" }}>
                   Executive Tree
                 </h5>
-                <p className="mb-0 small text-muted text-center fst-italic">
-                  Full tree of {treeData.agent.name}
+                <p className="mb-0 small text-muted text-center fw-semibold">
+                  the crown city — {treeData.agent.name?.toUpperCase()}
+                  {treeData.agent.referralCode ? ` (${treeData.agent.referralCode})` : ""}'s line (uplines + downline)
                 </p>
-                <p className="mb-0 small text-muted text-center mt-1">
-                  {flattenTree(treeData.treeData).length} record(s) &nbsp;·&nbsp; Generated{" "}
-                  {new Date().toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
-                </p>
+                <div className="d-flex justify-content-between w-100 px-2 mt-2">
+                  <p className="mb-0 small text-muted">
+                    Members: <span className="fw-semibold">{flattenTree(treeData.treeData).length}</span>
+                  </p>
+                  <p className="mb-0 small text-muted">
+                    Commission unit: <span className="fw-semibold">per sq ft</span>
+                  </p>
+                </div>
               </div>
               <div className="modal-body p-0" style={{ maxHeight: "60vh", overflow: "auto" }}>
                 <div className="table-responsive">
                   <table className="table table-sm table-hover mb-0">
                     <thead style={{ position: "sticky", top: 0, zIndex: 1 }}>
                       <tr>
-                        {treeHeaders.map((h, i) => (
+                        {["Level", "Name", "Designation", "Status", "Cap", "Team"].map((h, i) => (
                           <th
                             key={i}
                             className="text-uppercase small fw-bold"
-                            style={{ whiteSpace: "nowrap", background: "#eef0ff", color: "#4338ca", padding: "10px 14px" }}
+                            style={{ whiteSpace: "nowrap", background: "#1e1b4b", color: "#fff", padding: "10px 14px" }}
                           >
                             {h}
                           </th>
@@ -977,13 +976,17 @@ function AgentDetail() {
                       </tr>
                     </thead>
                     <tbody>
-                      {treeRowsForExport().map((row, ri) => (
+                      {flattenTree(treeData.treeData).map((r, ri) => (
                         <tr key={ri} style={{ background: ri % 2 ? "#fafaff" : "#fff" }}>
-                          {row.map((cell, ci) => (
-                            <td key={ci} className="px-3 py-2">
-                              {cell}
-                            </td>
-                          ))}
+                          <td className="px-3 py-2">L{r.level}</td>
+                          <td className="px-3 py-2" style={{ paddingLeft: `${12 + (r.level - 1) * 20}px` }}>
+                            {r.level > 1 && "└ "}
+                            {displayName(r)}
+                          </td>
+                          <td className="px-3 py-2">{r.designation}</td>
+                          <td className="px-3 py-2 text-capitalize">{r.status}</td>
+                          <td className="px-3 py-2">{r.cap != null ? `₹${r.cap}` : "—"}</td>
+                          <td className="px-3 py-2">{r.team != null ? `₹${r.team}` : "—"}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -993,10 +996,6 @@ function AgentDetail() {
               <div className="modal-footer bg-light border-0">
                 <button className="btn" style={{ background: "#1e293b", color: "#fff" }} onClick={() => setTreePreview(false)}>
                   Close
-                </button>
-                <button className="btn btn-success" onClick={handleDownloadTreeCsv}>
-                  <iconify-icon icon="solar:file-text-bold-duotone" className="align-middle me-1"></iconify-icon>
-                  Download CSV
                 </button>
                 <button className="btn" style={{ background: "#f59e0b", color: "#fff" }} onClick={generateTreePdf}>
                   <iconify-icon icon="solar:file-download-bold-duotone" className="align-middle me-1"></iconify-icon>
