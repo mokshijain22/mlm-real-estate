@@ -8,7 +8,7 @@ async function index(req, res) {
 
 // POST /api/agent/site-visits
 async function store(req, res) {
-  const { customer_name, mobile, alt_mobile, email, address, project_id, visit_date } = req.body;
+  const { customer_name, mobile, alt_mobile, email, address, project_id } = req.body;
 
   const errors = {};
   if (!customer_name || !customer_name.trim()) errors.customer_name = 'Customer name is required.';
@@ -25,7 +25,9 @@ async function store(req, res) {
     project: project_id,
     agent: req.user._id,
     photo: req.file ? `/storage/site-visits/${req.file.filename}` : null,
-    visitDate: visit_date || null,
+    // Visit date/time is always the server's current moment — never trust a
+    // client-supplied value, so agents cannot backdate or spoof it via the API.
+    visitDate: new Date(),
   });
 
   res.status(201).json({ message: 'Site visit logged.', data: visit });

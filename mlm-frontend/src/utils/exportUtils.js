@@ -60,13 +60,9 @@ export async function fetchCsvForPreview(api, url, params) {
 // what's shown in the PDF, matching the "Online"/"Cash" convention used
 // elsewhere in the app (Withdrawals, PayoutsReport, Dashboard, etc).
 function mapHeaderLabel(h) {
-  const map = {
-    "BV Amount": "Online Amount",
-    "PV Amount": "Cash Amount",
-    "BV": "Online",
-    "PV": "Cash",
-  };
-  return map[h] || h;
+  return String(h)
+    .replace(/\bBV\b/g, "Online")
+    .replace(/\bPV\b/g, "Cash");
 }
 
 function computeAmountSummary(headers, rows) {
@@ -110,15 +106,15 @@ export function downloadPdfTable(title, headers, rows, filename, periodLabel) {
   doc.text(title.toUpperCase(), margin, 30);
   doc.setFontSize(9);
   doc.setFont(undefined, "normal");
-  const generatedOn = new Date().toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
-  doc.text(`Generated on ${generatedOn}   \u00B7   Total Records: ${rows.length}`, margin, 48);
-  if (periodLabel) {
-    doc.text(periodLabel, margin, 62);
-  }
+  const generatedOn = new Date().toLocaleDateString("en-IN");
+  const headerLine = periodLabel
+    ? `Generated on: ${generatedOn}   ${periodLabel}   Total Records: ${rows.length}`
+    : `Generated on: ${generatedOn}   Total Records: ${rows.length}`;
+  doc.text(headerLine, margin, 48);
   if (summary) {
     const summaryText = `Total Amount: ${formatInr(summary.total)}   |   Pending: ${formatInr(summary.pending)}   |   Paid: ${formatInr(summary.paid)}`;
     doc.setFont(undefined, "bold");
-    doc.text(summaryText, margin, periodLabel ? 76 : 62);
+    doc.text(summaryText, margin, 64);
     doc.setFont(undefined, "normal");
   }
 
