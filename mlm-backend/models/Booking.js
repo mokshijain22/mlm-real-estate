@@ -56,6 +56,7 @@ const bookingSchema = new mongoose.Schema(
      plcAmount: { type: Number, default: 0 },
     plcPercent: { type: Number, default: 0 },
     commissionCapPerSqft: { type: Number, default: 0 }, // 0 = uncapped; caps the seller's per-sqft commission
+    companyRatePerSqft: { type: Number, default: 0 }, // Company's ₹/sqft share, snapshotted at booking time (Project pool minus top executive's slab at that moment) so later Project rate changes never alter an already-booked commission
     executiveGaveDiscount: { type: Boolean, default: false },
 
     paymentSchedule: {

@@ -8,6 +8,26 @@ const rankService = require('./rankService');
 const treeBuilderService = require('./treeBuilderService');
 
 /**
+ * Company's per-sqft share = Project's commissionPool minus the CAP already
+ * assigned to the top-of-chain executive above this selling agent (the same
+ * "Own" figure already computed by treeBuilderService.getCompanyTree()).
+ * Preview-only — no wallet is credited for this.
+ */
+async function getCompanyRatePerSqft(sellingAgent, commissionPool) {
+  const pool = Number(commissionPool) || 0;
+  if (pool <= 0) return 0;
+
+  const uplineChain = await treeBuilderService.getUplineChain(sellingAgent);
+  const uplineIds = Object.values(uplineChain);
+  const topLevelAgent = uplineIds.length > 0
+    ? await User.findById(uplineIds[uplineIds.length - 1])
+    : sellingAgent;
+
+  const topLevelCap = Number(topLevelAgent?.slabPerSqft) || 0;
+  return Math.max(pool - topLevelCap, 0);
+}
+
+/**
  * Process commission for a paid EMI. Mirrors CommissionService::processEmiCommission.
  *
  * Wrapped in a single Mongo transaction (like Laravel's DB::transaction) so
@@ -57,7 +77,8 @@ async function processEmiCommission(emi) {
         booking._id,
         emi._id,
         null,
-        session
+        session,
+        sqftPortion
       );
 
       // 2. Traverse upline chain for rank-difference commission
@@ -154,7 +175,8 @@ async function processCombinedDepositCommission(downPaymentEmi, depositEmi) {
         booking._id,
         downPaymentEmi._id,
         null,
-        session
+        session,
+        combinedSqft
       );
 
       const uplineChain = await treeBuilderService.getUplineChain(sellingAgent);
@@ -205,7 +227,7 @@ async function processCombinedDepositCommission(downPaymentEmi, depositEmi) {
  * Used both by the booking wizard's Commission step (before the booking exists)
  * and by previewCommission() below (for an already-saved booking).
  */
-async function previewCommissionForData({ agentId, agentRankId, pricePerSqft, emiAmount, emiMonths, paymentMode }) {
+async function previewCommissionForData({ agentId, agentRankId, pricePerSqft, emiAmount, emiMonths, paymentMode, commissionPool, companyRateOverride }) {
   const sellingAgent = await User.findById(agentId);
   if (!sellingAgent) throw new Error('Agent not found.');
 
@@ -263,6 +285,23 @@ async function previewCommissionForData({ agentId, agentRankId, pricePerSqft, em
     }
   }
 
+  // A saved booking passes its snapshotted rate (companyRateOverride); the
+  // live wizard preview (before a booking exists) passes commissionPool instead
+  // and the rate is computed fresh from today's Project pool.
+  const companyRate = companyRateOverride != null ? Number(companyRateOverride) : await getCompanyRatePerSqft(sellingAgent, commissionPool);
+  if (companyRate > 0) {
+    preview.push({
+      agent_name: 'Company',
+      rank: null,
+      role: 'Company',
+      points_per_sf: companyRate,
+      commission_per_emi: sqftPortion * companyRate,
+      total_commission: sqftPortion * companyRate * emiMonths,
+      note: 'Company share (Project pool minus top executive cap)',
+      isCompany: true,
+    });
+  }
+
   return preview;
 }
 
@@ -270,7 +309,7 @@ async function previewCommissionForData({ agentId, agentRankId, pricePerSqft, em
  * Preview commission for the one-time Booking Deposit + Down Payment portion
  * (no wallet writes). Mirrors what processCombinedDepositCommission() actually pays.
  */
-async function previewDepositCommissionForData({ agentId, agentRankId, pricePerSqft, depositSqft, paymentMode }) {
+async function previewDepositCommissionForData({ agentId, agentRankId, pricePerSqft, depositSqft, paymentMode, commissionPool, companyRateOverride }) {
   const sellingAgent = await User.findById(agentId);
   if (!sellingAgent || depositSqft <= 0) return [];
 
@@ -305,6 +344,11 @@ async function previewDepositCommissionForData({ agentId, agentRankId, pricePerS
     }
   }
 
+  const companyRate = companyRateOverride != null ? Number(companyRateOverride) : await getCompanyRatePerSqft(sellingAgent, commissionPool);
+  if (companyRate > 0) {
+    preview.push({ agent_name: 'Company', commission: depositSqft * companyRate, isCompany: true });
+  }
+
   return preview;
 }
 
@@ -320,6 +364,9 @@ async function previewCommission(booking) {
   }
 
   const pricePerSqft = Number(booking.pricePerSqft) || 0;
+  // Use the rate snapshotted at booking-creation time, not today's live Project
+  // pool — a saved booking's commission must never shift when rates change later.
+  const companyRateSnapshot = Number(booking.companyRatePerSqft) || 0;
 
   const emiRows = await previewCommissionForData({
     agentId: booking.agent._id,
@@ -328,6 +375,7 @@ async function previewCommission(booking) {
     emiAmount: booking.emiAmount,
     emiMonths: booking.emiMonths,
     paymentMode: booking.paymentMode,
+    companyRateOverride: companyRateSnapshot,
   });
 
   // Booking Deposit + Down Payment are paid up front and their commission is
@@ -342,6 +390,7 @@ async function previewCommission(booking) {
     pricePerSqft,
     depositSqft,
     paymentMode: booking.paymentMode,
+    companyRateOverride: companyRateSnapshot,
   });
   const depositMap = new Map(depositRows.map((d) => [d.agent_name, d.commission]));
 
@@ -375,4 +424,5 @@ module.exports = {
   previewCommission,
   previewCommissionForData,
   previewDepositCommissionForData,
+  getCompanyRatePerSqft,
 };

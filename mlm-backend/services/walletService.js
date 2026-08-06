@@ -10,7 +10,7 @@ const WalletTransaction = require('../models/WalletTransaction');
  * agents) so every write commits or rolls back together. When omitted, this
  * function opens and manages its own transaction as before.
  */
-async function credit(agent, amount, pointsType, category, remark, bookingId = null, emiId = null, withdrawalId = null, externalSession = null) {
+async function credit(agent, amount, pointsType, category, remark, bookingId = null, emiId = null, withdrawalId = null, externalSession = null, sqftPortion = null) {
   const runOps = async (session) => {
     let wallet = await AgentWallet.findOne({ agent: agent._id }).session(session);
     if (!wallet) {
@@ -34,6 +34,7 @@ async function credit(agent, amount, pointsType, category, remark, bookingId = n
           emi: emiId,
           withdrawal: withdrawalId,
           remark,
+          sqftPortion,
         },
       ],
       { session }

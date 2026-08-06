@@ -114,19 +114,26 @@ async function create(req, res) {
 // POST /api/admin/bookings/commission-preview
 // Used by the Create Booking wizard's Commission step, before the booking is saved.
 async function commissionPreview(req, res) {
-  const { agent_id, price_per_sqft, emi_amount, emi_months, payment_mode } = req.body;
+  const { agent_id, project_id, price_per_sqft, emi_amount, emi_months, payment_mode } = req.body;
 
   if (!agent_id || !emi_months || !payment_mode) {
     return res.status(422).json({ message: 'agent_id, emi_months and payment_mode are required.' });
   }
 
   try {
+    let commissionPool = 0;
+    if (project_id) {
+      const project = await Project.findById(project_id).select('commissionPool');
+      commissionPool = project?.commissionPool || 0;
+    }
+
     const preview = await commissionService.previewCommissionForData({
       agentId: agent_id,
       pricePerSqft: Number(price_per_sqft) || 0,
       emiAmount: Number(emi_amount) || 0,
       emiMonths: Number(emi_months),
       paymentMode: payment_mode,
+      commissionPool,
     });
     res.json({ preview });
   } catch (err) {

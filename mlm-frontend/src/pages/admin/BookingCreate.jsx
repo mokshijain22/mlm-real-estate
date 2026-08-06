@@ -359,6 +359,7 @@ function BookingCreate() {
     api
       .post("/admin/bookings/commission-preview", {
         agent_id: agentId || undefined,
+        project_id: projectId || undefined,
         price_per_sqft: Number(plotRate) || 0,
         emi_amount: emiAmount,
         emi_months: emiMonths,

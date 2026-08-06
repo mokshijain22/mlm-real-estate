@@ -8,6 +8,75 @@ const Customer = require('../../models/Customer');
 const WalletTransaction = require('../../models/WalletTransaction');
 const WithdrawalRequest = require('../../models/WithdrawalRequest');
 const Role = require('../../models/Role');
+const commissionService = require('../../services/commissionService');
+
+/**
+ * For every real 'emi_commission' wallet transaction (one per EMI / combined
+ * deposit — the seller's own payout), compute the matching virtual "Company"
+ * row: sqftPortion (from the linked Emi/deposit) × company's per-sqft share
+ * (Project pool minus the top executive's slab). No wallet record exists for
+ * this — it's computed fresh every time the report loads.
+ */
+/**
+ * Computes the virtual "Company" row for each real 'emi_commission' wallet
+ * transaction (the seller's own payout — one per EMI / combined deposit),
+ * reading the companyRatePerSqft snapshotted on that booking at creation time.
+ * No wallet record exists for Company — this is computed fresh every time.
+ */
+async function buildCompanyRows(transactions) {
+  const companyRows = [];
+
+  for (const t of transactions) {
+    if (t.category !== 'emi_commission' || !t.booking) continue;
+
+    // Read the rate snapshotted on the booking at creation time — never
+    // recompute from today's Project pool, so a later rate change can't alter
+    // what Company already earned on this booking.
+    const booking = await Booking.findById(t.booking._id || t.booking).select('companyRatePerSqft bookingNumber');
+    if (!booking) continue;
+
+    const companyRate = Number(booking.companyRatePerSqft) || 0;
+    if (companyRate <= 0) continue;
+
+    // t.sqftPortion is the source of truth (correctly covers the combined
+    // Deposit+DownPayment payout too). Old transactions from before this field
+    // existed fall back to emi.sqftPortion, which is only accurate for regular
+    // single-EMI credits.
+    const sqftPortion = t.sqftPortion != null ? Number(t.sqftPortion) : Number(t.emi?.sqftPortion) || 0;
+    const amount = sqftPortion * companyRate;
+    if (amount <= 0) continue;
+
+    companyRows.push({
+      _id: `company-${t._id}`,
+      isCompany: true,
+      agent: { name: 'Company' },
+      type: 'credit',
+      category: 'company_commission',
+      pointsType: t.pointsType,
+      amount,
+      booking: t.booking,
+      emi: t.emi,
+      remark: `Company share - ${t.booking?.bookingNumber || ''}`,
+      createdAt: t.createdAt,
+    });
+  }
+
+  return companyRows;
+}
+
+/**
+ * Sums Company's commission across EVERY matching 'emi_commission' transaction
+ * in the filtered report (not just the current page) — used for the summary
+ * card so it reports an accurate total rather than a page-local one.
+ */
+async function computeCompanyTotal(query) {
+  const emiTxns = await WalletTransaction.find({ ...query, category: 'emi_commission' })
+    .select('booking emi')
+    .populate('emi');
+
+  const rows = await buildCompanyRows(emiTxns);
+  return rows.reduce((s, r) => s + r.amount, 0);
+}
 
 function startEndOfMonth(date = new Date()) {
   const start = new Date(date.getFullYear(), date.getMonth(), 1);
@@ -284,8 +353,15 @@ async function commissions(req, res) {
       WalletTransaction.countDocuments(query),
     ]);
 
+    const companyRows = await buildCompanyRows(transactions);
+    const mergedData = [...transactions, ...companyRows].sort(
+      (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+    );
+
+    const headers = ['Date', 'Agent', 'Rank', 'Category', 'Booking#', 'Plot', 'EMI Month', 'BV Amount', 'PV Amount', 'Remark'];
+
     return res.json({
-      data: transactions,
+      data: mergedData,
       meta: { page, limit, total, lastPage: Math.ceil(total / limit) },
       summary: {
         total_bv: totalBv,
@@ -293,6 +369,7 @@ async function commissions(req, res) {
         emi_commissions: emiCommissions,
         rank_difference: rankDifference,
         agents_earning: uniqueAgents.length,
+        total_company_commission: totalCompanyCommission,
       },
     });
   } catch (err) {
@@ -311,11 +388,17 @@ async function commissionsExport(req, res) {
       .populate('emi')
       .sort({ createdAt: -1 });
 
+    const resolveCompanyRate = await makeCompanyRateResolver();
+    const companyRows = await buildCompanyRows(transactions, resolveCompanyRate);
+    const mergedData = [...transactions, ...companyRows].sort(
+      (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+    );
+
     const headers = ['Date', 'Agent', 'Rank', 'Category', 'Booking#', 'Plot', 'EMI Month', 'BV Amount', 'PV Amount', 'Remark'];
-    const rows = transactions.map((t) => [
-      t.createdAt.toISOString().slice(0, 16).replace('T', ' '),
+    const rows = mergedData.map((t) => [
+      new Date(t.createdAt).toISOString().slice(0, 16).replace('T', ' '),
       t.agent?.name || 'N/A',
-      t.agent?.rank?.abbreviation || 'N/A',
+      t.isCompany ? 'Company' : (t.agent?.rank?.abbreviation || 'N/A'),
       t.category,
       t.booking?.bookingNumber || 'N/A',
       t.booking?.plot?.plotNumber || 'N/A',

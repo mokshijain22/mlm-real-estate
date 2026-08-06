@@ -35,6 +35,16 @@ async function createBooking(data, actingUser) {
         }
       }
 
+      // Snapshot Company's ₹/sqft share NOW, using today's Project pool and the
+      // top executive's current slab — so a later Project rate change never
+      // retroactively changes what Company earned on this booking.
+      let companyRatePerSqft = 0;
+      if (sellingAgent) {
+        const bookingProject = await Plot.findById(data.plot_id).session(session).populate('project');
+        const pool = bookingProject?.project?.commissionPool || 0;
+        companyRatePerSqft = await commissionService.getCompanyRatePerSqft(sellingAgent, pool);
+      }
+
       if (plot.status !== 'available') {
         throw new Error('Plot is not available for booking');
       }
@@ -133,6 +143,7 @@ async function createBooking(data, actingUser) {
             },
             proposerName: data.proposer_name || null,
             commissionCapPerSqft: Number(data.commission_cap_per_sqft) || 0,
+            companyRatePerSqft,
             executiveGaveDiscount: !!data.executive_gave_discount,
             documents: {
               idProof: data.documents?.id_proof || null,

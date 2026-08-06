@@ -135,6 +135,14 @@ function CommissionsReport() {
               </div>
             </div>
           </div>
+          <div className="col-md-2 col-12">
+            <div className="card bg-dark-subtle border-0">
+              <div className="card-body">
+                <p className="text-dark-emphasis fw-semibold mb-1">Company Share</p>
+                <h4 className="fs-20 fw-bold text-dark mb-0">₹{fmt(summary.total_company_commission)}</h4>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -239,7 +247,7 @@ function CommissionsReport() {
                       </tr>
                     ) : (
                       transactions.map((t) => (
-                        <tr key={t._id}>
+                        <tr key={t._id} className={t.isCompany ? "table-dark bg-opacity-10" : ""}>
                           <td>
                             {new Date(t.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
                             <br />
@@ -250,10 +258,18 @@ function CommissionsReport() {
                           <td>
                             <span className="fw-bold">{t.agent?.name || "N/A"}</span>
                             <br />
-                            <span className="badge bg-light text-dark border">{t.agent?.rank?.name || "No Rank"}</span>
+                            {t.isCompany ? (
+                              <span className="badge bg-dark">Company</span>
+                            ) : (
+                              <span className="badge bg-light text-dark border">{t.agent?.rank?.name || "No Rank"}</span>
+                            )}
                           </td>
                           <td>
-                            {t.category === "emi_commission" ? (
+                            {t.isCompany ? (
+                              <span className="badge bg-dark-subtle text-dark border border-dark border-opacity-25">
+                                Company Share
+                              </span>
+                            ) : t.category === "emi_commission" ? (
                               <span className="badge bg-primary-subtle text-primary border border-primary border-opacity-25">
                                 EMI Commission
                               </span>
