@@ -330,13 +330,19 @@ async function commissions(req, res) {
   try {
     const query = await buildCommissionsQuery(req.query);
 
-    const [totalBv, totalPv, emiCommissions, rankDifference, uniqueAgents] = await Promise.all([
+   const [totalBv, totalPv, emiCommissions, rankDifference, uniqueAgents, allEmiCommissionTxns] = await Promise.all([
       sumAmount(WalletTransaction, { ...query, pointsType: 'BV' }),
       sumAmount(WalletTransaction, { ...query, pointsType: 'PV' }),
       sumAmount(WalletTransaction, { ...query, category: 'emi_commission' }),
       sumAmount(WalletTransaction, { ...query, category: 'rank_difference' }),
       WalletTransaction.distinct('agent', query),
+      WalletTransaction.find({ ...query, category: 'emi_commission' })
+        .select('category booking emi sqftPortion pointsType createdAt')
+        .populate('emi'),
     ]);
+
+    const allCompanyRows = await buildCompanyRows(allEmiCommissionTxns);
+    const totalCompanyCommission = allCompanyRows.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
 
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
@@ -372,8 +378,10 @@ async function commissions(req, res) {
         total_company_commission: totalCompanyCommission,
       },
     });
-  } catch (err) {
+    } catch (err) {
+    console.error('Commission report error:', err);
     return res.status(500).json({ message: 'Failed to fetch commission report.', error: err.message });
+
   }
 }
 
@@ -388,8 +396,7 @@ async function commissionsExport(req, res) {
       .populate('emi')
       .sort({ createdAt: -1 });
 
-    const resolveCompanyRate = await makeCompanyRateResolver();
-    const companyRows = await buildCompanyRows(transactions, resolveCompanyRate);
+    const companyRows = await buildCompanyRows(transactions);
     const mergedData = [...transactions, ...companyRows].sort(
       (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
     );

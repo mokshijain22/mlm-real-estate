@@ -15,6 +15,7 @@ const projectSchema = new mongoose.Schema(
     defaultRate: { type: Number, default: 0 }, // ₹/sqft — default selling rate for new plots
     defaultOwnerMinimum: { type: Number, default: 0 }, // ₹/sqft — floor price owner keeps
     commissionPool: { type: Number, default: 0 }, // auto: defaultRate - defaultOwnerMinimum (₹/sqft)
+    banks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Bank' }], // banks offering loans for this project
 
     facilities: [{ type: String }], // e.g. ["Clubhouse", "24x7 Security"]
     nearbyLandmarks: [
