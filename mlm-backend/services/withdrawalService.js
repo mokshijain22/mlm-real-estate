@@ -38,8 +38,8 @@ async function requestWithdrawal(req, agent, amount, pointsType) {
         throw new Error(`Minimum withdrawal amount is ${minAmount}`);
       }
 
-      // 4. Calculate TDS and Net
-      const tdsPercentage = await settingService.get('tds_percentage', 2);
+      // 4. Calculate TDS and Net — TDS applies only to online (BV) withdrawals
+      const tdsPercentage = pointsType === 'BV' ? await settingService.get('tds_percentage', 2) : 0;
       const tdsAmount = (Number(amount) * Number(tdsPercentage)) / 100;
       const netAmount = Number(amount) - tdsAmount;
 
@@ -71,16 +71,18 @@ async function requestWithdrawal(req, agent, amount, pointsType) {
         request._id
       );
 
-      // 7. Debit wallet for TDS (separate transaction for visibility)
-      await walletService.debit(
-        agent,
-        tdsAmount,
-        pointsType,
-        'tds_deduction',
-        `TDS Deduction (${tdsPercentage}%) on Withdrawal #${request._id}`,
-        null,
-        request._id
-      );
+      // 7. Debit wallet for TDS (separate transaction for visibility) — skip when no TDS applies
+      if (tdsAmount > 0) {
+        await walletService.debit(
+          agent,
+          tdsAmount,
+          pointsType,
+          'tds_deduction',
+          `TDS Deduction (${tdsPercentage}%) on Withdrawal #${request._id}`,
+          null,
+          request._id
+        );
+      }
 
       await auditService.log(
         req,

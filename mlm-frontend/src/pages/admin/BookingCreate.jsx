@@ -147,6 +147,9 @@ function BookingCreate() {
     setCommissionCap(sellerDefaultCap);
   }, [agentId, sellerDefaultCap]);
   const [execGaveDiscount, setExecGaveDiscount] = useState(false);
+  const [execDiscountRemarks, setExecDiscountRemarks] = useState("");
+  const [uplineCaps, setUplineCaps] = useState([]);
+  const [commissionPoolPerSqft, setCommissionPoolPerSqft] = useState(0);
   const [commissionPreview, setCommissionPreview] = useState([]);
   const [commissionLoading, setCommissionLoading] = useState(false);
   const [commissionError, setCommissionError] = useState(null);
@@ -248,12 +251,12 @@ function BookingCreate() {
   const emiPercent = sellingPrice > 0 ? Math.round(((emiAmountEach / sellingPrice) * 100) * 100) / 100 : 0; // display-only
   const totalSqftForToggle = Number(selectedPlot?.totalArea) || 0;
 
-  const dpBase = Math.max(sellingPrice - (Number(bookingAmount) || 0), 0);
+  const dpBase = sellingPrice;
 
   const downPaymentDisplayValue =
     downPaymentMode === "percent"
       ? dpBase > 0
-        ? Math.round((downPaymentAmount / dpBase) * 10000) / 100
+        ? Math.round(((downPaymentAmount + (Number(bookingAmount) || 0)) / dpBase) * 10000) / 100
         : 0
       : totalSqftForToggle > 0
       ? Math.round((downPaymentAmount / totalSqftForToggle) * 100) / 100
@@ -271,7 +274,9 @@ function BookingCreate() {
   function handleDownPaymentInput(value) {
     const v = Number(value) || 0;
     setDownPaymentAmount(
-      downPaymentMode === "percent" ? Math.round((dpBase * v) / 100) : Math.round(v * totalSqftForToggle)
+      downPaymentMode === "percent"
+        ? Math.max(Math.round((dpBase * v) / 100) - (Number(bookingAmount) || 0), 0)
+        : Math.round(v * totalSqftForToggle)
     );
   }
 
@@ -365,13 +370,57 @@ function BookingCreate() {
         emi_months: emiMonths,
         payment_mode: paymentMode,
       })
-      .then((res) => setCommissionPreview(res.data.preview || []))
+      .then((res) => {
+        const rows = res.data.preview || [];
+        setCommissionPreview(rows);
+        setCommissionPoolPerSqft(Number(res.data.commission_pool_per_sqft) || 0);
+        setUplineCaps(
+          rows.slice(1).filter((r) => !r.isCompany).map((r) => r.default_cap_per_sqft ?? 0)
+        );
+      })
       .catch((err) => setCommissionError(err.response?.data?.message || err.message))
       .finally(() => setCommissionLoading(false));
   }, [step]);
 
-  const totalCommission = commissionPreview.reduce((sum, row) => sum + row.total_commission, 0);
   const totalSqft = Number(selectedPlot?.totalArea) || 0;
+  let uplineRunningIndex = 0;
+  const commissionRows = commissionPreview.map((row, i) => {
+    if (i === 0) {
+      const cap = commissionCap || 0;
+      return {
+        ...row,
+        cappedTotal: cap > 0 ? Math.min(row.total_commission, cap * totalSqft) : row.total_commission,
+        capEditable: true,
+        capValue: cap,
+        uplineIndex: null,
+      };
+    }
+    if (row.isCompany) {
+      return { ...row, cappedTotal: row.total_commission, capEditable: false, capValue: null, uplineIndex: null, isCompanyPlaceholder: true };
+    }
+    const uplineIndex = uplineRunningIndex;
+    uplineRunningIndex += 1;
+    const cap = Number(uplineCaps[uplineIndex]) || 0;
+    return {
+      ...row,
+      cappedTotal: cap > 0 ? Math.min(row.total_commission, cap * totalSqft) : row.total_commission,
+      capEditable: true,
+      capValue: cap,
+      uplineIndex,
+    };
+  });
+  const paidRatePerSqft = commissionRows
+    .filter((row) => !row.isCompanyPlaceholder)
+    .reduce((sum, row) => sum + (totalSqft > 0 ? row.cappedTotal / totalSqft : 0), 0);
+  const liveCommissionRows = commissionRows.map((row) =>
+    row.isCompanyPlaceholder
+      ? {
+          ...row,
+          cappedTotal: Math.max((commissionPoolPerSqft - paidRatePerSqft) * totalSqft, 0),
+        }
+      : row
+  );
+  const totalCommission = liveCommissionRows.reduce((sum, row) => sum + row.cappedTotal, 0);
   const commissionPerSqft = totalSqft > 0 ? totalCommission / totalSqft : 0;
 
   // ---- validation ----
@@ -467,7 +516,9 @@ function BookingCreate() {
         notes: remarks || undefined,
         documents,
         commission_cap_per_sqft: commissionCap || undefined,
+        upline_commission_caps_per_sqft: uplineCaps,
         executive_gave_discount: execGaveDiscount,
+        executive_discount_remarks: execGaveDiscount ? execDiscountRemarks || undefined : undefined,
       };
 
       const res = await api.post("/admin/bookings", payload);
@@ -907,7 +958,7 @@ function BookingCreate() {
               />
               <p className="text-muted small mb-0 mt-1">
                 = {money(downPaymentAmount)}
-                {downPaymentMode === "percent" ? ` (of ${money(dpBase)} after token)` : ""}
+                {downPaymentMode === "percent" ? ` (${downPaymentDisplayValue}% of ${money(dpBase)} total, minus token)` : ""}
               </p>
             </div>
             <div className="col-md-3">
@@ -1307,11 +1358,7 @@ function BookingCreate() {
                   </tr>
                 </thead>
                 <tbody>
-                  {commissionPreview.map((row, i) => {
-                    const cappedTotal =
-                      i === 0 && commissionCap > 0
-                        ? Math.min(row.total_commission, commissionCap * totalSqft)
-                        : row.total_commission;
+                  {liveCommissionRows.map((row, i) => {
                     return (
                       <tr key={i}>
                         <td>
@@ -1320,22 +1367,35 @@ function BookingCreate() {
                           <div className="text-muted small">{row.rank}</div>
                         </td>
                         <td>
-                          {i === 0 ? (
+                          {row.capEditable ? (
                             <>
                               <input
                                 type="number"
                                 className="form-control form-control-sm"
                                 style={{ width: 100 }}
-                                value={commissionCap}
-                                onChange={(e) => setCommissionCap(Number(e.target.value) || 0)}
+                                value={i === 0 ? commissionCap : uplineCaps[row.uplineIndex] ?? 0}
+                                onChange={(e) => {
+                                  const v = Number(e.target.value) || 0;
+                                  if (i === 0) {
+                                    setCommissionCap(v);
+                                  } else {
+                                    setUplineCaps((prev) => {
+                                      const next = [...prev];
+                                      next[row.uplineIndex] = v;
+                                      return next;
+                                    });
+                                  }
+                                }}
                               />
-                              <div className="text-muted small">default ₹{sellerDefaultCap}</div>
+                              <div className="text-muted small">
+                                default ₹{i === 0 ? sellerDefaultCap : row.default_cap_per_sqft ?? 0}
+                              </div>
                             </>
                           ) : (
                             <span className="text-muted">—</span>
                           )}
                         </td>
-                        <td className="text-end fw-semibold">{money(cappedTotal)}</td>
+                        <td className="text-end fw-semibold">{money(row.cappedTotal)}</td>
                       </tr>
                     );
                   })}
@@ -1349,17 +1409,28 @@ function BookingCreate() {
             </div>
           )}
 
-          <div className="form-check mb-4">
-            <input
-              className="form-check-input"
-              type="checkbox"
-              id="execDiscount"
-              checked={execGaveDiscount}
-              onChange={(e) => setExecGaveDiscount(e.target.checked)}
-            />
-            <label className="form-check-label" htmlFor="execDiscount">
-              Executive gave a discount from his own commission
-            </label>
+          <div className="mb-4">
+            <div className="form-check">
+              <input
+                className="form-check-input"
+                type="checkbox"
+                id="execDiscount"
+                checked={execGaveDiscount}
+                onChange={(e) => setExecGaveDiscount(e.target.checked)}
+              />
+              <label className="form-check-label" htmlFor="execDiscount">
+                Executive gave a discount from his own commission
+              </label>
+            </div>
+            {execGaveDiscount && (
+              <textarea
+                className="form-control form-control-sm mt-2"
+                rows={2}
+                placeholder="Add remarks — e.g. reason for the discount, amount given up, approval note"
+                value={execDiscountRemarks}
+                onChange={(e) => setExecDiscountRemarks(e.target.value)}
+              />
+            )}
           </div>
 
           <div className="card bg-light border-0 mb-4">
@@ -1402,7 +1473,7 @@ function BookingCreate() {
                 <div className="col-md-2">
                   <div className="text-muted">Commission amount</div>
                   <div className="fw-semibold">
-                    {money(commissionCap > 0 ? Math.min(totalCommission, commissionCap * totalSqft) : totalCommission)}
+                    {money(totalCommission)}
                   </div>
                 </div>
                 <div className="col-md-2">

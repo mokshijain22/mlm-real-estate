@@ -135,7 +135,7 @@ async function commissionPreview(req, res) {
       paymentMode: payment_mode,
       commissionPool,
     });
-    res.json({ preview });
+    res.json({ preview, commission_pool_per_sqft: commissionPool });
   } catch (err) {
     res.status(422).json({ message: err.message });
   }

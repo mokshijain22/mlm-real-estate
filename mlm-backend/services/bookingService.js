@@ -35,16 +35,6 @@ async function createBooking(data, actingUser) {
         }
       }
 
-      // Snapshot Company's ₹/sqft share NOW, using today's Project pool and the
-      // top executive's current slab — so a later Project rate change never
-      // retroactively changes what Company earned on this booking.
-      let companyRatePerSqft = 0;
-      if (sellingAgent) {
-        const bookingProject = await Plot.findById(data.plot_id).session(session).populate('project');
-        const pool = bookingProject?.project?.commissionPool || 0;
-        companyRatePerSqft = await commissionService.getCompanyRatePerSqft(sellingAgent, pool);
-      }
-
       if (plot.status !== 'available') {
         throw new Error('Plot is not available for booking');
       }
@@ -73,6 +63,30 @@ async function createBooking(data, actingUser) {
         totalAmount - bookingAmount - downPaymentAmount - downPayment2Amount - registryAmount;
       const emiMonths = parseInt(data.emi_months, 10);
       const emiAmount = emiMonths > 0 ? remainingAmount / emiMonths : 0;
+
+      // Snapshot Company's ₹/sqft share NOW — Project pool minus what seller +
+      // upline actually earn (after their caps), a true leftover. Reuses the
+      // exact calculation the wizard's preview uses, so the number confirmed
+      // in the wizard always matches what actually gets saved.
+      let companyRatePerSqft = 0;
+      if (sellingAgent) {
+        const bookingProject = await Plot.findById(data.plot_id).session(session).populate('project');
+        const pool = bookingProject?.project?.commissionPool || 0;
+        const snapshotPreview = await commissionService.previewCommissionForData({
+          agentId: data.agent_id,
+          pricePerSqft,
+          emiAmount,
+          emiMonths: emiMonths || 1,
+          paymentMode: data.payment_mode,
+          commissionPool: pool,
+          sellerCapPerSqft: Number(data.commission_cap_per_sqft) || 0,
+          uplineCapsPerSqft: Array.isArray(data.upline_commission_caps_per_sqft)
+            ? data.upline_commission_caps_per_sqft.map((v) => Number(v) || 0)
+            : [],
+        });
+        const companyRow = snapshotPreview.find((r) => r.isCompany);
+        companyRatePerSqft = companyRow ? Number(companyRow.points_per_sf) || 0 : 0;
+      }
 
       const actingIsAdmin = actingUser && (isSuperAdmin(actingUser) || isSubAdmin(actingUser));
 
@@ -143,8 +157,12 @@ async function createBooking(data, actingUser) {
             },
             proposerName: data.proposer_name || null,
             commissionCapPerSqft: Number(data.commission_cap_per_sqft) || 0,
+            uplineCommissionCapsPerSqft: Array.isArray(data.upline_commission_caps_per_sqft)
+              ? data.upline_commission_caps_per_sqft.map((v) => Number(v) || 0)
+              : [],
             companyRatePerSqft,
             executiveGaveDiscount: !!data.executive_gave_discount,
+            executiveDiscountRemarks: data.executive_discount_remarks || null,
             documents: {
               idProof: data.documents?.id_proof || null,
               panCard: data.documents?.pan_card || null,

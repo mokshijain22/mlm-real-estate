@@ -83,7 +83,9 @@ async function processEmiCommission(emi) {
 
       // 2. Traverse upline chain for rank-difference commission
       const uplineChain = await treeBuilderService.getUplineChain(sellingAgent);
+      const uplineCaps = booking.uplineCommissionCapsPerSqft || [];
       let previousRankPoints = sellerPoints;
+      let uplineRowIndex = 0;
 
       for (const [level, uplineId] of Object.entries(uplineChain)) {
         const uplineAgent = await User.findById(uplineId).populate('rank').session(session);
@@ -93,7 +95,9 @@ async function processEmiCommission(emi) {
         const difference = uplinePoints - previousRankPoints;
 
         if (difference > 0) {
-          const commission = sqftPortion * difference * multiplier;
+          const rawCommission = sqftPortion * difference * multiplier;
+          const uplineCap = Number(uplineCaps[uplineRowIndex]) || 0;
+          const commission = uplineCap > 0 ? Math.min(rawCommission, sqftPortion * uplineCap) : rawCommission;
 
           await walletService.credit(
             uplineAgent,
@@ -108,6 +112,7 @@ async function processEmiCommission(emi) {
           );
 
           previousRankPoints = uplinePoints;
+          uplineRowIndex++;
         }
       }
 
@@ -180,7 +185,9 @@ async function processCombinedDepositCommission(downPaymentEmi, depositEmi) {
       );
 
       const uplineChain = await treeBuilderService.getUplineChain(sellingAgent);
+      const uplineCaps = booking.uplineCommissionCapsPerSqft || [];
       let previousRankPoints = sellerPoints;
+      let uplineRowIndex = 0;
 
       for (const [level, uplineId] of Object.entries(uplineChain)) {
         const uplineAgent = await User.findById(uplineId).populate('rank').session(session);
@@ -190,7 +197,9 @@ async function processCombinedDepositCommission(downPaymentEmi, depositEmi) {
         const difference = uplinePoints - previousRankPoints;
 
         if (difference > 0) {
-          const commission = combinedSqft * difference * multiplier;
+          const rawCommission = combinedSqft * difference * multiplier;
+          const uplineCap = Number(uplineCaps[uplineRowIndex]) || 0;
+          const commission = uplineCap > 0 ? Math.min(rawCommission, combinedSqft * uplineCap) : rawCommission;
 
           await walletService.credit(
             uplineAgent,
@@ -205,6 +214,7 @@ async function processCombinedDepositCommission(downPaymentEmi, depositEmi) {
           );
 
           previousRankPoints = uplinePoints;
+          uplineRowIndex++;
         }
       }
 
@@ -227,7 +237,18 @@ async function processCombinedDepositCommission(downPaymentEmi, depositEmi) {
  * Used both by the booking wizard's Commission step (before the booking exists)
  * and by previewCommission() below (for an already-saved booking).
  */
-async function previewCommissionForData({ agentId, agentRankId, pricePerSqft, emiAmount, emiMonths, paymentMode, commissionPool, companyRateOverride }) {
+async function previewCommissionForData({
+  agentId,
+  agentRankId,
+  pricePerSqft,
+  emiAmount,
+  emiMonths,
+  paymentMode,
+  commissionPool,
+  companyRateOverride,
+  sellerCapPerSqft = 0,
+  uplineCapsPerSqft = [],
+}) {
   const sellingAgent = await User.findById(agentId);
   if (!sellingAgent) throw new Error('Agent not found.');
 
@@ -247,7 +268,10 @@ async function previewCommissionForData({ agentId, agentRankId, pricePerSqft, em
   }
 
   const sellerPoints = pointsType === 'BV' ? Number(bookingRank?.bvPoints || 0) : Number(bookingRank?.pvPoints || 0);
-  const sellerCommissionPerEmi = sqftPortion * sellerPoints * multiplier;
+  const rawSellerRatePerSqft = sellerPoints * multiplier;
+  const sellerRatePerSqft =
+    sellerCapPerSqft > 0 ? Math.min(rawSellerRatePerSqft, sellerCapPerSqft) : rawSellerRatePerSqft;
+  const sellerCommissionPerEmi = sqftPortion * sellerRatePerSqft;
 
   preview.push({
     agent_name: sellingAgent.name,
@@ -256,11 +280,16 @@ async function previewCommissionForData({ agentId, agentRankId, pricePerSqft, em
     points_per_sf: sellerPoints,
     commission_per_emi: sellerCommissionPerEmi,
     total_commission: sellerCommissionPerEmi * emiMonths,
+    default_cap_per_sqft: sellingAgent.slabPerSqft ?? 0,
     note: `Seller rank at booking time: ${bookingRank?.name || 'N/A'}`,
   });
 
   const uplineChain = await treeBuilderService.getUplineChain(sellingAgent);
   let previousRankPoints = sellerPoints;
+  // Sum of what seller + upline actually earn, per sqft — Company's share is
+  // whatever's left of the pool after this, not a disconnected formula.
+  let paidRatePerSqft = sellerRatePerSqft;
+  let uplineRowIndex = 0;
 
   for (const [level, uplineId] of Object.entries(uplineChain)) {
     const uplineAgent = await User.findById(uplineId).populate('rank');
@@ -270,7 +299,10 @@ async function previewCommissionForData({ agentId, agentRankId, pricePerSqft, em
     const difference = uplinePoints - previousRankPoints;
 
     if (difference > 0) {
-      const commissionPerEmi = sqftPortion * difference * multiplier;
+      const rawUplineRatePerSqft = difference * multiplier;
+      const uplineCap = Number(uplineCapsPerSqft[uplineRowIndex]) || 0;
+      const uplineRatePerSqft = uplineCap > 0 ? Math.min(rawUplineRatePerSqft, uplineCap) : rawUplineRatePerSqft;
+      const commissionPerEmi = sqftPortion * uplineRatePerSqft;
 
       preview.push({
         agent_name: uplineAgent.name,
@@ -279,16 +311,22 @@ async function previewCommissionForData({ agentId, agentRankId, pricePerSqft, em
         points_per_sf: difference,
         commission_per_emi: commissionPerEmi,
         total_commission: commissionPerEmi * emiMonths,
+        default_cap_per_sqft: uplineAgent.slabPerSqft ?? 0,
       });
 
+      paidRatePerSqft += uplineRatePerSqft;
       previousRankPoints = uplinePoints;
+      uplineRowIndex++;
     }
   }
 
   // A saved booking passes its snapshotted rate (companyRateOverride); the
-  // live wizard preview (before a booking exists) passes commissionPool instead
-  // and the rate is computed fresh from today's Project pool.
-  const companyRate = companyRateOverride != null ? Number(companyRateOverride) : await getCompanyRatePerSqft(sellingAgent, commissionPool);
+  // live wizard preview (before a booking exists) computes it fresh — Project
+  // pool minus what seller + upline actually earn, a true leftover.
+  const companyRate =
+    companyRateOverride != null
+      ? Number(companyRateOverride)
+      : Math.max((Number(commissionPool) || 0) - paidRatePerSqft, 0);
   if (companyRate > 0) {
     preview.push({
       agent_name: 'Company',
@@ -297,7 +335,7 @@ async function previewCommissionForData({ agentId, agentRankId, pricePerSqft, em
       points_per_sf: companyRate,
       commission_per_emi: sqftPortion * companyRate,
       total_commission: sqftPortion * companyRate * emiMonths,
-      note: 'Company share (Project pool minus top executive cap)',
+      note: 'Company share (Project pool minus what seller + upline actually earn)',
       isCompany: true,
     });
   }

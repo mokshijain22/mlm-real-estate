@@ -89,7 +89,7 @@ function Wallet() {
             <div className="card-body p-4">
               <h6 className="fw-bold mb-3">Request Withdrawal</h6>
               <p className="text-muted fs-13">
-                Minimum withdrawal: ₹{minWithdrawal} &middot; TDS: {tdsPercent}%
+                Minimum withdrawal: ₹{minWithdrawal} &middot; TDS: {form.points_type === "BV" ? tdsPercent : 0}%
               </p>
               <form onSubmit={handleWithdraw}>
                 <div className="mb-3">

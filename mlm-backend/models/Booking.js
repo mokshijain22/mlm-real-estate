@@ -56,8 +56,10 @@ const bookingSchema = new mongoose.Schema(
      plcAmount: { type: Number, default: 0 },
     plcPercent: { type: Number, default: 0 },
     commissionCapPerSqft: { type: Number, default: 0 }, // 0 = uncapped; caps the seller's per-sqft commission
+    uplineCommissionCapsPerSqft: { type: [Number], default: [] }, // 0/absent = uncapped; index-aligned to the upline rank-difference rows shown in the commission preview (L2, L3-if-upline, etc.) — does NOT include the Company row
     companyRatePerSqft: { type: Number, default: 0 }, // Company's ₹/sqft share, snapshotted at booking time (Project pool minus top executive's slab at that moment) so later Project rate changes never alter an already-booked commission
     executiveGaveDiscount: { type: Boolean, default: false },
+    executiveDiscountRemarks: { type: String, default: null },
 
     paymentSchedule: {
       tokenDate: { type: Date, default: null },
