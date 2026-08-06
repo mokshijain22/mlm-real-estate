@@ -2,6 +2,18 @@ import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import api from "../../api/axios.js";
 
+const EMI_LABELS = {
+  0: "Booking Amount",
+  "-1": "Down Payment",
+  "-2": "Down Payment 2",
+  99: "Registry",
+};
+function emiLabel(emiNumber) {
+  if (EMI_LABELS[emiNumber] !== undefined) return EMI_LABELS[emiNumber];
+  if (emiNumber > 0) return `EMI Month ${emiNumber}`;
+  return `Step ${emiNumber}`;
+}
+
 function EmiManagement() {
   const [searchParams] = useSearchParams();
   const isOverdue = searchParams.get("view") === "overdue";
@@ -134,7 +146,7 @@ function EmiManagement() {
                     <td>
                       {emi.booking?.plot?.plotNumber} ({emi.booking?.project?.name})
                     </td>
-                    <td>Month {emi.emiNumber}</td>
+                    <td>{emiLabel(emi.emiNumber)}</td>
                     <td>{new Date(emi.dueDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</td>
                     <td>₹ {Number(emi.amount).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                     <td>

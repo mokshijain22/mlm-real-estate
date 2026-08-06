@@ -3,6 +3,18 @@ import { Link } from "react-router-dom";
 import api from "../../api/axios.js";
 import ExportButton from "../../components/shared/ExportButton.jsx";
 
+const EMI_LABELS = {
+  0: "Booking Amount",
+  "-1": "Down Payment",
+  "-2": "Down Payment 2",
+  99: "Registry",
+};
+function emiLabel(emiNumber) {
+  if (EMI_LABELS[emiNumber] !== undefined) return EMI_LABELS[emiNumber];
+  if (emiNumber > 0) return `EMI Month ${emiNumber}`;
+  return `Step ${emiNumber}`;
+}
+
 function EmiCollectionsReport() {
   const [emis, setEmis] = useState(null);
   const [meta, setMeta] = useState(null);
@@ -274,7 +286,7 @@ function EmiCollectionsReport() {
                           <td>
                             <span className="fw-bold fs-14">#{emi._id.slice(-6)}</span>
                             <br />
-                            <span className="text-muted">Month {emi.emiNumber}</span>
+                            <span className="text-muted">{emiLabel(emi.emiNumber)}</span>
                           </td>
                           <td>
                             {emi.booking ? (

@@ -201,6 +201,8 @@ router.get('/reports/cancelled-bookings', requirePermission('reports_cancelled_b
 router.get('/reports/cancelled-bookings/export', requirePermission('reports_cancelled_bookings'), reportController.cancelledBookingsExport);
 router.get('/reports/executive-tds', requirePermission('reports_executive_tds'), reportController.executiveTds);
 router.get('/reports/executive-tds/export', requirePermission('reports_executive_tds'), reportController.executiveTdsExport);
+router.get('/reports/booked-plots', requirePermission('reports_booked_plots'), reportController.bookedPlots);
+router.get('/reports/booked-plots/export', requirePermission('reports_booked_plots'), reportController.bookedPlotsExport);
 
 // Settings
 router.use('/settings', restrictTo('super_admin'));

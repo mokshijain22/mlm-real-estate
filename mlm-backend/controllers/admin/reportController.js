@@ -8,6 +8,7 @@ const Customer = require('../../models/Customer');
 const WalletTransaction = require('../../models/WalletTransaction');
 const WithdrawalRequest = require('../../models/WithdrawalRequest');
 const Role = require('../../models/Role');
+const Bank = require('../../models/Bank');
 const commissionService = require('../../services/commissionService');
 
 /**
@@ -282,7 +283,16 @@ async function emiCollectionsExport(req, res) {
       .populate({ path: 'booking', populate: [{ path: 'customer' }, { path: 'plot' }, { path: 'project' }, { path: 'agent', select: 'name' }] })
       .sort({ dueDate: -1 });
 
-    const headers = ['EMI #', 'Booking #', 'Customer', 'Project', 'Plot', 'Agent', 'Month #', 'Amount', 'Mode', 'Due Date', 'Paid Date', 'Status'];
+    const emiLabel = (n) => {
+      if (n === 0) return 'Booking Amount';
+      if (n === -1) return 'Down Payment';
+      if (n === -2) return 'Down Payment 2';
+      if (n === 99) return 'Registry';
+      if (n > 0) return `EMI Month ${n}`;
+      return `Step ${n}`;
+    };
+
+    const headers = ['EMI #', 'Booking #', 'Customer', 'Project', 'Plot', 'Agent', 'Month', 'Amount', 'Mode', 'Due Date', 'Paid Date', 'Status'];
     const rows = emis.map((e) => [
       e._id,
       e.booking?.bookingNumber || 'N/A',
@@ -290,7 +300,7 @@ async function emiCollectionsExport(req, res) {
       e.booking?.project?.name || 'N/A',
       e.booking?.plot?.plotNumber || 'N/A',
       e.booking?.agent?.name || 'N/A',
-      e.emiNumber,
+      emiLabel(e.emiNumber),
       e.amount,
       e.paymentMode || '-',
       e.dueDate ? e.dueDate.toISOString().slice(0, 10) : '-',
@@ -301,6 +311,102 @@ async function emiCollectionsExport(req, res) {
     return sendCsv(res, `emi_collections_${timestamp()}.csv`, toCsv(headers, rows));
   } catch (err) {
     return res.status(500).json({ message: 'Failed to export EMI collections report.', error: err.message });
+  }
+}
+
+// GET /api/admin/reports/booked-plots
+async function bookedPlots(req, res) {
+  try {
+    const { project_id, date_from, date_to } = req.query;
+    const bookingQuery = { status: { $in: ['active', 'completed', 'cancelled'] } };
+    if (project_id) bookingQuery.project = project_id;
+    Object.assign(bookingQuery, dateRangeFilter('createdAt', date_from, date_to));
+
+    const bookings = await Booking.find(bookingQuery)
+      .populate('customer', 'name mobile')
+      .populate('plot', 'plotNumber totalArea plotDimensions')
+      .populate('project', 'name')
+      .sort({ createdAt: -1 });
+
+    const bookingIds = bookings.map((b) => b._id);
+    const emis = await Emi.find({ booking: { $in: bookingIds }, status: 'paid' });
+
+    const paidByBooking = {};
+    for (const e of emis) {
+      const key = String(e.booking);
+      if (!paidByBooking[key]) paidByBooking[key] = { received: 0, cash: 0, bank: 0, cheque: 0, bankNames: new Set() };
+      const bucket = paidByBooking[key];
+      bucket.received += e.amount || 0;
+      if (e.paymentMode === 'cash') bucket.cash += e.amount || 0;
+      else if (e.paymentMode === 'cheque') bucket.cheque += e.amount || 0;
+      else bucket.bank += e.amount || 0;
+    }
+    const banksByBooking = {};
+    const bankIds = emis.filter((e) => e.bank).map((e) => e.bank);
+    if (bankIds.length) {
+      const banks = await Bank.find({ _id: { $in: bankIds } }).select('name');
+      const bankMap = {};
+      banks.forEach((b) => (bankMap[String(b._id)] = b.name));
+      for (const e of emis) {
+        if (!e.bank) continue;
+        const key = String(e.booking);
+        if (!banksByBooking[key]) banksByBooking[key] = new Set();
+        banksByBooking[key].add(bankMap[String(e.bank)] || '');
+      }
+    }
+
+    const rows = bookings.map((b) => {
+      const key = String(b._id);
+      const p = paidByBooking[key] || { received: 0, cash: 0, bank: 0, cheque: 0 };
+      const bankNames = banksByBooking[key] ? Array.from(banksByBooking[key]).filter(Boolean).join(', ') : '-';
+      return {
+        plot: b.plot?.plotNumber || 'N/A',
+        area: b.plot?.plotDimensions ? `${b.plot.totalArea} (${b.plot.plotDimensions})` : b.plot?.totalArea || 'N/A',
+        project: b.project?.name || 'N/A',
+        client: b.customer?.name || 'N/A',
+        mobile: b.customer?.mobile || 'N/A',
+        status: b.status === 'active' ? 'Booked' : b.status === 'completed' ? 'Completed' : 'Cancelled',
+        bookingDate: b.createdAt,
+        sellingPrice: b.totalAmount || 0,
+        dpAmount: (b.downPaymentAmount || 0) + (b.bookingAmount || 0),
+        received: p.received,
+        cash: p.cash,
+        bank: p.bank,
+        cheque: p.cheque,
+        bankAccount: bankNames,
+      };
+    });
+
+    const summary = {
+      booked_plots: rows.filter((r) => r.status === 'Booked' || r.status === 'Completed').length,
+      cancelled_plots: rows.filter((r) => r.status === 'Cancelled').length,
+      total_selling_price: rows.reduce((s, r) => s + r.sellingPrice, 0),
+      total_received: rows.reduce((s, r) => s + r.received, 0),
+    };
+
+    return res.json({ data: rows, summary });
+  } catch (err) {
+    return res.status(500).json({ message: 'Failed to fetch booked plots report.', error: err.message });
+  }
+}
+
+// GET /api/admin/reports/booked-plots/export
+async function bookedPlotsExport(req, res) {
+  try {
+    req.query.page = undefined;
+    const fakeRes = { json: (data) => data, status: () => fakeRes };
+    const result = await bookedPlots(req, fakeRes);
+    const rows = result?.data || [];
+
+    const headers = ['Plot', 'Area', 'Project', 'Client', 'Mobile', 'Status', 'Booking Date', 'Selling Price', 'DP Amount', 'Received', 'Cash', 'Bank', 'Cheque', 'Bank Account'];
+    const csvRows = rows.map((r) => [
+      r.plot, r.area, r.project, r.client, r.mobile, r.status,
+      r.bookingDate ? new Date(r.bookingDate).toISOString().slice(0, 10) : '-',
+      r.sellingPrice, r.dpAmount, r.received, r.cash, r.bank, r.cheque, r.bankAccount,
+    ]);
+    return sendCsv(res, `booked_plots_${timestamp()}.csv`, toCsv(headers, csvRows));
+  } catch (err) {
+    return res.status(500).json({ message: 'Failed to export booked plots report.', error: err.message });
   }
 }
 
@@ -1182,4 +1288,6 @@ module.exports = {
   cancelledBookingsExport,
   executiveTds,
   executiveTdsExport,
+  bookedPlots,
+  bookedPlotsExport,
 };
