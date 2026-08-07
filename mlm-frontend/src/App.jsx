@@ -64,6 +64,8 @@ import AgentEarningsReport from "./pages/admin/AgentEarningsReport.jsx";
 import ProjectSalesReport from "./pages/admin/ProjectSalesReport.jsx";
 import PayoutsReport from "./pages/admin/PayoutsReport.jsx";
 import DateRangeReport from "./pages/admin/DateRangeReport.jsx";
+import BookedPlotsReport from "./pages/admin/BookedPlotsReport.jsx";
+import ExecutiveCommissionReport from "./pages/admin/ExecutiveCommissionReport.jsx";
 import MonthEndReport from "./pages/admin/MonthEndReport.jsx";
 import SingleUnitReport from "./pages/admin/SingleUnitReport.jsx";
 import CancelledBookingsReport from "./pages/admin/CancelledBookingsReport.jsx";
@@ -163,6 +165,8 @@ function App() {
         <Route path="/admin/reports/project-sales" element={<PermissionRoute permission="reports_project_sales"><ProjectSalesReport /></PermissionRoute>} />
         <Route path="/admin/reports/payouts" element={<PermissionRoute permission="reports_payouts"><PayoutsReport /></PermissionRoute>} />
         <Route path="/admin/reports/date-range" element={<PermissionRoute permission="reports_date_range"><DateRangeReport /></PermissionRoute>} />
+        <Route path="/admin/reports/booked-plots" element={<PermissionRoute permission="reports_booked_plots"><BookedPlotsReport /></PermissionRoute>} />
+        <Route path="/admin/reports/executive-commissions" element={<PermissionRoute permission="reports_executive_commissions"><ExecutiveCommissionReport /></PermissionRoute>} />
         <Route path="/admin/reports/month-end" element={<PermissionRoute permission="reports_month_end"><MonthEndReport /></PermissionRoute>} />
         <Route path="/admin/reports/single-unit" element={<PermissionRoute permission="reports_single_unit"><SingleUnitReport /></PermissionRoute>} />
         <Route path="/admin/reports/cancelled-bookings" element={<PermissionRoute permission="reports_cancelled_bookings"><CancelledBookingsReport /></PermissionRoute>} />

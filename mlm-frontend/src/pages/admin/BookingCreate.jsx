@@ -384,12 +384,16 @@ function BookingCreate() {
 
   const totalSqft = Number(selectedPlot?.totalArea) || 0;
   let uplineRunningIndex = 0;
+  let previousCap = 0;
   const commissionRows = commissionPreview.map((row, i) => {
     if (i === 0) {
       const cap = commissionCap || 0;
+      const fallbackRate = totalSqft > 0 ? row.total_commission / totalSqft : 0;
+      const rate = cap > 0 ? cap : fallbackRate;
+      previousCap = cap > 0 ? cap : rate;
       return {
         ...row,
-        cappedTotal: cap > 0 ? cap * totalSqft : row.total_commission,
+        cappedTotal: rate * totalSqft,
         capEditable: true,
         capValue: cap,
         uplineIndex: null,
@@ -401,9 +405,12 @@ function BookingCreate() {
     const uplineIndex = uplineRunningIndex;
     uplineRunningIndex += 1;
     const cap = Number(uplineCaps[uplineIndex]) || 0;
+    const fallbackRate = totalSqft > 0 ? row.total_commission / totalSqft : 0;
+    const rate = cap > 0 ? Math.max(cap - previousCap, 0) : fallbackRate;
+    previousCap = cap > 0 ? Math.max(cap, previousCap) : previousCap;
     return {
       ...row,
-      cappedTotal: cap > 0 ? cap * totalSqft : row.total_commission,
+      cappedTotal: rate * totalSqft,
       capEditable: true,
       capValue: cap,
       uplineIndex,

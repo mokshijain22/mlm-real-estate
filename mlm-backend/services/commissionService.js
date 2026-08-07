@@ -66,7 +66,9 @@ async function processEmiCommission(emi) {
 
       const sellerPoints = pointsType === 'BV' ? Number(bookingRank?.bvPoints || 0) : Number(bookingRank?.pvPoints || 0);
       const cap = Number(booking.commissionCapPerSqft) || 0;
-      const sellerEarning = cap > 0 ? sqftPortion * cap : sqftPortion * sellerPoints * multiplier;
+      const sellerRate = cap > 0 ? cap : sellerPoints * multiplier;
+      const sellerEarning = sqftPortion * sellerRate;
+      let previousCap = cap > 0 ? cap : sellerRate;
 
       await walletService.credit(
         sellingAgent,
@@ -97,7 +99,9 @@ async function processEmiCommission(emi) {
         if (difference > 0) {
           const rawCommission = sqftPortion * difference * multiplier;
           const uplineCap = Number(uplineCaps[uplineRowIndex]) || 0;
-          const commission = uplineCap > 0 ? sqftPortion * uplineCap : rawCommission;
+          const uplineRate = uplineCap > 0 ? Math.max(uplineCap - previousCap, 0) : difference * multiplier;
+          const commission = sqftPortion * uplineRate;
+          previousCap = uplineCap > 0 ? Math.max(uplineCap, previousCap) : previousCap;
 
           await walletService.credit(
             uplineAgent,
@@ -169,7 +173,9 @@ async function processCombinedDepositCommission(downPaymentEmi, depositEmi) {
 
       const sellerPoints = pointsType === 'BV' ? Number(bookingRank?.bvPoints || 0) : Number(bookingRank?.pvPoints || 0);
       const cap = Number(booking.commissionCapPerSqft) || 0;
-      const sellerEarning = cap > 0 ? Math.min(combinedSqft * sellerPoints * multiplier, combinedSqft * cap) : combinedSqft * sellerPoints * multiplier;
+      const sellerRate = cap > 0 ? cap : sellerPoints * multiplier;
+      const sellerEarning = combinedSqft * sellerRate;
+      let previousCap = cap > 0 ? cap : sellerRate;
 
       await walletService.credit(
         sellingAgent,
@@ -199,7 +205,9 @@ async function processCombinedDepositCommission(downPaymentEmi, depositEmi) {
         if (difference > 0) {
           const rawCommission = combinedSqft * difference * multiplier;
           const uplineCap = Number(uplineCaps[uplineRowIndex]) || 0;
-          const commission = uplineCap > 0 ? Math.min(rawCommission, combinedSqft * uplineCap) : rawCommission;
+          const uplineRate = uplineCap > 0 ? Math.max(uplineCap - previousCap, 0) : difference * multiplier;
+          const commission = combinedSqft * uplineRate;
+          previousCap = uplineCap > 0 ? Math.max(uplineCap, previousCap) : previousCap;
 
           await walletService.credit(
             uplineAgent,
@@ -269,9 +277,9 @@ async function previewCommissionForData({
 
   const sellerPoints = pointsType === 'BV' ? Number(bookingRank?.bvPoints || 0) : Number(bookingRank?.pvPoints || 0);
   const rawSellerRatePerSqft = sellerPoints * multiplier;
-  const sellerRatePerSqft =
-    sellerCapPerSqft > 0 ? Math.min(rawSellerRatePerSqft, sellerCapPerSqft) : rawSellerRatePerSqft;
+  const sellerRatePerSqft = sellerCapPerSqft > 0 ? sellerCapPerSqft : rawSellerRatePerSqft;
   const sellerCommissionPerEmi = sqftPortion * sellerRatePerSqft;
+  let previousCap = sellerCapPerSqft > 0 ? sellerCapPerSqft : sellerRatePerSqft;
 
   preview.push({
     agent_name: sellingAgent.name,
@@ -301,8 +309,9 @@ async function previewCommissionForData({
     if (difference > 0) {
       const rawUplineRatePerSqft = difference * multiplier;
       const uplineCap = Number(uplineCapsPerSqft[uplineRowIndex]) || 0;
-      const uplineRatePerSqft = uplineCap > 0 ? Math.min(rawUplineRatePerSqft, uplineCap) : rawUplineRatePerSqft;
+      const uplineRatePerSqft = uplineCap > 0 ? Math.max(uplineCap - previousCap, 0) : rawUplineRatePerSqft;
       const commissionPerEmi = sqftPortion * uplineRatePerSqft;
+      previousCap = uplineCap > 0 ? Math.max(uplineCap, previousCap) : previousCap;
 
       preview.push({
         agent_name: uplineAgent.name,

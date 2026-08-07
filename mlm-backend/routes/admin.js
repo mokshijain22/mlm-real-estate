@@ -203,6 +203,8 @@ router.get('/reports/executive-tds', requirePermission('reports_executive_tds'),
 router.get('/reports/executive-tds/export', requirePermission('reports_executive_tds'), reportController.executiveTdsExport);
 router.get('/reports/booked-plots', requirePermission('reports_booked_plots'), reportController.bookedPlots);
 router.get('/reports/booked-plots/export', requirePermission('reports_booked_plots'), reportController.bookedPlotsExport);
+router.get('/reports/executive-commissions', requirePermission('reports_executive_commissions'), reportController.executiveCommissions);
+router.get('/reports/executive-commissions/export', requirePermission('reports_executive_commissions'), reportController.executiveCommissionsExport);
 
 // Settings
 router.use('/settings', restrictTo('super_admin'));

@@ -198,7 +198,7 @@ function Sidebar() {
           )}
 
           {/* Finance */}
-          {canAny("reports", "reports_emi", "reports_commissions", "reports_agent_earnings", "reports_project_sales", "reports_payouts", "reports_date_range", "reports_month_end", "reports_single_unit", "reports_cancelled_bookings", "reports_executive_tds") && (
+          {canAny("reports", "reports_emi", "reports_commissions", "reports_agent_earnings", "reports_project_sales", "reports_payouts", "reports_date_range", "reports_month_end", "reports_single_unit", "reports_cancelled_bookings", "reports_executive_tds", "reports_booked_plots", "reports_executive_commissions") && (
   <>
     <li className="menu-title mt-2">Finance</li>
 
@@ -235,11 +235,16 @@ function Sidebar() {
 
           {can("reports_executive_tds") && <li className="nav-item"><NavLink className="nav-link" to="/admin/reports/executive-tds"><span className="nav-text">Executive TDS Report</span></NavLink></li>}
 
+
           {can("reports_project_sales") && <li className="nav-item"><NavLink className="nav-link" to="/admin/reports/project-sales"><span className="nav-text">Project Sales</span></NavLink></li>}
 
           {can("reports_cancelled_bookings") && <li className="nav-item"><NavLink className="nav-link" to="/admin/reports/cancelled-bookings"><span className="nav-text">Cancelled Bookings</span></NavLink></li>}
 
           {can("reports_payouts") && <li className="nav-item"><NavLink className="nav-link" to="/admin/reports/payouts"><span className="nav-text">Payouts</span></NavLink></li>}
+
+          {can("reports_booked_plots") && <li className="nav-item"><NavLink className="nav-link" to="/admin/reports/booked-plots"><span className="nav-text">Booked Plots</span></NavLink></li>}
+
+          {can("reports_executive_commissions") && <li className="nav-item"><NavLink className="nav-link" to="/admin/reports/executive-commissions"><span className="nav-text">Executive Commission Report</span></NavLink></li>}
         </ul>
       </div>
     </li>

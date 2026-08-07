@@ -10,6 +10,9 @@ const WithdrawalRequest = require('../../models/WithdrawalRequest');
 const Role = require('../../models/Role');
 const Bank = require('../../models/Bank');
 const commissionService = require('../../services/commissionService');
+const treeBuilderService = require('../../services/treeBuilderService');
+const rankService = require('../../services/rankService');
+const settingService = require('../../services/settingService');
 
 /**
  * For every real 'emi_commission' wallet transaction (one per EMI / combined
@@ -407,6 +410,229 @@ async function bookedPlotsExport(req, res) {
     return sendCsv(res, `booked_plots_${timestamp()}.csv`, toCsv(headers, csvRows));
   } catch (err) {
     return res.status(500).json({ message: 'Failed to export booked plots report.', error: err.message });
+  }
+}
+
+// --- Executive Commission Report helpers ---
+
+// Builds { [agentIdString]: levelNumber } where the selling agent itself is
+// Level 1, their direct referrer is Level 2, and so on up the upline chain.
+async function buildLevelMap(sellingAgent) {
+  const levelMap = { [String(sellingAgent._id)]: 1 };
+  const uplineChain = await treeBuilderService.getUplineChain(sellingAgent);
+  let level = 2;
+  for (const uplineId of Object.values(uplineChain)) {
+    levelMap[String(uplineId)] = level;
+    level++;
+  }
+  return levelMap;
+}
+
+// Mirrors commissionService.processEmiCommission's math but WITHOUT writing
+// any wallet records — used to show what an already-paid-but-not-yet-processed
+// EMI (commissionProcessed: false) WOULD earn, so it can appear as "Pending".
+async function computePendingCommissionRows(emi, booking) {
+  if (!booking.agent) return [];
+  const sellingAgent = booking.agent;
+  const mode = emi.paymentMode || booking.paymentMode;
+  const sqftPortion = Number(emi.sqftPortion) || 0;
+  const { isOnlineMode } = require('../../utils/paymentModes');
+  const ptype = isOnlineMode(mode) ? 'BV' : 'PV';
+  const multiplier = await settingService.get(`${ptype.toLowerCase()}_per_sqft`, 1.0);
+
+  let bookingRank = booking.agentRank;
+  if (!bookingRank) bookingRank = await Rank.findOne().sort({ sortOrder: 1 });
+
+  const sellerPoints = ptype === 'BV' ? Number(bookingRank?.bvPoints || 0) : Number(bookingRank?.pvPoints || 0);
+  const cap = Number(booking.commissionCapPerSqft) || 0;
+  const sellerEarning = cap > 0 ? Math.min(sqftPortion * sellerPoints * multiplier, sqftPortion * cap) : sqftPortion * sellerPoints * multiplier;
+
+  const rows = [{ agentId: String(sellingAgent._id), amount: sellerEarning }];
+
+  const uplineChain = await treeBuilderService.getUplineChain(sellingAgent);
+  const uplineCaps = booking.uplineCommissionCapsPerSqft || [];
+  let previousRankPoints = sellerPoints;
+  let uplineRowIndex = 0;
+  for (const uplineId of Object.values(uplineChain)) {
+    const uplineAgent = await User.findById(uplineId).populate('rank');
+    if (!uplineAgent) continue;
+    const uplinePoints = await rankService.getAgentRankPoints(uplineAgent, ptype);
+    const difference = uplinePoints - previousRankPoints;
+    if (difference > 0) {
+      const rawCommission = sqftPortion * difference * multiplier;
+      const uplineCap = Number(uplineCaps[uplineRowIndex]) || 0;
+      const commission = uplineCap > 0 ? Math.min(rawCommission, sqftPortion * uplineCap) : rawCommission;
+      rows.push({ agentId: String(uplineAgent._id), amount: commission });
+      previousRankPoints = uplinePoints;
+      uplineRowIndex++;
+    }
+  }
+  return rows;
+}
+
+function levelLabel(level) {
+  return `Level ${level} (L${level})`;
+}
+
+async function buildExecutiveCommissionRows(filters) {
+  const { project_id, date_from, date_to, agent_id } = filters;
+  const bookingQuery = { status: { $in: ['active', 'completed'] } };
+  if (project_id) bookingQuery.project = project_id;
+  Object.assign(bookingQuery, dateRangeFilter('createdAt', date_from, date_to));
+
+  const bookings = await Booking.find(bookingQuery)
+    .populate('customer', 'name')
+    .populate('plot', 'plotNumber totalArea plotDimensions')
+    .populate('project', 'name')
+    .populate('agent', 'name')
+    .populate('agentRank');
+
+  const bookingIds = bookings.map((b) => b._id);
+  const [paidEmis, pendingEmis, walletTxns, allAgents] = await Promise.all([
+    Emi.find({ booking: { $in: bookingIds }, status: 'paid' }),
+    Emi.find({ booking: { $in: bookingIds }, status: 'paid', commissionProcessed: false }),
+    WalletTransaction.find({ booking: { $in: bookingIds }, category: { $in: ['emi_commission', 'rank_difference'] }, type: 'credit' }),
+    User.find({}).select('name'),
+  ]);
+  const agentNameMap = {};
+  allAgents.forEach((a) => (agentNameMap[String(a._id)] = a.name));
+
+  const paidByBooking = {};
+  for (const e of paidEmis) {
+    const key = String(e.booking);
+    if (!paidByBooking[key]) paidByBooking[key] = { received: 0, cash: 0, bank: 0, cheque: 0, modes: new Set() };
+    const b = paidByBooking[key];
+    b.received += e.amount || 0;
+    if (e.paymentMode === 'cash') { b.cash += e.amount || 0; b.modes.add('Cash'); }
+    else if (e.paymentMode === 'cheque') { b.cheque += e.amount || 0; b.modes.add('Cheque'); }
+    else { b.bank += e.amount || 0; b.modes.add('Bank'); }
+  }
+
+  const pendingByBooking = {};
+  for (const e of pendingEmis) {
+    const key = String(e.booking);
+    if (!pendingByBooking[key]) pendingByBooking[key] = [];
+    pendingByBooking[key].push(e);
+  }
+
+  const walletByBooking = {};
+  for (const t of walletTxns) {
+    const key = String(t.booking);
+    if (!walletByBooking[key]) walletByBooking[key] = {};
+    const agentKey = String(t.agent);
+    walletByBooking[key][agentKey] = (walletByBooking[key][agentKey] || 0) + (t.amount || 0);
+  }
+
+  const rows = [];
+  for (const b of bookings) {
+    const key = String(b._id);
+    if (agent_id && String(b.agent?._id) !== agent_id) continue;
+    const paid = paidByBooking[key] || { received: 0, cash: 0, bank: 0, cheque: 0, modes: new Set() };
+    const collectionSource = paid.modes.size ? Array.from(paid.modes).join(' + ') : '-';
+    const saleValue = b.totalAmount || 0;
+    const custOutstanding = Math.max(saleValue - paid.received, 0);
+    if (!b.agent) continue;
+    const levelMap = await buildLevelMap(b.agent);
+
+    // Paid rows — from real wallet credits, one row per (booking, agent).
+    const paidAgents = walletByBooking[key] || {};
+    for (const [agentId, amount] of Object.entries(paidAgents)) {
+      rows.push({
+        plot: b.plot?.plotNumber || 'N/A',
+        area: b.plot?.plotDimensions ? `${b.plot.totalArea} (${b.plot.plotDimensions})` : b.plot?.totalArea || 'N/A',
+        project: b.project?.name || 'N/A',
+        customer: b.customer?.name || 'N/A',
+        soldBy: b.agent.name,
+        commissionTo: agentNameMap[agentId] || 'Unknown',
+        level: levelLabel(levelMap[agentId] || 1),
+        collectionSource,
+        cash: paid.cash,
+        bank: paid.bank,
+        cheque: paid.cheque,
+        saleValue,
+        received: paid.received,
+        custOutstanding,
+        grossComm: amount,
+        paidComm: amount,
+        commOutstanding: 0,
+        status: 'Paid',
+      });
+    }
+
+    // Pending rows — EMIs paid by the customer but commission not yet released.
+    const pending = pendingByBooking[key] || [];
+    const pendingTotals = {};
+    for (const e of pending) {
+      const computed = await computePendingCommissionRows(e, b);
+      for (const r of computed) {
+        pendingTotals[r.agentId] = (pendingTotals[r.agentId] || 0) + r.amount;
+      }
+    }
+    for (const [agentId, amount] of Object.entries(pendingTotals)) {
+      rows.push({
+        plot: b.plot?.plotNumber || 'N/A',
+        area: b.plot?.plotDimensions ? `${b.plot.totalArea} (${b.plot.plotDimensions})` : b.plot?.totalArea || 'N/A',
+        project: b.project?.name || 'N/A',
+        customer: b.customer?.name || 'N/A',
+        soldBy: b.agent.name,
+        commissionTo: agentNameMap[agentId] || 'Unknown',
+        level: levelLabel(levelMap[agentId] || 1),
+        collectionSource,
+        cash: paid.cash,
+        bank: paid.bank,
+        cheque: paid.cheque,
+        saleValue,
+        received: paid.received,
+        custOutstanding,
+        grossComm: amount,
+        paidComm: 0,
+        commOutstanding: amount,
+        status: 'Pending',
+      });
+    }
+  }
+
+  const summary = {
+    total_plots: bookings.length,
+    sale_value: bookings.reduce((s, b) => s + (b.totalAmount || 0), 0),
+    customer_received: rows.length
+      ? Object.values(paidByBooking).reduce((s, p) => s + p.received, 0)
+      : 0,
+    customer_outstanding: bookings.reduce((s, b) => {
+      const p = paidByBooking[String(b._id)] || { received: 0 };
+      return s + Math.max((b.totalAmount || 0) - p.received, 0);
+    }, 0),
+    gross_commission: rows.reduce((s, r) => s + r.grossComm, 0),
+    commission_paid: rows.reduce((s, r) => s + r.paidComm, 0),
+    commission_outstanding: rows.reduce((s, r) => s + r.commOutstanding, 0),
+  };
+
+  return { rows, summary };
+}
+
+// GET /api/admin/reports/executive-commissions
+async function executiveCommissions(req, res) {
+  try {
+    const { rows, summary } = await buildExecutiveCommissionRows(req.query);
+    return res.json({ data: rows, summary });
+  } catch (err) {
+    console.error('Executive commission report error:', err);
+    return res.status(500).json({ message: 'Failed to fetch executive commission report.', error: err.message });
+  }
+}
+
+// GET /api/admin/reports/executive-commissions/export
+async function executiveCommissionsExport(req, res) {
+  try {
+    const { rows } = await buildExecutiveCommissionRows(req.query);
+    const headers = ['Plot', 'Area', 'Project', 'Customer', 'Sold By', 'Commission To', 'Level', 'Collection Source', 'Cash', 'Bank', 'Cheque', 'Sale Value', 'Received', 'Cust Outstanding', 'Gross Comm', 'Paid Comm', 'Comm Outstanding', 'Status'];
+    const csvRows = rows.map((r) => [
+      r.plot, r.area, r.project, r.customer, r.soldBy, r.commissionTo, r.level, r.collectionSource,
+      r.cash, r.bank, r.cheque, r.saleValue, r.received, r.custOutstanding, r.grossComm, r.paidComm, r.commOutstanding, r.status,
+    ]);
+    return sendCsv(res, `executive_commission_report_${timestamp()}.csv`, toCsv(headers, csvRows));
+  } catch (err) {
+    return res.status(500).json({ message: 'Failed to export executive commission report.', error: err.message });
   }
 }
 
@@ -1290,4 +1516,6 @@ module.exports = {
   executiveTdsExport,
   bookedPlots,
   bookedPlotsExport,
+  executiveCommissions,
+  executiveCommissionsExport,
 };

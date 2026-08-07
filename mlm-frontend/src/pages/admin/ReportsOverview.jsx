@@ -52,6 +52,20 @@ function ReportsOverview() {
       bg: "",
       style: { background: "#7c3aed" },
     },
+    {
+      to: "/admin/reports/booked-plots",
+      title: "Booked Plots Report",
+      icon: "solar:home-smile-bold-duotone",
+      bg: "",
+      style: { background: "#0ea5e9" },
+    },
+    {
+      to: "/admin/reports/executive-commissions",
+      title: "Executive Commission Report",
+      icon: "solar:medal-ribbons-star-bold-duotone",
+      bg: "",
+      style: { background: "#f97316" },
+    },
   ];
 
   return (

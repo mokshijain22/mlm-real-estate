@@ -26,6 +26,8 @@ const PERMISSION_OPTIONS = [
   { key: "reports_single_unit", label: "Reports — Single Unit" },
   { key: "reports_cancelled_bookings", label: "Reports — Cancelled Bookings" },
   { key: "reports_executive_tds", label: "Reports — Executive TDS" },
+  { key: "reports_booked_plots", label: "Reports — Booked Plots" },
+  { key: "reports_executive_commissions", label: "Reports — Executive Commission" },
   { key: "withdrawals", label: "Withdrawals" },
   { key: "tickets", label: "Support Tickets" },
 ];
