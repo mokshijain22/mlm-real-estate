@@ -176,6 +176,21 @@ function Dashboard() {
           </Link>
         </div>
         <div className="col-md-3 col-6 mb-3">
+          <Link to="/admin/reports/agent-earnings" className="dash-stat-card dash-animate d-block">
+            <div className="dash-stat-body">
+              <div className="dash-stat-icon dash-grad-orange">
+                <iconify-icon icon="solar:wallet-2-bold-duotone"></iconify-icon>
+              </div>
+              <div>
+                <p className="dash-stat-value">
+                  <CountUp value={stats.total_commission_pending} format={inr} />
+                </p>
+                <p className="dash-stat-label">Total Commission Pending</p>
+              </div>
+            </div>
+          </Link>
+        </div>
+        <div className="col-md-3 col-6 mb-3">
           <Link to="/admin/reports/emi-collections" className="dash-stat-card dash-animate d-block">
             <div className="dash-stat-body">
               <div className="dash-stat-icon dash-grad-red">

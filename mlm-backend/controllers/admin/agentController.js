@@ -200,7 +200,7 @@ async function companyTree(req, res) {
     const project = await Project.findById(req.query.projectId).select('commissionPool name');
     if (!project) return res.status(404).json({ message: 'Project not found.' });
 
-    const treeData = await treeBuilderService.getCompanyTree(project.commissionPool, 7);
+    const treeData = await treeBuilderService.getCompanyTree(project.commissionPool, 7, project.name);
     return res.json({ project, treeData });
   } catch (err) {
     return res.status(500).json({ message: 'Failed to fetch company tree.', error: err.message });

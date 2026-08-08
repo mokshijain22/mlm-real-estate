@@ -29,6 +29,7 @@ const settingService = require('../../services/settingService');
  */
 async function buildCompanyRows(transactions) {
   const companyRows = [];
+  const companyDisplayName = await settingService.get('site_title', 'Company');
 
   for (const t of transactions) {
     if (t.category !== 'emi_commission' || !t.booking) continue;
@@ -53,7 +54,7 @@ async function buildCompanyRows(transactions) {
     companyRows.push({
       _id: `company-${t._id}`,
       isCompany: true,
-      agent: { name: 'Company' },
+      agent: { name: companyDisplayName },
       type: 'credit',
       category: 'company_commission',
       pointsType: t.pointsType,
@@ -837,7 +838,7 @@ async function commissionsExport(req, res) {
 
     const rows = mergedData.map((t) => {
       const executive = t.isCompany
-        ? 'Company'
+        ? (t.agent?.name || 'Company')
         : `${t.agent?.name || 'N/A'}${t.agent?.referralCode ? `(${t.agent.referralCode})` : ''}`;
       const projectName = t.booking?.project?.name || 'N/A';
       const plotNumber = t.booking?.plot?.plotNumber || 'N/A';

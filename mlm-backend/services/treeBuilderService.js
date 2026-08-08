@@ -174,7 +174,7 @@ async function getChildrenRecursive(parentId, currentLevel, maxLevel) {
  * own recursive downline. Company's Own = Pool minus what's been assigned
  * to those top-level agents; Company's Team = what's been assigned to them.
  */
-async function getCompanyTree(poolPerSqft, maxLevel = 7) {
+async function getCompanyTree(poolPerSqft, maxLevel = 7, companyName = 'Company') {
   const allUsers = await User.find({}).populate(['role', 'rank']);
   const isAgent = (u) => u.role && u.role.slug === 'agent';
 
@@ -224,7 +224,7 @@ async function getCompanyTree(poolPerSqft, maxLevel = 7) {
 
   return {
     id: 'company',
-    name: 'Company',
+    name: companyName,
     isCompany: true,
     role: 'Company',
     rank_name: null,

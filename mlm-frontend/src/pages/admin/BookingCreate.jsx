@@ -503,13 +503,14 @@ function BookingCreate() {
   // pool), a discount typed afterward still needs somewhere to show the
   // leftover — synthesize a placeholder row here instead of only updating
   // one that may not exist yet.
+  const companyDisplayName = commissionPreview.find((r) => r.isCompany)?.agent_name || "Company";
   const rowsWithCompany = hasCompanyRow
     ? commissionRows
     : [
         ...commissionRows,
         {
-          agent_name: "Company",
-          role: "Company",
+          agent_name: companyDisplayName,
+          role: companyDisplayName,
           isCompany: true,
           isCompanyPlaceholder: true,
           capEditable: false,

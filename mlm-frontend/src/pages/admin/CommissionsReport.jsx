@@ -297,7 +297,7 @@ function CommissionsReport() {
                           <tr key={t._id} className={t.isCompany ? "table-dark bg-opacity-10" : ""}>
                             <td>
                               <span className="fw-bold">
-                                {t.isCompany ? "Company" : `${t.agent?.name || "N/A"}${t.agent?.referralCode ? `(${t.agent.referralCode})` : ""}`}
+                                {t.isCompany ? (t.agent?.name || "Company") : `${t.agent?.name || "N/A"}${t.agent?.referralCode ? `(${t.agent.referralCode})` : ""}`}
                               </span>
                             </td>
                             <td>

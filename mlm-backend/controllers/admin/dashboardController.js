@@ -199,6 +199,7 @@ async function index(req, res) {
       total_outstanding: sumOf(totalRevenueAgg) - sumOf(totalOutstandingAgg),
       total_commission_generated: sumOf(totalCommissionGeneratedAgg),
       total_commission_received: sumOf(totalCommissionReceivedAgg),
+      total_commission_pending: sumOf(totalCommissionGeneratedAgg) - sumOf(totalCommissionReceivedAgg),
     };
 
     const overdueDues = overdueDuesRaw.map((e) => ({

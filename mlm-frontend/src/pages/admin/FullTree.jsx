@@ -94,13 +94,12 @@ function FullTree() {
     autoTable(doc, {
       startY: summaryY + 20,
       margin: { left: margin, right: margin },
-      head: [["Name", "Designation", "Status", "Cap", "Team"]],
+      head: [["Name", "Designation", "Status", "Cap"]],
       body: rows.map((r) => [
         `${r.level > 1 ? "  ".repeat(r.level - 1) + "\u2514 " : ""}${r.name}`,
         r.designation,
         r.status?.charAt(0).toUpperCase() + r.status?.slice(1),
         r.cap != null ? `₹${r.cap.toLocaleString("en-IN")}` : "—",
-        r.team != null ? `₹${r.team.toLocaleString("en-IN")}` : "—",
       ]),
       theme: "striped",
       styles: { fontSize: 9, cellPadding: 6, lineColor: [230, 230, 230], lineWidth: 0.5 },
@@ -108,7 +107,6 @@ function FullTree() {
       alternateRowStyles: { fillColor: [247, 247, 252] },
       columnStyles: {
         3: { halign: "right" },
-        4: { halign: "right" },
       },
       didParseCell: (data) => {
         if (data.section === "body" && data.column.index === 2) {
@@ -164,7 +162,7 @@ function FullTree() {
       <div className="card-body">
         {error && <div className="alert alert-danger">{error}</div>}
         <p className="text-muted small mb-3">
-          Cap = rate assigned to that person by their upline · Own = kept by them · Team = handed down to their reports (per sq ft)
+          Cap = rate assigned to that person by their upline · Pool = total rate allotted by the company for this project (per sq ft)
         </p>
 
         {loading && <div className="text-center py-4">Loading tree...</div>}
@@ -202,8 +200,6 @@ function FullTree() {
                     <th>Designation</th>
                     <th>Status</th>
                     <th>Cap/Pool (₹)</th>
-                    <th>Own (₹)</th>
-                    <th>Team (₹)</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -214,8 +210,6 @@ function FullTree() {
                       <td>{r.designation}</td>
                       <td className="text-capitalize">{r.status}</td>
                       <td>₹{r.cap}</td>
-                      <td>₹{r.own}</td>
-                      <td>₹{r.team}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -254,7 +248,7 @@ function FullTree() {
                   <table className="table table-sm table-hover mb-0">
                     <thead style={{ position: "sticky", top: 0, zIndex: 1 }}>
                       <tr>
-                        {["Level", "Name", "Designation", "Status", "Cap", "Team"].map((h, i) => (
+                        {["Level", "Name", "Designation", "Status", "Cap"].map((h, i) => (
                           <th
                             key={i}
                             className="text-uppercase small fw-bold"
@@ -276,7 +270,6 @@ function FullTree() {
                           <td className="px-3 py-2">{r.designation}</td>
                           <td className="px-3 py-2 text-capitalize">{r.status}</td>
                           <td className="px-3 py-2">{r.cap != null ? `₹${r.cap}` : "—"}</td>
-                          <td className="px-3 py-2">{r.team != null ? `₹${r.team}` : "—"}</td>
                         </tr>
                       ))}
                     </tbody>

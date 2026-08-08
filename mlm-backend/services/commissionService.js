@@ -355,11 +355,12 @@ async function previewCommissionForData({
       ? Number(companyRateOverride)
       : Math.max((Number(commissionPool) || 0) - paidRatePerSqft, 0);
   if (companyRate > 0) {
+    const companyDisplayName = await settingService.get('site_title', 'Company');
     preview.push({
       agent_id: null,
-      agent_name: 'Company',
+      agent_name: companyDisplayName,
       rank: null,
-      role: 'Company',
+      role: companyDisplayName,
       points_per_sf: companyRate,
       commission_per_emi: sqftPortion * companyRate,
       total_commission: sqftPortion * companyRate * emiMonths,
@@ -426,7 +427,8 @@ async function previewDepositCommissionForData({ agentId, agentRankId, pricePerS
 
   const companyRate = companyRateOverride != null ? Number(companyRateOverride) : await getCompanyRatePerSqft(sellingAgent, commissionPool);
   if (companyRate > 0) {
-    preview.push({ agent_name: 'Company', commission: depositSqft * companyRate, isCompany: true });
+    const companyDisplayName = await settingService.get('site_title', 'Company');
+    preview.push({ agent_name: companyDisplayName, commission: depositSqft * companyRate, isCompany: true });
   }
 
   return preview;
