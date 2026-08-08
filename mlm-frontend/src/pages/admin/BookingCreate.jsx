@@ -418,7 +418,7 @@ function BookingCreate() {
       })
       .catch((err) => setCommissionError(err.response?.data?.message || err.message))
       .finally(() => setCommissionLoading(false));
-  }, [step]);
+  }, [step, projectId, agentId, emiMonths]);
 
   const totalSqft = Number(selectedPlot?.totalArea) || 0;
   let uplineRunningIndex = 0;
@@ -428,7 +428,11 @@ function BookingCreate() {
       const cap = commissionCap || 0;
       const fallbackRate = totalSqft > 0 ? row.total_commission / totalSqft : 0;
       const rate = cap > 0 ? cap : fallbackRate;
-      previousCap = cap > 0 ? cap : rate;
+      // Upline diff must use the seller's DEFAULT slab, not any discounted
+      // cap for this booking — otherwise a discount inflates upline earnings
+      // instead of falling to Company. Mirrors the backend fix.
+      const defaultCap = Number(sellerDefaultCap) || rate;
+      previousCap = cap > 0 ? Math.max(cap, defaultCap) : rate;
       return {
         ...row,
         cappedTotal: rate * totalSqft,
@@ -457,7 +461,27 @@ function BookingCreate() {
   const paidRatePerSqft = commissionRows
     .filter((row) => !row.isCompanyPlaceholder)
     .reduce((sum, row) => sum + (totalSqft > 0 ? row.cappedTotal / totalSqft : 0), 0);
-  const liveCommissionRows = commissionRows.map((row) =>
+  const hasCompanyRow = commissionRows.some((row) => row.isCompanyPlaceholder);
+  // If the initial fetch had no Company row (defaults consumed the whole
+  // pool), a discount typed afterward still needs somewhere to show the
+  // leftover — synthesize a placeholder row here instead of only updating
+  // one that may not exist yet.
+  const rowsWithCompany = hasCompanyRow
+    ? commissionRows
+    : [
+        ...commissionRows,
+        {
+          agent_name: "Company",
+          role: "Company",
+          isCompany: true,
+          isCompanyPlaceholder: true,
+          capEditable: false,
+          capValue: null,
+          uplineIndex: null,
+          cappedTotal: 0,
+        },
+      ];
+  const liveCommissionRows = rowsWithCompany.map((row) =>
     row.isCompanyPlaceholder
       ? {
           ...row,
@@ -1431,7 +1455,7 @@ function BookingCreate() {
               Commission
             </h6>
             <span className="text-muted small">
-              Pool {money(totalCommission)} · {money(commissionPerSqft)}/sq.ft
+              Pool {money(commissionPoolPerSqft * totalSqft)} · {money(commissionPoolPerSqft)}/sq.ft
             </span>
           </div>
 

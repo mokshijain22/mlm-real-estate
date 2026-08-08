@@ -68,7 +68,13 @@ async function processEmiCommission(emi) {
       const cap = Number(booking.commissionCapPerSqft) || 0;
       const sellerRate = cap > 0 ? cap : sellerPoints * multiplier;
       const sellerEarning = sqftPortion * sellerRate;
-      let previousCap = cap > 0 ? cap : sellerRate;
+      // Upline diff must be computed off the agent's DEFAULT slab, not any
+      // self-given discount on this booking — otherwise a discount the agent
+      // absorbs quietly inflates the upline's commission. The shortfall
+      // between default and discounted cap goes to Company instead (see
+      // previewCommissionForData's paidRatePerSqft), upline stays unaffected.
+      const defaultSellerCap = Number(sellingAgent.slabPerSqft) || sellerRate;
+      let previousCap = cap > 0 ? Math.max(cap, defaultSellerCap) : sellerRate;
 
       await walletService.credit(
         sellingAgent,
@@ -175,7 +181,11 @@ async function processCombinedDepositCommission(downPaymentEmi, depositEmi) {
       const cap = Number(booking.commissionCapPerSqft) || 0;
       const sellerRate = cap > 0 ? cap : sellerPoints * multiplier;
       const sellerEarning = combinedSqft * sellerRate;
-      let previousCap = cap > 0 ? cap : sellerRate;
+      // Same fix as processEmiCommission: base the upline diff on the agent's
+      // DEFAULT slab so a discount never passes through as extra upline
+      // commission — the discount amount falls to Company instead.
+      const defaultSellerCap = Number(sellingAgent.slabPerSqft) || sellerRate;
+      let previousCap = cap > 0 ? Math.max(cap, defaultSellerCap) : sellerRate;
 
       await walletService.credit(
         sellingAgent,
@@ -279,7 +289,13 @@ async function previewCommissionForData({
   const rawSellerRatePerSqft = sellerPoints * multiplier;
   const sellerRatePerSqft = sellerCapPerSqft > 0 ? sellerCapPerSqft : rawSellerRatePerSqft;
   const sellerCommissionPerEmi = sqftPortion * sellerRatePerSqft;
-  let previousCap = sellerCapPerSqft > 0 ? sellerCapPerSqft : sellerRatePerSqft;
+  // Upline diff is computed off the agent's DEFAULT slab (sellingAgent.slabPerSqft),
+  // never the discounted cap for this booking — so if the agent absorbs a
+  // discount, the upline's incentive stays exactly as if there were no
+  // discount. The gap between default and discounted cap simply isn't paid
+  // out to seller or upline, so it flows to Company via paidRatePerSqft below.
+  const defaultSellerCap = Number(sellingAgent.slabPerSqft) || sellerRatePerSqft;
+  let previousCap = sellerCapPerSqft > 0 ? Math.max(sellerCapPerSqft, defaultSellerCap) : sellerRatePerSqft;
 
   preview.push({
     agent_name: sellingAgent.name,
@@ -356,7 +372,7 @@ async function previewCommissionForData({
  * Preview commission for the one-time Booking Deposit + Down Payment portion
  * (no wallet writes). Mirrors what processCombinedDepositCommission() actually pays.
  */
-async function previewDepositCommissionForData({ agentId, agentRankId, pricePerSqft, depositSqft, paymentMode, commissionPool, companyRateOverride }) {
+async function previewDepositCommissionForData({ agentId, agentRankId, pricePerSqft, depositSqft, paymentMode, commissionPool, companyRateOverride, sellerCapPerSqft = 0, uplineCapsPerSqft = [] }) {
   const sellingAgent = await User.findById(agentId);
   if (!sellingAgent || depositSqft <= 0) return [];
 
@@ -373,10 +389,19 @@ async function previewDepositCommissionForData({ agentId, agentRankId, pricePerS
   }
 
   const sellerPoints = pointsType === 'BV' ? Number(bookingRank?.bvPoints || 0) : Number(bookingRank?.pvPoints || 0);
-  preview.push({ agent_name: sellingAgent.name, commission: depositSqft * sellerPoints * multiplier });
+  const rawSellerRatePerSqft = sellerPoints * multiplier;
+  const sellerRatePerSqft = sellerCapPerSqft > 0 ? sellerCapPerSqft : rawSellerRatePerSqft;
+  preview.push({ agent_name: sellingAgent.name, commission: depositSqft * sellerRatePerSqft });
+
+  // Same as previewCommissionForData: upline diff is computed off the
+  // agent's DEFAULT slab, never the discounted cap — so the deposit portion
+  // of a discount also flows to Company, not upline.
+  const defaultSellerCap = Number(sellingAgent.slabPerSqft) || sellerRatePerSqft;
+  let previousCap = sellerCapPerSqft > 0 ? Math.max(sellerCapPerSqft, defaultSellerCap) : sellerRatePerSqft;
 
   const uplineChain = await treeBuilderService.getUplineChain(sellingAgent);
   let previousRankPoints = sellerPoints;
+  let uplineRowIndex = 0;
 
   for (const [level, uplineId] of Object.entries(uplineChain)) {
     const uplineAgent = await User.findById(uplineId).populate('rank');
@@ -386,8 +411,13 @@ async function previewDepositCommissionForData({ agentId, agentRankId, pricePerS
     const difference = uplinePoints - previousRankPoints;
 
     if (difference > 0) {
-      preview.push({ agent_name: uplineAgent.name, commission: depositSqft * difference * multiplier });
+      const rawUplineRatePerSqft = difference * multiplier;
+      const uplineCap = Number(uplineCapsPerSqft[uplineRowIndex]) || 0;
+      const uplineRatePerSqft = uplineCap > 0 ? Math.max(uplineCap - previousCap, 0) : rawUplineRatePerSqft;
+      preview.push({ agent_name: uplineAgent.name, commission: depositSqft * uplineRatePerSqft });
+      previousCap = uplineCap > 0 ? Math.max(uplineCap, previousCap) : previousCap;
       previousRankPoints = uplinePoints;
+      uplineRowIndex++;
     }
   }
 
