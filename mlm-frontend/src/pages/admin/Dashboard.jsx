@@ -222,6 +222,23 @@ function Dashboard() {
         )}
         {can("reports") && (
         <div className="col-md-3 col-6 mb-3">
+          <Link to="/admin/reports/emi-collections" className="dash-stat-card dash-animate d-block">
+            <div className="dash-stat-body">
+              <div className="dash-stat-icon dash-grad-blue">
+                <iconify-icon icon="solar:card-transfer-bold-duotone"></iconify-icon>
+              </div>
+              <div>
+                <p className="dash-stat-value">
+                  <CountUp value={stats.token_dp_collected_this_month} format={inr} />
+                </p>
+                <p className="dash-stat-label">Token / DP Collected</p>
+              </div>
+            </div>
+          </Link>
+        </div>
+        )}
+        {can("reports") && (
+        <div className="col-md-3 col-6 mb-3">
           <Link to="/admin/reports/commissions" className="dash-stat-card dash-animate d-block">
             <div className="dash-stat-body">
               <div className="dash-stat-icon dash-grad-blue">
@@ -612,7 +629,7 @@ function Dashboard() {
               <div className="d-flex gap-3 fs-12 fw-semibold">
                 <span className="d-flex align-items-center gap-1">
                   <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#34d399", display: "inline-block" }}></span>
-                  EMI Collected
+                  Amount Collected
                 </span>
                 <span className="d-flex align-items-center gap-1">
                   <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#2563eb", display: "inline-block" }}></span>
@@ -625,7 +642,7 @@ function Dashboard() {
                 <OverviewAreaChart
                   labels={monthlyOverview.labels}
                   series={[
-                    { name: "EMI Collected", color: "#34d399", data: monthlyOverview.emiCollected },
+                    { name: "Amount Collected", color: "#34d399", data: monthlyOverview.emiCollected },
                     { name: "Commission Paid", color: "#2563eb", data: monthlyOverview.commissionPaid },
                   ]}
                 />

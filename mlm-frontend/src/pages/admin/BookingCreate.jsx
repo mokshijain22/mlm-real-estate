@@ -1562,9 +1562,14 @@ function BookingCreate() {
                   <div className="fw-semibold">{money(selectedPlot?.pricePerSqft)}/sq.ft</div>
                 </div>
                 <div className="col-md-2">
+                  <div className="text-muted">PLC %</div>
+                  <div className="fw-semibold">{plotPlcPercent || 0}%</div>
+                </div>
+                <div className="col-md-2">
                   <div className="text-muted">Owner total (min + PLC)</div>
                   <div className="fw-semibold">{money(sellingPrice)}</div>
-                </div>                <div className="col-md-2">
+                </div>
+                <div className="col-md-2">
                   <div className="text-muted">Customer</div>
                   <div className="fw-semibold">{name}</div>
                 </div>

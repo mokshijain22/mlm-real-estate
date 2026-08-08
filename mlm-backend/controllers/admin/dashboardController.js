@@ -44,6 +44,7 @@ async function index(req, res) {
       openTickets,
       pendingKyc,
       emiCollectedAgg,
+      tokenDpCollectedAgg,
       commissionDistributedAgg,
       newBookingsThisMonth,
       bvPaidOutAgg,
@@ -77,8 +78,16 @@ async function index(req, res) {
       WithdrawalRequest.countDocuments({ status: 'pending' }),
       SupportTicket.countDocuments({ status: 'open' }),
       agentRole ? User.countDocuments({ role: agentRole._id, isKycVerified: false }) : Promise.resolve(0),
+      // Pure EMI installments only (emiNumber 1, 2, 3...) — excludes Token
+      // (0), Down Payments (negative), and Registry (99), which are tracked
+      // separately below so this card doesn't overstate what's actually EMI.
       Emi.aggregate([
-        { $match: { status: 'paid', paidDate: { $gte: startOfMonth, $lt: startOfNextMonth } } },
+        { $match: { status: 'paid', paidDate: { $gte: startOfMonth, $lt: startOfNextMonth }, emiNumber: { $gt: 0, $lt: 99 } } },
+        { $group: { _id: null, total: { $sum: '$amount' } } },
+      ]),
+      // Token + Down Payment(s) + Registry collected this month.
+      Emi.aggregate([
+        { $match: { status: 'paid', paidDate: { $gte: startOfMonth, $lt: startOfNextMonth }, $or: [{ emiNumber: { $lte: 0 } }, { emiNumber: 99 }] } },
         { $group: { _id: null, total: { $sum: '$amount' } } },
       ]),
       WalletTransaction.aggregate([
@@ -136,10 +145,15 @@ async function index(req, res) {
         { $match: { status: { $ne: 'cancelled' } } },
         { $group: { _id: null, total: { $sum: '$totalAmount' } } },
       ]),
-      // All-time outstanding balance across active/completed bookings
-      Booking.aggregate([
-        { $match: { status: { $ne: 'cancelled' } } },
-        { $group: { _id: null, total: { $sum: '$remainingAmount' } } },
+      // All-time ACTUALLY collected amount — booking.remainingAmount is only
+      // a snapshot taken at booking-creation time (total EMI to be paid) and
+      // never updates as installments get paid, so it can't be used to infer
+      // what's actually been collected. Sum every paid Emi row instead —
+      // this covers Token, Down Payment(s), regular EMIs, and Registry alike,
+      // since all of them are stored as Emi documents.
+      Emi.aggregate([
+        { $match: { status: 'paid' } },
+        { $group: { _id: null, total: { $sum: '$amount' } } },
       ]),
       // All-time commission generated (credited to agent wallets)
       WalletTransaction.aggregate([
@@ -169,6 +183,7 @@ async function index(req, res) {
       open_tickets: openTickets,
       pending_kyc: pendingKyc,
       emi_collected_this_month: sumOf(emiCollectedAgg),
+      token_dp_collected_this_month: sumOf(tokenDpCollectedAgg),
       commission_distributed_this_month: sumOf(commissionDistributedAgg),
       new_bookings_this_month: newBookingsThisMonth,
       total_bv_paid_out: sumOf(bvPaidOutAgg),
@@ -176,8 +191,8 @@ async function index(req, res) {
       overdue_lines: overdueAgg[0]?.count || 0,
       overdue_outstanding: overdueAgg[0]?.total || 0,
       total_revenue_sale: sumOf(totalRevenueAgg),
-      total_revenue_collected: sumOf(totalRevenueAgg) - sumOf(totalOutstandingAgg),
-      total_outstanding: sumOf(totalOutstandingAgg),
+      total_revenue_collected: sumOf(totalOutstandingAgg),
+      total_outstanding: sumOf(totalRevenueAgg) - sumOf(totalOutstandingAgg),
       total_commission_generated: sumOf(totalCommissionGeneratedAgg),
       total_commission_received: sumOf(totalCommissionReceivedAgg),
     };
