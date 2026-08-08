@@ -191,7 +191,7 @@ async function processCombinedDepositCommission(downPaymentEmi, depositEmi) {
         sellingAgent,
         sellerEarning,
         pointsType,
-        'emi_commission',
+        'deposit_commission',
         `Booking Deposit + Down Payment Commission - ${booking.bookingNumber}`,
         booking._id,
         downPaymentEmi._id,
@@ -445,10 +445,25 @@ async function previewCommission(booking) {
     return { rows: [], summary: null };
   }
 
-  const pricePerSqft = Number(booking.pricePerSqft) || 0;
+  // booking.pricePerSqft is the BASE rate only (excludes PLC), but the ₹
+  // amounts we're about to convert to sqft (emiAmount, depositAmount,
+  // registryAmount) already include PLC. Dividing PLC-inclusive money by a
+  // PLC-exclusive rate silently inflates the resulting sqft (and therefore
+  // the commission) by the PLC percentage. Use the true effective rate
+  // (totalAmount / totalArea) instead, matching how the real EMI schedule's
+  // sqftPortion was actually computed at booking creation.
+  const totalArea = Number(booking.totalArea) || 0;
+  const totalAmount = Number(booking.totalAmount) || 0;
+  const pricePerSqft = totalArea > 0 ? totalAmount / totalArea : Number(booking.pricePerSqft) || 0;
   // Use the rate snapshotted at booking-creation time, not today's live Project
   // pool — a saved booking's commission must never shift when rates change later.
   const companyRateSnapshot = Number(booking.companyRatePerSqft) || 0;
+  // The caps set on the booking wizard (and actually used by processEmiCommission
+  // when EMIs get paid) must also drive this preview — otherwise the preview
+  // silently falls back to rank-points × multiplier and disagrees with what
+  // actually gets credited to wallets.
+  const sellerCapPerSqft = Number(booking.commissionCapPerSqft) || 0;
+  const uplineCapsPerSqft = booking.uplineCommissionCapsPerSqft || [];
 
   const emiRows = await previewCommissionForData({
     agentId: booking.agent._id,
@@ -458,6 +473,8 @@ async function previewCommission(booking) {
     emiMonths: booking.emiMonths,
     paymentMode: booking.paymentMode,
     companyRateOverride: companyRateSnapshot,
+    sellerCapPerSqft,
+    uplineCapsPerSqft,
   });
 
   // Booking Deposit + Down Payment are paid up front and their commission is
@@ -473,6 +490,8 @@ async function previewCommission(booking) {
     depositSqft,
     paymentMode: booking.paymentMode,
     companyRateOverride: companyRateSnapshot,
+    sellerCapPerSqft,
+    uplineCapsPerSqft,
   });
   const depositMap = new Map(depositRows.map((d) => [d.agent_name, d.commission]));
 
@@ -489,6 +508,8 @@ async function previewCommission(booking) {
     depositSqft: registrySqft,
     paymentMode: booking.paymentMode,
     companyRateOverride: companyRateSnapshot,
+    sellerCapPerSqft,
+    uplineCapsPerSqft,
   });
   const registryMap = new Map(registryRows.map((r) => [r.agent_name, r.commission]));
 

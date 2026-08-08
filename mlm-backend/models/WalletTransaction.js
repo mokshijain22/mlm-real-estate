@@ -6,7 +6,7 @@ const walletTransactionSchema = new mongoose.Schema(
     type: { type: String, enum: ['credit', 'debit'], required: true },
     category: {
       type: String,
-      enum: ['emi_commission', 'rank_difference', 'withdrawal', 'tds_deduction'],
+      enum: ['emi_commission', 'deposit_commission', 'rank_difference', 'withdrawal', 'tds_deduction'],
       required: true,
     },
     pointsType: { type: String, enum: ['BV', 'PV'], required: true },

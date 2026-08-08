@@ -95,7 +95,7 @@ async function index(req, res) {
         { $group: { _id: null, total: { $sum: '$amount' } } },
       ]),
       WalletTransaction.aggregate([
-        { $match: { type: 'credit', category: 'emi_commission', createdAt: { $gte: startOfMonth, $lt: startOfNextMonth } } },
+        { $match: { type: 'credit', category: { $in: ['emi_commission', 'deposit_commission'] }, createdAt: { $gte: startOfMonth, $lt: startOfNextMonth } } },
         { $group: { _id: null, total: { $sum: '$amount' } } },
       ]),
       Booking.countDocuments({ bookingDate: { $gte: startOfMonth, $lt: startOfNextMonth } }),
@@ -124,7 +124,7 @@ async function index(req, res) {
         { $group: { _id: { y: { $year: '$paidDate' }, m: { $month: '$paidDate' } }, total: { $sum: '$amount' } } },
       ]),
       WalletTransaction.aggregate([
-        { $match: { type: 'credit', category: 'emi_commission', createdAt: { $gte: monthWindowStart, $lt: startOfNextMonth } } },
+        { $match: { type: 'credit', category: { $in: ['emi_commission', 'deposit_commission'] }, createdAt: { $gte: monthWindowStart, $lt: startOfNextMonth } } },
         { $group: { _id: { y: { $year: '$createdAt' }, m: { $month: '$createdAt' } }, total: { $sum: '$amount' } } },
       ]),
       Emi.aggregate([
@@ -161,7 +161,7 @@ async function index(req, res) {
       ]),
       // All-time commission generated (credited to agent wallets)
       WalletTransaction.aggregate([
-        { $match: { type: 'credit', category: 'emi_commission' } },
+        { $match: { type: 'credit', category: { $in: ['emi_commission', 'deposit_commission'] } } },
         { $group: { _id: null, total: { $sum: '$amount' } } },
       ]),
       // All-time commission actually paid out (approved withdrawals)

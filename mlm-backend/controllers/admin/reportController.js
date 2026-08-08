@@ -32,7 +32,7 @@ async function buildCompanyRows(transactions) {
   const companyDisplayName = await settingService.get('site_title', 'Company');
 
   for (const t of transactions) {
-    if (t.category !== 'emi_commission' || !t.booking) continue;
+    if (!['emi_commission', 'deposit_commission'].includes(t.category) || !t.booking) continue;
 
     // Read the rate snapshotted on the booking at creation time — never
     // recompute from today's Project pool, so a later rate change can't alter
@@ -75,7 +75,7 @@ async function buildCompanyRows(transactions) {
  * card so it reports an accurate total rather than a page-local one.
  */
 async function computeCompanyTotal(query) {
-  const emiTxns = await WalletTransaction.find({ ...query, category: 'emi_commission' })
+  const emiTxns = await WalletTransaction.find({ ...query, category: { $in: ['emi_commission', 'deposit_commission'] } })
     .select('booking emi')
     .populate('emi');
 
@@ -155,13 +155,13 @@ async function overview(req, res) {
       sumAmount(Emi, { status: 'paid', paidDate: { $gte: startOfMonth, $lt: endOfMonth } }),
       sumAmount(WalletTransaction, {
         type: 'credit',
-        category: { $in: ['emi_commission', 'rank_difference'] },
+        category: { $in: ['emi_commission', 'deposit_commission', 'rank_difference'] },
         pointsType: 'BV',
         createdAt: { $gte: startOfMonth, $lt: endOfMonth },
       }),
       sumAmount(WalletTransaction, {
         type: 'credit',
-        category: { $in: ['emi_commission', 'rank_difference'] },
+        category: { $in: ['emi_commission', 'deposit_commission', 'rank_difference'] },
         pointsType: 'PV',
         createdAt: { $gte: startOfMonth, $lt: endOfMonth },
       }),
@@ -169,7 +169,7 @@ async function overview(req, res) {
       Booking.countDocuments({ createdAt: { $gte: startOfMonth, $lt: endOfMonth } }),
       User.countDocuments({ role: agentRoleId, isKycVerified: true, createdAt: { $gte: startOfMonth, $lt: endOfMonth } }),
       sumAmount(Emi, { status: 'paid' }),
-      sumAmount(WalletTransaction, { type: 'credit', category: { $in: ['emi_commission', 'rank_difference'] } }),
+      sumAmount(WalletTransaction, { type: 'credit', category: { $in: ['emi_commission', 'deposit_commission', 'rank_difference'] } }),
       Plot.countDocuments({ status: 'sold' }),
       User.countDocuments({ role: agentRoleId, status: 'active', isKycVerified: true }),
       Customer.countDocuments(),
@@ -551,7 +551,7 @@ async function buildExecutiveCommissionRows(filters) {
   const [paidEmis, pendingEmis, walletTxns, allAgents] = await Promise.all([
     Emi.find({ booking: { $in: bookingIds }, status: 'paid' }),
     Emi.find({ booking: { $in: bookingIds }, status: 'paid', commissionProcessed: false }),
-    WalletTransaction.find({ booking: { $in: bookingIds }, category: { $in: ['emi_commission', 'rank_difference'] }, type: 'credit' }),
+    WalletTransaction.find({ booking: { $in: bookingIds }, category: { $in: ['emi_commission', 'deposit_commission', 'rank_difference'] }, type: 'credit' }),
     User.find({}).select('name'),
   ]);
   const agentNameMap = {};
@@ -765,10 +765,15 @@ async function commissions(req, res) {
    const [totalBv, totalPv, emiCommissions, rankDifference, uniqueAgents, allEmiCommissionTxns] = await Promise.all([
       sumAmount(WalletTransaction, { ...query, pointsType: 'BV' }),
       sumAmount(WalletTransaction, { ...query, pointsType: 'PV' }),
+      // "EMI Commissions" card must stay EMI-only — Deposit payouts are a
+      // separate category now, intentionally excluded here.
       sumAmount(WalletTransaction, { ...query, category: 'emi_commission' }),
       sumAmount(WalletTransaction, { ...query, category: 'rank_difference' }),
       WalletTransaction.distinct('agent', query),
-      WalletTransaction.find({ ...query, category: 'emi_commission' })
+      // Company's share applies to BOTH EMI and Deposit payouts, so this feed
+      // into buildCompanyRows() must include deposit_commission too — using
+      // only 'emi_commission' here silently drops Company's deposit share.
+      WalletTransaction.find({ ...query, category: { $in: ['emi_commission', 'deposit_commission'] } })
         .select('category booking emi sqftPortion pointsType createdAt')
         .populate('emi'),
     ]);
@@ -1354,8 +1359,8 @@ async function monthEndReport(req, res) {
       Emi.countDocuments({ dueDate: { $gte: start, $lt: end } }),
       sumAmount(Emi, { status: 'paid', paidDate: { $gte: start, $lt: end } }),
       Emi.countDocuments({ status: 'overdue', dueDate: { $lt: end } }),
-      sumAmount(WalletTransaction, { type: 'credit', category: { $in: ['emi_commission', 'rank_difference'] }, pointsType: 'BV', createdAt: { $gte: start, $lt: end } }),
-      sumAmount(WalletTransaction, { type: 'credit', category: { $in: ['emi_commission', 'rank_difference'] }, pointsType: 'PV', createdAt: { $gte: start, $lt: end } }),
+      sumAmount(WalletTransaction, { type: 'credit', category: { $in: ['emi_commission', 'deposit_commission', 'rank_difference'] }, pointsType: 'BV', createdAt: { $gte: start, $lt: end } }),
+      sumAmount(WalletTransaction, { type: 'credit', category: { $in: ['emi_commission', 'deposit_commission', 'rank_difference'] }, pointsType: 'PV', createdAt: { $gte: start, $lt: end } }),
       sumAmount(WithdrawalRequest, { status: 'approved', reviewedAt: { $gte: start, $lt: end } }),
       Plot.countDocuments({ status: 'sold', updatedAt: { $gte: start, $lt: end } }),
       Booking.countDocuments({ status: 'cancelled', updatedAt: { $gte: start, $lt: end } }),
@@ -1409,7 +1414,7 @@ async function singleUnitReport(req, res) {
 
     const bookingIds = bookings.map((b) => b._id);
     const emis = await Emi.find({ booking: { $in: bookingIds } }).sort({ emiNumber: 1 });
-    const commissionTxns = await WalletTransaction.find({ booking: { $in: bookingIds }, category: 'emi_commission' })
+    const commissionTxns = await WalletTransaction.find({ booking: { $in: bookingIds }, category: { $in: ['emi_commission', 'deposit_commission'] } })
       .populate('agent', 'name')
       .sort({ createdAt: -1 });
 

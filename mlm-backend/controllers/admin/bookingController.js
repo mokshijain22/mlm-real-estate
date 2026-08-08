@@ -217,8 +217,12 @@ async function show(req, res) {
   // and how much commission has actually been credited to each agent's
   // wallet so far (not projected) — so the preview table can distinguish
   // "full projected total" from "what's actually been earned so far".
-  const paidEmisCount = emis.filter((e) => e.status === 'paid').length;
-  const totalEmisCount = emis.length;
+  // "EMIs Paid" column should count only the real monthly EMI installments —
+  // not the Down Payment (-1), Booking Token (0), or Registry (99) lines,
+  // which are separate one-time milestones, not EMIs.
+  const realEmis = emis.filter((e) => e.emiNumber >= 1 && e.emiNumber < 99);
+  const paidEmisCount = realEmis.filter((e) => e.status === 'paid').length;
+  const totalEmisCount = realEmis.length;
 
   const WalletTransaction = require('../../models/WalletTransaction');
   const actualCreditedAgg = await WalletTransaction.aggregate([
@@ -226,7 +230,7 @@ async function show(req, res) {
       $match: {
         booking: booking._id,
         type: 'credit',
-        category: { $in: ['emi_commission', 'rank_difference'] },
+        category: { $in: ['emi_commission', 'deposit_commission', 'rank_difference'] },
       },
     },
     { $group: { _id: '$agent', total: { $sum: '$amount' } } },

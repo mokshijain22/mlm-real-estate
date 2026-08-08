@@ -672,6 +672,9 @@ function BookingDetail() {
                         ₹ {fmtMoney(commissionPreview.rows.reduce((s, r) => s + (r.deposit_commission || 0), 0))}
                       </td>
                       <td>
+                        ₹ {fmtMoney(commissionPreview.rows.reduce((s, r) => s + (r.registry_commission || 0), 0))}
+                      </td>
+                      <td>
                         ₹ {fmtMoney(commissionPreview.rows.reduce((s, r) => s + (r.total_commission || 0), 0))}
                       </td>
                       <td className="text-success">

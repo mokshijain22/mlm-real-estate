@@ -95,7 +95,7 @@ async function overview(req, res) {
   const commissionMatch = {
     ...wtProjectFilter,
     type: 'credit',
-    category: { $in: ['emi_commission', 'rank_difference'] },
+    category: { $in: ['emi_commission', 'deposit_commission', 'rank_difference'] },
     ...(range ? { createdAt: { $gte: range.start, $lt: range.end } } : {}),
   };
   const commissionAgg = await WalletTransaction.aggregate([
@@ -324,7 +324,7 @@ async function commission(req, res) {
   const match = {
     ...wtProjectFilter,
     type: 'credit',
-    category: { $in: ['emi_commission', 'rank_difference'] },
+    category: { $in: ['emi_commission', 'deposit_commission', 'rank_difference'] },
     ...(range ? { createdAt: { $gte: range.start, $lt: range.end } } : {}),
   };
 
