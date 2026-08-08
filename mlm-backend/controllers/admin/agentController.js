@@ -370,7 +370,7 @@ async function updateDetails(req, res) {
       if (maxAssignable != null && newCap > maxAssignable) {
         return res.status(422).json({
           errors: {
-            slab_per_sqft: `Cap can't exceed ₹${maxAssignable}/sqft — that's all that's left after your own upline's allocation. Assigning more would leave no profit for you or the company.`,
+            slab_per_sqft: `Cap can't exceed ₹${maxAssignable}/sqft — that's the cap of ${agent.name}'s own upline. A downline's cap can't be higher than the cap of the person who referred them.`,
           },
         });
       }

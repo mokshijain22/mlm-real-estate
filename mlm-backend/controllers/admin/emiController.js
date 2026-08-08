@@ -195,13 +195,12 @@ async function overdue(req, res) {
 
 const STEP_LABELS = {
   0: 'Booking token',
-  '-1': 'Down payment 1',
-  '-2': 'Down payment 2',
   99: 'Registry / final settlement',
 };
 function stepLabel(emiNumber) {
   if (STEP_LABELS[emiNumber] !== undefined) return STEP_LABELS[emiNumber];
   if (emiNumber > 0) return `EMI ${emiNumber}`;
+  if (emiNumber < 0) return `Down payment ${Math.abs(emiNumber)}`;
   return `Step ${emiNumber}`;
 }
 

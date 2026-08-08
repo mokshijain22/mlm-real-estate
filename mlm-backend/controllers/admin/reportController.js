@@ -1144,7 +1144,7 @@ async function buildDateRangeTransactions(filters) {
       plot: e.booking.plot?.plotNumber || 'N/A',
       area: e.booking.plot?.totalArea || 0,
       purpose:
-        e.emiNumber === 0 ? 'booking' : e.emiNumber === -1 ? 'down payment' : e.emiNumber === -2 ? 'down payment 2' : e.emiNumber === 99 ? 'registry' : 'installment',
+        e.emiNumber === 0 ? 'booking' : e.emiNumber < 0 ? `down payment ${Math.abs(e.emiNumber)}` : e.emiNumber === 99 ? 'registry' : 'installment',
       method: e.paymentMode || 'N/A',
       bank: e.bank?.name || '-',
       amount: e.amount || 0,

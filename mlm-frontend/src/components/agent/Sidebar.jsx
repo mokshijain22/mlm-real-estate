@@ -1,6 +1,22 @@
 import { NavLink } from "react-router-dom";
+import { useEffect, useState } from "react";
+import api from "../../api/axios.js";
+
+const STORAGE_BASE = "http://localhost:5000";
 
 function Sidebar({ isKycVerified }) {
+  const [siteTitle, setSiteTitle] = useState("MLM Real Estate");
+  const [siteLogo, setSiteLogo] = useState("");
+
+  useEffect(() => {
+    api
+      .get("/auth/settings/public")
+      .then((res) => {
+        if (res.data?.site_title) setSiteTitle(res.data.site_title);
+        if (res.data?.site_logo) setSiteLogo(res.data.site_logo);
+      })
+      .catch(() => {});
+  }, []);
   function collapseSidebar() {
     document.documentElement.removeAttribute("data-menu-size");
   }
@@ -25,10 +41,20 @@ function Sidebar({ isKycVerified }) {
     <div className="main-nav">
       <div className="logo-box">
         <a href="/" className="logo-dark">
-          <span className="fw-bold fs-24">MLM Real Estate</span>
+          <span className="d-flex align-items-center gap-2">
+            {siteLogo && (
+              <img src={`${STORAGE_BASE}/storage/${siteLogo}`} alt="logo" style={{ height: 32, width: 32, objectFit: "contain" }} />
+            )}
+            <span className="fw-bold fs-24">{siteTitle}</span>
+          </span>
         </a>
         <a href="/" className="logo-light">
-          <span className="fw-bold fs-24 text-white">MLM Real Estate</span>
+          <span className="d-flex align-items-center gap-2">
+            {siteLogo && (
+              <img src={`${STORAGE_BASE}/storage/${siteLogo}`} alt="logo" style={{ height: 32, width: 32, objectFit: "contain" }} />
+            )}
+            <span className="fw-bold fs-24 text-white">{siteTitle}</span>
+          </span>
         </a>
       </div>
 

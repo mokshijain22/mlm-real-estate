@@ -54,13 +54,22 @@ async function createBooking(data, actingUser) {
         : null;
       const downPayment2Amount = Number(data.down_payment2_amount) || 0;
       const downPayment2DueDate = data.down_payment2_due_date ? new Date(data.down_payment2_due_date) : null;
+      const additionalDownPayments = Array.isArray(data.additional_down_payments)
+        ? data.additional_down_payments
+            .map((dp) => ({
+              amount: Number(dp.amount) || 0,
+              dueDate: dp.due_date ? new Date(dp.due_date) : null,
+            }))
+            .filter((dp) => dp.amount > 0)
+        : [];
+      const additionalDownPaymentsTotal = additionalDownPayments.reduce((sum, dp) => sum + dp.amount, 0);
       const registryAmount = Number(data.registry_amount) || 0;
       const registryDueDate = data.registry_due_date ? new Date(data.registry_due_date) : null;
       const emiDueDates = Array.isArray(data.emi_due_dates)
         ? data.emi_due_dates.map((d) => (d ? new Date(d) : null))
         : [];
       const remainingAmount =
-        totalAmount - bookingAmount - downPaymentAmount - downPayment2Amount - registryAmount;
+        totalAmount - bookingAmount - downPaymentAmount - downPayment2Amount - additionalDownPaymentsTotal - registryAmount;
       const emiMonths = parseInt(data.emi_months, 10);
       const emiAmount = emiMonths > 0 ? remainingAmount / emiMonths : 0;
 
@@ -183,7 +192,7 @@ async function createBooking(data, actingUser) {
       await plot.save({ session });
 
       if (booking.approvalStatus === 'approved') {
-        await generateEmis(booking, session);
+        await generateEmis(booking, session, additionalDownPayments);
 
         // If the token/booking-amount payment was collected right there in the
         // wizard (bank/receipt/remarks provided), mark that milestone paid
@@ -229,7 +238,7 @@ async function createBooking(data, actingUser) {
   }
 }
 
-async function generateEmis(booking, session = null) {
+async function generateEmis(booking, session = null, additionalDownPayments = []) {
   const pricePerSqft = Number(booking.pricePerSqft) || 0;
   const sqftFor = (amount) => (pricePerSqft > 0 ? Math.round((Number(amount) / pricePerSqft) * 100) / 100 : 0);
 
@@ -276,6 +285,22 @@ async function generateEmis(booking, session = null) {
       createdBy: booking.createdBy,
     });
   }
+
+  additionalDownPayments.forEach((dp, idx) => {
+    if (Number(dp.amount) > 0) {
+      emis.push({
+        booking: booking._id,
+        agent: booking.agent,
+        emiNumber: -3 - idx, // -3, -4, -5, ... one per extra part-payment
+        amount: dp.amount,
+        sqftPortion: sqftFor(dp.amount),
+        dueDate: dp.dueDate || addDays(new Date(booking.bookingDate), 60 + (idx + 1) * 30),
+        status: 'pending',
+        commissionProcessed: false,
+        createdBy: booking.createdBy,
+      });
+    }
+  });
 
   for (let i = 1; i <= booking.emiMonths; i++) {
     const override = Array.isArray(booking.emiDueDates) ? booking.emiDueDates[i - 1] : null;

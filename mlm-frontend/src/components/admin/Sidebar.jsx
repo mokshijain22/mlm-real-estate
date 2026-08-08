@@ -1,10 +1,27 @@
 import { NavLink } from "react-router-dom";
+import { useEffect, useState } from "react";
 import useAdminCounts from "../../hooks/useAdminCounts.js";
 import { getStoredUser } from "../../utils/userHelpers.js";
+import api from "../../api/axios.js";
+
+const STORAGE_BASE = "http://localhost:5000";
 
 function Sidebar() {
   const counts = useAdminCounts();
   const adminUser = getStoredUser({});
+  const [siteTitle, setSiteTitle] = useState("MLM Real Estate");
+  const [siteLogo, setSiteLogo] = useState("");
+
+  useEffect(() => {
+    api
+      .get("/admin/settings")
+      .then((res) => {
+        const s = res.data.settings || {};
+        if (s.site_title) setSiteTitle(s.site_title);
+        if (s.site_logo) setSiteLogo(s.site_logo);
+      })
+      .catch(() => {});
+  }, []);
   const isSuperAdmin = adminUser.role === "super_admin";
   const perms = adminUser.permissions || [];
   const can = (key) => isSuperAdmin || perms.includes(key);
@@ -34,10 +51,20 @@ function Sidebar() {
     <div className="main-nav">
       <div className="logo-box">
         <a href="/" className="logo-dark">
-          <span className="fw-bold fs-24">MLM Real Estate</span>
+          <span className="d-flex align-items-center gap-2">
+            {siteLogo && (
+              <img src={`${STORAGE_BASE}/storage/${siteLogo}`} alt="logo" style={{ height: 32, width: 32, objectFit: "contain" }} />
+            )}
+            <span className="fw-bold fs-24">{siteTitle}</span>
+          </span>
         </a>
         <a href="/" className="logo-light">
-          <span className="fw-bold fs-24 text-white">MLM Real Estate</span>
+          <span className="d-flex align-items-center gap-2">
+            {siteLogo && (
+              <img src={`${STORAGE_BASE}/storage/${siteLogo}`} alt="logo" style={{ height: 32, width: 32, objectFit: "contain" }} />
+            )}
+            <span className="fw-bold fs-24 text-white">{siteTitle}</span>
+          </span>
         </a>
       </div>
 

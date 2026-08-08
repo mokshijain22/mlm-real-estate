@@ -165,7 +165,7 @@ function AgentDetail() {
   }, [id]);
 
   useEffect(() => {
-    if (tab === "tree" && projects.length === 0) {
+    if (projects.length === 0) {
       api
         .get("/admin/projects", { params: { limit: 100 } })
         .then((res) => {

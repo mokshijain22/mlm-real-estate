@@ -63,6 +63,19 @@ function BookingCreate() {
   const [plans, setPlans] = useState([]);
   const [selectedPlanId, setSelectedPlanId] = useState("");
   const [downPaymentAmount, setDownPaymentAmount] = useState(0);
+  const [additionalDownPayments, setAdditionalDownPayments] = useState([]); // [{ amount, date }]
+
+  function addExtraDownPayment() {
+    setAdditionalDownPayments((prev) => [...prev, { amount: 0, date: "" }]);
+  }
+  function removeExtraDownPayment(index) {
+    setAdditionalDownPayments((prev) => prev.filter((_, i) => i !== index));
+  }
+  function updateExtraDownPayment(index, field, value) {
+    setAdditionalDownPayments((prev) =>
+      prev.map((dp, i) => (i === index ? { ...dp, [field]: value } : dp))
+    );
+  }
   const [emiAmountEach, setEmiAmountEach] = useState(0); // ₹ per EMI — the real source of truth
   const [emiCount, setEmiCount] = useState(0);
   const emiMonths = emiCount;
@@ -293,15 +306,24 @@ function BookingCreate() {
     return d.toISOString().slice(0, 10);
   }
 
-  function buildPlanSchedule(total, token, downPayment, emiEach, emiN, date) {
+  function buildPlanSchedule(total, token, downPayment, emiEach, emiN, date, extraDownPayments = []) {
     const n = Number(emiN) || 0;
-    let registry = Math.round(total - token - downPayment - (Number(emiEach) || 0) * n);
+    const extraTotal = extraDownPayments.reduce((sum, dp) => sum + (Number(dp.amount) || 0), 0);
+    let registry = Math.round(total - token - downPayment - extraTotal - (Number(emiEach) || 0) * n);
     if (registry < 0) registry = 0;
 
     const rows = [
       { key: "token", label: "Booking amount (token)", amount: token, date },
       { key: "dp1", label: "Down payment", amount: downPayment, date },
     ];
+    extraDownPayments.forEach((dp, idx) => {
+      rows.push({
+        key: `dp${idx + 2}`,
+        label: `Down payment ${idx + 2}`,
+        amount: Number(dp.amount) || 0,
+        date: dp.date || date,
+      });
+    });
     for (let i = 1; i <= n; i++) {
       rows.push({ key: `emi${i}`, label: `EMI ${i}`, amount: Number(emiEach) || 0, date: addMonths(date, i) });
     }
@@ -320,10 +342,18 @@ function BookingCreate() {
       return;
     }
     setScheduleDates(
-      buildPlanSchedule(sellingPrice, Number(bookingAmount) || 0, Number(downPaymentAmount) || 0, emiAmountEach, emiCount, bookingDate)
+      buildPlanSchedule(
+        sellingPrice,
+        Number(bookingAmount) || 0,
+        Number(downPaymentAmount) || 0,
+        emiAmountEach,
+        emiCount,
+        bookingDate,
+        additionalDownPayments
+      )
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sellingPrice, bookingAmount, downPaymentAmount, emiAmountEach, emiCount, bookingDate]);
+  }, [sellingPrice, bookingAmount, downPaymentAmount, emiAmountEach, emiCount, bookingDate, additionalDownPayments]);
 
   function updateScheduleRow(key, field, value) {
     setScheduleDates((rows) => {
@@ -351,8 +381,16 @@ function BookingCreate() {
 
   const registryAmount = scheduleDates.find((r) => r.key === "registry")?.amount || 0;
   const emiAmount = scheduleDates.find((r) => r.key === "emi1")?.amount || 0;
+  const additionalDownPaymentsTotal = additionalDownPayments.reduce(
+    (sum, dp) => sum + (Number(dp.amount) || 0),
+    0
+  );
   const remainingAmount = Math.max(
-    sellingPrice - (Number(bookingAmount) || 0) - (Number(downPaymentAmount) || 0) - registryAmount,
+    sellingPrice -
+      (Number(bookingAmount) || 0) -
+      (Number(downPaymentAmount) || 0) -
+      additionalDownPaymentsTotal -
+      registryAmount,
     0
   );
   const scheduleRows = scheduleDates;
@@ -507,6 +545,9 @@ function BookingCreate() {
         booking_amount: Number(bookingAmount) || 0,
         down_payment_amount: Number(downPaymentAmount) || 0,
         down_payment_due_date: scheduleDates.find((r) => r.key === "dp1")?.date,
+        additional_down_payments: additionalDownPayments
+          .filter((dp) => Number(dp.amount) > 0)
+          .map((dp) => ({ amount: Number(dp.amount) || 0, due_date: dp.date || undefined })),
         registry_amount: registryAmount,
         registry_due_date: scheduleDates.find((r) => r.key === "registry")?.date,
         emi_due_dates: scheduleDates.filter((r) => r.key.startsWith("emi")).map((r) => r.date),
@@ -1017,6 +1058,54 @@ function BookingCreate() {
               </p>
             </div>
           </div>
+
+          {(additionalDownPayments.length > 0 || true) && (
+            <div className="mb-3">
+              {additionalDownPayments.map((dp, idx) => (
+                <div key={idx} className="row g-2 align-items-center mb-2">
+                  <div className="col-md-3">
+                    <label className="form-label small text-muted mb-1">Down payment {idx + 2} amount</label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      placeholder="Amount"
+                      value={dp.amount}
+                      onChange={(e) => updateExtraDownPayment(idx, "amount", e.target.value)}
+                    />
+                  </div>
+                  <div className="col-md-3">
+                    <label className="form-label small text-muted mb-1">Due date</label>
+                    <input
+                      type="date"
+                      className="form-control"
+                      value={dp.date}
+                      onChange={(e) => updateExtraDownPayment(idx, "date", e.target.value)}
+                    />
+                  </div>
+                  <div className="col-md-2 pt-4">
+                    <button
+                      type="button"
+                      className="btn btn-outline-danger btn-sm"
+                      onClick={() => removeExtraDownPayment(idx)}
+                      title="Remove"
+                    >
+                      <iconify-icon icon="solar:trash-bin-trash-bold" className="align-middle me-1"></iconify-icon>
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ))}
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-primary"
+                onClick={addExtraDownPayment}
+              >
+                <iconify-icon icon="solar:add-circle-bold" className="align-middle me-1"></iconify-icon>
+                Add another down payment
+              </button>
+            </div>
+          )}
+
           <p className="text-muted small mb-3">
             Booking amount, down payment, EMI amount and EMI months are all editable — Registry (final amount) is
             whatever's left. Token, down payment and EMIs fall on monthly dates from the booking month; you can

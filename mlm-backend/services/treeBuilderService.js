@@ -106,8 +106,12 @@ async function getHierarchicalTree(agent, maxLevel = 7, poolPerSqft = null) {
 
   const cap = agent.slabPerSqft != null ? agent.slabPerSqft : (agent.referredBy ? 0 : poolPerSqft);
   const children = await getChildrenRecursive(agent._id, 1, maxLevel);
-  const team = children.length ? Math.max(...children.map((c) => Number(c.cap) || 0)) : 0;
-  const own = cap != null ? Math.max(cap - team, 0) : null;
+  const team = children.reduce((sum, c) => sum + (Number(c.cap) || 0), 0);
+  const own = cap != null
+    ? (children.length
+        ? children.reduce((sum, c) => sum + Math.max(cap - (Number(c.cap) || 0), 0), 0)
+        : cap)
+    : null;
 
   return {
     id: agent._id,
@@ -138,8 +142,10 @@ async function getChildrenRecursive(parentId, currentLevel, maxLevel) {
   for (const child of childUsers) {
     const cap = child.slabPerSqft ?? 0; // the rate specifically assigned to this person by their upline
     const grandChildren = await getChildrenRecursive(child._id, currentLevel + 1, maxLevel);
-    const team = grandChildren.length ? Math.max(...grandChildren.map((c) => Number(c.cap) || 0)) : 0;
-    const own = Math.max(cap - team, 0);
+    const team = grandChildren.reduce((sum, c) => sum + (Number(c.cap) || 0), 0);
+    const own = grandChildren.length
+      ? grandChildren.reduce((sum, c) => sum + Math.max(cap - (Number(c.cap) || 0), 0), 0)
+      : cap;
 
     branch.push({
       id: child._id,
@@ -186,8 +192,10 @@ async function getCompanyTree(poolPerSqft, maxLevel = 7) {
   for (const agent of topLevelAgents) {
     const cap = agent.slabPerSqft ?? 0;
     const grandChildren = await getChildrenRecursive(agent._id, 1, maxLevel);
-    const team = grandChildren.length ? Math.max(...grandChildren.map((c) => Number(c.cap) || 0)) : 0;
-    const own = Math.max(cap - team, 0);
+    const team = grandChildren.reduce((sum, c) => sum + (Number(c.cap) || 0), 0);
+    const own = grandChildren.length
+      ? grandChildren.reduce((sum, c) => sum + Math.max(cap - (Number(c.cap) || 0), 0), 0)
+      : cap;
 
     children.push({
       id: agent._id,
@@ -207,8 +215,12 @@ async function getCompanyTree(poolPerSqft, maxLevel = 7) {
     });
   }
 
-  const teamTotal = children.length ? Math.max(...children.map((c) => Number(c.cap) || 0)) : 0;
-  const companyOwn = poolPerSqft != null ? Math.max(poolPerSqft - teamTotal, 0) : null;
+  const teamTotal = children.reduce((sum, c) => sum + (Number(c.cap) || 0), 0);
+  const companyOwn = poolPerSqft != null
+    ? (children.length
+        ? children.reduce((sum, c) => sum + Math.max(poolPerSqft - (Number(c.cap) || 0), 0), 0)
+        : poolPerSqft)
+    : null;
 
   return {
     id: 'company',
@@ -232,26 +244,18 @@ async function getCompanyTree(poolPerSqft, maxLevel = 7) {
  */
 async function getMaxAssignableCap(agent, poolPerSqft) {
   let uplineCap;
-  let siblingsQuery;
 
   const upline = agent.referredBy ? await User.findById(agent.referredBy).populate('role') : null;
   const uplineIsAgent = upline && upline.role && upline.role.slug === 'agent';
 
   if (uplineIsAgent) {
     uplineCap = upline.slabPerSqft ?? 0;
-    siblingsQuery = { referredBy: agent.referredBy, _id: { $ne: agent._id } };
   } else {
     if (poolPerSqft == null) return null;
     uplineCap = poolPerSqft;
-    siblingsQuery = {
-      referredBy: agent.referredBy ?? null,
-      _id: { $ne: agent._id },
-    };
   }
 
-  const siblings = await User.find(siblingsQuery).select('slabPerSqft');
-  const siblingsMax = siblings.length ? Math.max(...siblings.map((s) => Number(s.slabPerSqft) || 0)) : 0;
-  return Math.max(uplineCap - siblingsMax, 0);
+  return Math.max(uplineCap, 0);
 }
 
 module.exports = {
