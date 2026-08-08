@@ -114,7 +114,7 @@ async function create(req, res) {
 // POST /api/admin/bookings/commission-preview
 // Used by the Create Booking wizard's Commission step, before the booking is saved.
 async function commissionPreview(req, res) {
-  const { agent_id, project_id, price_per_sqft, emi_amount, emi_months, payment_mode } = req.body;
+  const { agent_id, project_id, price_per_sqft, emi_amount, emi_months, payment_mode, commission_ratio } = req.body;
 
   if (!agent_id || !emi_months || !payment_mode) {
     return res.status(422).json({ message: 'agent_id, emi_months and payment_mode are required.' });
@@ -127,10 +127,16 @@ async function commissionPreview(req, res) {
       commissionPool = project?.commissionPool || 0;
     }
 
+    // Same PLC exclusion as generateEmis() — the wizard sends the raw EMI ₹
+    // (which includes any PLC premium baked into the selling price), so we
+    // scale it down here too, otherwise the preview would show commission
+    // on the PLC portion that the real saved booking then wouldn't have.
+    const ratio = commission_ratio !== undefined ? Math.min(Math.max(Number(commission_ratio) || 1, 0), 1) : 1;
+
     const preview = await commissionService.previewCommissionForData({
       agentId: agent_id,
       pricePerSqft: Number(price_per_sqft) || 0,
-      emiAmount: Number(emi_amount) || 0,
+      emiAmount: (Number(emi_amount) || 0) * ratio,
       emiMonths: Number(emi_months),
       paymentMode: payment_mode,
       commissionPool,
@@ -207,7 +213,39 @@ async function show(req, res) {
     await booking.agent.populate('rank');
   }
 
-  res.json({ booking, emis, commissionPreview });
+  // How many EMI/payment lines are actually paid vs pending on this booking,
+  // and how much commission has actually been credited to each agent's
+  // wallet so far (not projected) — so the preview table can distinguish
+  // "full projected total" from "what's actually been earned so far".
+  const paidEmisCount = emis.filter((e) => e.status === 'paid').length;
+  const totalEmisCount = emis.length;
+
+  const WalletTransaction = require('../../models/WalletTransaction');
+  const actualCreditedAgg = await WalletTransaction.aggregate([
+    {
+      $match: {
+        booking: booking._id,
+        type: 'credit',
+        category: { $in: ['emi_commission', 'rank_difference'] },
+      },
+    },
+    { $group: { _id: '$agent', total: { $sum: '$amount' } } },
+  ]);
+  const actualCreditedByAgent = {};
+  for (const row of actualCreditedAgg) {
+    actualCreditedByAgent[String(row._id)] = row.total;
+  }
+
+  res.json({
+    booking,
+    emis,
+    commissionPreview,
+    commissionProgress: {
+      paidEmisCount,
+      totalEmisCount,
+      actualCreditedByAgent,
+    },
+  });
 }
 
 async function cancel(req, res) {

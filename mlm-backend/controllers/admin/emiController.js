@@ -243,13 +243,44 @@ async function dues(req, res) {
   const limit = 25;
   const skip = (page - 1) * limit;
 
-  const [lines, total, counts, sums] = await Promise.all([
-    Emi.find(filter)
-      .populate({ path: 'booking', populate: [{ path: 'customer' }, { path: 'plot' }, { path: 'project' }] })
-      .sort({ dueDate: 1 })
-      .skip(skip)
-      .limit(limit),
-    Emi.countDocuments(filter),
+  const allMatching = await Emi.find(filter)
+    .populate({ path: 'booking', populate: [{ path: 'customer' }, { path: 'plot' }, { path: 'project' }] })
+    .sort({ dueDate: 1 });
+
+  // Collapse every EMI line into one row per booking, so a booking with 24
+  // pending EMIs shows as one row (with a count) instead of 24 separate rows.
+  const groupedMap = new Map();
+  for (const e of allMatching) {
+    const key = e.booking?._id ? String(e.booking._id) : `no-booking-${e._id}`;
+    if (!groupedMap.has(key)) {
+      groupedMap.set(key, {
+        _id: key,
+        emiCount: 0,
+        dueDate: e.dueDate,
+        remaining: 0,
+        hasOverdue: false,
+        client: e.booking?.customer?.name || null,
+        clientPhone: e.booking?.customer?.phone || null,
+        project: e.booking?.project?.name || null,
+        plot: e.booking?.plot?.plotNumber || null,
+        bookingId: e.booking?._id || null,
+        bookingNumber: e.booking?.bookingNumber || null,
+      });
+    }
+    const g = groupedMap.get(key);
+    g.emiCount += 1;
+    g.remaining += e.amount || 0;
+    if (e.dueDate < g.dueDate) g.dueDate = e.dueDate; // nearest due date wins
+    if (e.status === 'overdue') g.hasOverdue = true;
+  }
+  const grouped = Array.from(groupedMap.values()).sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+
+  const total = grouped.length;
+  const lines = grouped.slice(skip, skip + limit);
+
+  const [, , counts, sums] = await Promise.all([
+    null,
+    null,
     Promise.all([
       Emi.countDocuments(baseFilter),
       Emi.countDocuments({ ...baseFilter, dueDate: { $lt: startOfToday } }),
@@ -268,18 +299,18 @@ async function dues(req, res) {
   const [pastDueSum, dueTodaySum, dueIn7Sum, pageSum] = sums;
 
   res.json({
-    data: lines.map((e) => ({
-      _id: e._id,
-      step: stepLabel(e.emiNumber),
-      dueDate: e.dueDate,
-      remaining: e.amount,
-      status: e.status,
-      client: e.booking?.customer?.name || null,
-      clientPhone: e.booking?.customer?.phone || null,
-      project: e.booking?.project?.name || null,
-      plot: e.booking?.plot?.plotNumber || null,
-      bookingId: e.booking?._id || null,
-      bookingNumber: e.booking?.bookingNumber || null,
+    data: lines.map((g) => ({
+      _id: g._id,
+      step: `${g.emiCount} EMI${g.emiCount > 1 ? 's' : ''} due`,
+      dueDate: g.dueDate,
+      remaining: g.remaining,
+      status: g.hasOverdue ? 'overdue' : 'pending',
+      client: g.client,
+      clientPhone: g.clientPhone,
+      project: g.project,
+      plot: g.plot,
+      bookingId: g.bookingId,
+      bookingNumber: g.bookingNumber,
     })),
     meta: { page, limit, total, lastPage: Math.ceil(total / limit) },
     summary: {

@@ -232,7 +232,7 @@ async function buildEmiCollectionsQuery(filters) {
 // GET /api/admin/reports/emi-collections
 async function emiCollections(req, res) {
   try {
-    const { status = 'all' } = req.query;
+    const { status = 'all', group_by } = req.query;
     const baseQuery = await buildEmiCollectionsQuery(req.query);
 
     const [totalEmis, totalCollected, cashCollected, onlineCollected, pendingAmount, overdueAmount] = await Promise.all([
@@ -249,6 +249,64 @@ async function emiCollections(req, res) {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
+    // "Group by Booking" view — collapses every EMI line for a booking into
+    // one summary row. Runs over ALL matching lines (not just one page) so a
+    // booking's EMIs spread across what would've been multiple pages still
+    // collapse into a single accurate row.
+    if (group_by === 'booking') {
+      const allLines = await Emi.find(listQuery)
+        .populate({ path: 'booking', populate: [{ path: 'customer' }, { path: 'plot' }, { path: 'project' }, { path: 'agent', select: 'name' }] })
+        .sort({ dueDate: -1 });
+
+      const groupedMap = new Map();
+      for (const e of allLines) {
+        const key = e.booking?._id ? String(e.booking._id) : `no-booking-${e._id}`;
+        if (!groupedMap.has(key)) {
+          groupedMap.set(key, {
+            _id: key,
+            bookingId: e.booking?._id || null,
+            bookingNumber: e.booking?.bookingNumber || null,
+            customer: e.booking?.customer?.name || null,
+            project: e.booking?.project?.name || null,
+            plot: e.booking?.plot?.plotNumber || null,
+            agent: e.booking?.agent?.name || null,
+            lineCount: 0,
+            paidCount: 0,
+            totalAmount: 0,
+            collectedAmount: 0,
+            latestPaidDate: null,
+            nearestDueDate: e.dueDate,
+          });
+        }
+        const g = groupedMap.get(key);
+        g.lineCount += 1;
+        g.totalAmount += e.amount || 0;
+        if (e.status === 'paid') {
+          g.paidCount += 1;
+          g.collectedAmount += e.amount || 0;
+          if (!g.latestPaidDate || (e.paidDate && e.paidDate > g.latestPaidDate)) g.latestPaidDate = e.paidDate;
+        }
+        if (e.dueDate < g.nearestDueDate) g.nearestDueDate = e.dueDate;
+      }
+      const grouped = Array.from(groupedMap.values()).sort((a, b) => new Date(b.nearestDueDate) - new Date(a.nearestDueDate));
+      const groupedTotal = grouped.length;
+      const groupedPage = grouped.slice(skip, skip + limit);
+
+      return res.json({
+        data: groupedPage,
+        grouped: true,
+        meta: { page, limit, total: groupedTotal, lastPage: Math.ceil(groupedTotal / limit) },
+        summary: {
+          total_emis: totalEmis,
+          total_collected: totalCollected,
+          cash_collected: cashCollected,
+          online_collected: onlineCollected,
+          pending_amount: pendingAmount,
+          overdue_amount: overdueAmount,
+        },
+      });
+    }
+
     const [emis, total] = await Promise.all([
       Emi.find(listQuery)
         .populate({ path: 'booking', populate: [{ path: 'customer' }, { path: 'plot' }, { path: 'project' }, { path: 'agent', select: 'name' }] })
@@ -260,6 +318,7 @@ async function emiCollections(req, res) {
 
     return res.json({
       data: emis,
+      grouped: false,
       meta: { page, limit, total, lastPage: Math.ceil(total / limit) },
       summary: {
         total_emis: totalEmis,
@@ -637,7 +696,7 @@ async function executiveCommissionsExport(req, res) {
 }
 
 async function buildCommissionsQuery(filters) {
-  const { date_from, date_to, agent_id, category, points_type, booking_id, search } = filters;
+  const { date_from, date_to, agent_id, category, points_type, booking_id, project_id, payment_type, search } = filters;
 
   const query = { type: 'credit', ...dateRangeFilter('createdAt', date_from, date_to) };
   if (agent_id) query.agent = agent_id;
@@ -645,13 +704,53 @@ async function buildCommissionsQuery(filters) {
   if (points_type && points_type !== 'all') query.pointsType = points_type;
   if (booking_id) query.booking = booking_id;
 
+  // Down Payment / Booking Token / Registry commission all share the same
+  // categories as regular EMI commission (see processCombinedDepositCommission
+  // and processEmiCommission) — the only way to tell them apart is which Emi
+  // line (by emiNumber) each WalletTransaction is linked to.
+  if (payment_type && payment_type !== 'all') {
+    const emiNumberFilter =
+      payment_type === 'token'
+        ? { $eq: 0 }
+        : payment_type === 'down_payment'
+        ? { $lt: 0 }
+        : payment_type === 'registry'
+        ? { $eq: 99 }
+        : { $gt: 0, $lt: 99 }; // 'emi'
+    const matchingEmiIds = await Emi.find({ emiNumber: emiNumberFilter }).distinct('_id');
+    query.emi = { $in: matchingEmiIds };
+  }
+
+  if (project_id) {
+    const projectBookingIds = await Booking.find({ project: project_id }).distinct('_id');
+    if (query.booking) {
+      // booking_id filter already narrowed it to one booking — only keep it
+      // if that booking actually belongs to the selected project.
+      const already = String(query.booking);
+      query.booking = projectBookingIds.some((id) => String(id) === already)
+        ? query.booking
+        : { $in: [] };
+    } else {
+      query.booking = { $in: projectBookingIds };
+    }
+  }
+
   if (search && search.trim()) {
     const re = new RegExp(search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
     const [matchingAgents, matchingBookings] = await Promise.all([
       User.find({ name: re }).distinct('_id'),
       Booking.find({ bookingNumber: re }).distinct('_id'),
     ]);
-    query.$or = [{ agent: { $in: matchingAgents } }, { booking: { $in: matchingBookings } }];
+    const searchBookingIds = new Set([...matchingBookings.map(String)]);
+    if (query.booking && query.booking.$in) {
+      const allowed = new Set(query.booking.$in.map(String));
+      query.$or = [
+        { agent: { $in: matchingAgents } },
+        { booking: { $in: [...searchBookingIds].filter((id) => allowed.has(id)) } },
+      ];
+    } else {
+      query.$or = [{ agent: { $in: matchingAgents } }, { booking: { $in: matchingBookings } }];
+    }
   }
 
   return query;
@@ -746,7 +845,8 @@ async function commissionsExport(req, res) {
       const sqft = t.sqftPortion != null ? Number(t.sqftPortion) : Number(t.emi?.sqftPortion) || 0;
       const rateValue = sqft > 0 ? Math.round((t.amount / sqft) * 100) / 100 : 0;
       const formattedRate = `\u20B9${fmtNum(rateValue)}/sq.ft`;
-      const status = (t.emi?.status || 'pending').toUpperCase();
+      const emiStatus = t.emi?.status || 'pending';
+      const status = emiStatus === 'paid' ? 'CREDITED' : emiStatus.toUpperCase();
       const date = new Date(t.createdAt).toLocaleDateString('en-IN');
 
       return [

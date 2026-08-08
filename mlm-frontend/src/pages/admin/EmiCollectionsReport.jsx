@@ -34,6 +34,8 @@ function EmiCollectionsReport() {
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [page, setPage] = useState(1);
+  const [groupByBooking, setGroupByBooking] = useState(false);
+  const [grouped, setGrouped] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -63,6 +65,7 @@ function EmiCollectionsReport() {
     if (status !== "all") params.status = status;
     if (paymentMode !== "all") params.payment_mode = paymentMode;
     if (search.trim()) params.search = search.trim();
+    if (groupByBooking) params.group_by = "booking";
     return params;
   };
 
@@ -73,10 +76,11 @@ function EmiCollectionsReport() {
         setEmis(res.data.data);
         setMeta(res.data.meta);
         setSummary(res.data.summary);
+        setGrouped(!!res.data.grouped);
       })
       .catch((err) => setError(err.response?.data?.message || err.message));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dateFrom, dateTo, projectId, agentId, status, paymentMode, search, page]);
+  }, [dateFrom, dateTo, projectId, agentId, status, paymentMode, search, page, groupByBooking]);
 
   const resetToPage1 = (setter) => (val) => {
     setPage(1);
@@ -93,6 +97,7 @@ function EmiCollectionsReport() {
     setPaymentMode("all");
     setSearchInput("");
     setSearch("");
+    setGroupByBooking(false);
   };
 
   const getExportParams = () => {
@@ -112,7 +117,25 @@ function EmiCollectionsReport() {
       <div className="row mb-3">
         <div className="col-12 d-flex justify-content-between align-items-center">
           <h3 className="mt-2 mb-4">EMI Collections Report</h3>
-          <ExportButton url="/admin/reports/emi-collections/export" params={getExportParams()} title="EMI Collections Report" filenamePrefix="emi_collections" />
+          <div className="d-flex align-items-center gap-3">
+            <div className="btn-group btn-group-sm" role="group">
+              <button
+                type="button"
+                className={`btn ${!groupByBooking ? "btn-primary" : "btn-outline-secondary"}`}
+                onClick={() => resetToPage1(setGroupByBooking)(false)}
+              >
+                Line by line
+              </button>
+              <button
+                type="button"
+                className={`btn ${groupByBooking ? "btn-primary" : "btn-outline-secondary"}`}
+                onClick={() => resetToPage1(setGroupByBooking)(true)}
+              >
+                Group by booking
+              </button>
+            </div>
+            <ExportButton url="/admin/reports/emi-collections/export" params={getExportParams()} title="EMI Collections Report" filenamePrefix="emi_collections" />
+          </div>
         </div>
       </div>
 
@@ -248,95 +271,173 @@ function EmiCollectionsReport() {
               </div>
 
               <div className="table-responsive">
-                <table className="table table-centered table-nowrap table-hover mb-0">
-                  <thead className="table-light">
-                    <tr>
-                      <th>EMI # / Month</th>
-                      <th>Booking #</th>
-                      <th>Customer</th>
-                      <th>Project / Plot</th>
-                      <th>Agent</th>
-                      <th>Amount</th>
-                      <th>Mode</th>
-                      <th>Due Date</th>
-                      <th>Paid Date</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {!emis ? (
+                {grouped ? (
+                  <table className="table table-centered table-nowrap table-hover mb-0">
+                    <thead className="table-light">
                       <tr>
-                        <td colSpan="10" className="text-center py-4">
-                          Loading...
-                        </td>
+                        <th>Booking #</th>
+                        <th>Customer</th>
+                        <th>Project / Plot</th>
+                        <th>Agent</th>
+                        <th>Lines</th>
+                        <th>Collected / Total</th>
+                        <th>Last Paid</th>
+                        <th>Nearest Due</th>
+                        <th></th>
                       </tr>
-                    ) : emis.length === 0 ? (
-                      <tr>
-                        <td colSpan="10" className="text-center py-4">
-                          <div className="my-3">
-                            <iconify-icon icon="solar:document-text-line-duotone" className="text-muted fs-32"></iconify-icon>
-                            <h5 className="mt-2">No EMI records found</h5>
-                            <p className="text-muted">Try adjusting your filters.</p>
-                          </div>
-                        </td>
-                      </tr>
-                    ) : (
-                      emis.map((emi) => (
-                        <tr key={emi._id}>
-                          <td>
-                            <span className="fw-bold fs-14">#{emi._id.slice(-6)}</span>
-                            <br />
-                            <span className="text-muted">{emiLabel(emi.emiNumber)}</span>
-                          </td>
-                          <td>
-                            {emi.booking ? (
-                              <Link to={`/admin/bookings/${emi.booking._id}`} className="fw-bold">
-                                {emi.booking.bookingNumber}
-                              </Link>
-                            ) : (
-                              <span className="text-muted">N/A</span>
-                            )}
-                          </td>
-                          <td>{emi.booking?.customer?.name || "N/A"}</td>
-                          <td>
-                            {emi.booking && emi.booking.project && emi.booking.plot ? (
-                              <>
-                                <span className="d-block">{emi.booking.project.name}</span>
-                                <span className="text-muted fs-12">Plot: {emi.booking.plot.plotNumber}</span>
-                              </>
-                            ) : (
-                              <span className="text-muted">N/A</span>
-                            )}
-                          </td>
-                          <td>{emi.booking?.agent?.name || <span className="text-muted">N/A</span>}</td>
-                          <td className="fw-bold">₹ {fmt(emi.amount)}</td>
-                          <td>
-                            {emi.paymentMode ? (
-                              <span className="badge bg-secondary text-white">
-                                {emi.paymentMode.charAt(0).toUpperCase() + emi.paymentMode.slice(1)}
-                              </span>
-                            ) : (
-                              <span className="text-muted">-</span>
-                            )}
-                          </td>
-                          <td>{fmtDate(emi.dueDate)}</td>
-                          <td>{fmtDate(emi.paidDate)}</td>
-                          <td>
-                            {emi.status === "paid" ? (
-                              <span className="badge bg-success-subtle text-success border border-success border-opacity-25">Paid</span>
-                            ) : emi.status === "pending" ? (
-                              <span className="badge bg-warning-subtle text-warning border border-warning border-opacity-25">Pending</span>
-                            ) : emi.status === "overdue" ? (
-                              <span className="badge bg-danger-subtle text-danger border border-danger border-opacity-25">Overdue</span>
-                            ) : (
-                              <span className="badge bg-light text-muted">{emi.status}</span>
-                            )}
+                    </thead>
+                    <tbody>
+                      {!emis ? (
+                        <tr>
+                          <td colSpan="9" className="text-center py-4">
+                            Loading...
                           </td>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                      ) : emis.length === 0 ? (
+                        <tr>
+                          <td colSpan="9" className="text-center py-4">
+                            <div className="my-3">
+                              <iconify-icon icon="solar:document-text-line-duotone" className="text-muted fs-32"></iconify-icon>
+                              <h5 className="mt-2">No bookings found</h5>
+                              <p className="text-muted">Try adjusting your filters.</p>
+                            </div>
+                          </td>
+                        </tr>
+                      ) : (
+                        emis.map((g) => (
+                          <tr key={g._id}>
+                            <td>
+                              {g.bookingId ? (
+                                <Link to={`/admin/bookings/${g.bookingId}`} className="fw-bold">
+                                  {g.bookingNumber}
+                                </Link>
+                              ) : (
+                                <span className="text-muted">N/A</span>
+                              )}
+                            </td>
+                            <td>{g.customer || "N/A"}</td>
+                            <td>
+                              {g.project ? (
+                                <>
+                                  <span className="d-block">{g.project}</span>
+                                  <span className="text-muted fs-12">Plot: {g.plot}</span>
+                                </>
+                              ) : (
+                                <span className="text-muted">N/A</span>
+                              )}
+                            </td>
+                            <td>{g.agent || <span className="text-muted">N/A</span>}</td>
+                            <td>
+                              {g.paidCount} / {g.lineCount}
+                            </td>
+                            <td className="fw-bold">
+                              ₹ {fmt(g.collectedAmount)} <span className="text-muted fw-normal">/ ₹{fmt(g.totalAmount)}</span>
+                            </td>
+                            <td>{fmtDate(g.latestPaidDate)}</td>
+                            <td>{fmtDate(g.nearestDueDate)}</td>
+                            <td>
+                              {g.bookingId && (
+                                <Link to={`/admin/bookings/${g.bookingId}`} className="btn btn-sm btn-outline-primary">
+                                  View
+                                </Link>
+                              )}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                ) : (
+                  <table className="table table-centered table-nowrap table-hover mb-0">
+                    <thead className="table-light">
+                      <tr>
+                        <th>EMI # / Month</th>
+                        <th>Booking #</th>
+                        <th>Customer</th>
+                        <th>Project / Plot</th>
+                        <th>Agent</th>
+                        <th>Amount</th>
+                        <th>Mode</th>
+                        <th>Due Date</th>
+                        <th>Paid Date</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {!emis ? (
+                        <tr>
+                          <td colSpan="10" className="text-center py-4">
+                            Loading...
+                          </td>
+                        </tr>
+                      ) : emis.length === 0 ? (
+                        <tr>
+                          <td colSpan="10" className="text-center py-4">
+                            <div className="my-3">
+                              <iconify-icon icon="solar:document-text-line-duotone" className="text-muted fs-32"></iconify-icon>
+                              <h5 className="mt-2">No EMI records found</h5>
+                              <p className="text-muted">Try adjusting your filters.</p>
+                            </div>
+                          </td>
+                        </tr>
+                      ) : (
+                        emis.map((emi) => (
+                          <tr key={emi._id}>
+                            <td>
+                              <span className="fw-bold fs-14">#{emi._id.slice(-6)}</span>
+                              <br />
+                              <span className="text-muted">{emiLabel(emi.emiNumber)}</span>
+                            </td>
+                            <td>
+                              {emi.booking ? (
+                                <Link to={`/admin/bookings/${emi.booking._id}`} className="fw-bold">
+                                  {emi.booking.bookingNumber}
+                                </Link>
+                              ) : (
+                                <span className="text-muted">N/A</span>
+                              )}
+                            </td>
+                            <td>{emi.booking?.customer?.name || "N/A"}</td>
+                            <td>
+                              {emi.booking && emi.booking.project && emi.booking.plot ? (
+                                <>
+                                  <span className="d-block">{emi.booking.project.name}</span>
+                                  <span className="text-muted fs-12">Plot: {emi.booking.plot.plotNumber}</span>
+                                </>
+                              ) : (
+                                <span className="text-muted">N/A</span>
+                              )}
+                            </td>
+                            <td>{emi.booking?.agent?.name || <span className="text-muted">N/A</span>}</td>
+                            <td className="fw-bold">₹ {fmt(emi.amount)}</td>
+                            <td>
+                              {emi.paymentMode ? (
+                                <span className="badge bg-secondary text-white">
+                                  {emi.paymentMode.charAt(0).toUpperCase() + emi.paymentMode.slice(1)}
+                                </span>
+                              ) : (
+                                <span className="text-muted">-</span>
+                              )}
+                            </td>
+                            <td>{fmtDate(emi.dueDate)}</td>
+                            <td>{fmtDate(emi.paidDate)}</td>
+                            <td>
+                              {emi.status === "paid" ? (
+                                <span className="badge bg-success-subtle text-success border border-success border-opacity-25">Paid</span>
+                              ) : emi.status === "pending" ? (
+                                <span className="badge bg-warning-subtle text-warning border border-warning border-opacity-25">Pending</span>
+                              ) : emi.status === "overdue" ? (
+                                <span className="badge bg-danger-subtle text-danger border border-danger border-opacity-25">Overdue</span>
+                              ) : (
+                                <span className="badge bg-light text-muted">{emi.status}</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                )}
               </div>
 
               {meta && (

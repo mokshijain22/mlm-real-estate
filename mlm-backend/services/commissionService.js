@@ -298,6 +298,7 @@ async function previewCommissionForData({
   let previousCap = sellerCapPerSqft > 0 ? Math.max(sellerCapPerSqft, defaultSellerCap) : sellerRatePerSqft;
 
   preview.push({
+    agent_id: sellingAgent._id,
     agent_name: sellingAgent.name,
     rank: bookingRank?.name || 'B.EX',
     role: 'Selling Agent',
@@ -330,6 +331,7 @@ async function previewCommissionForData({
       previousCap = uplineCap > 0 ? Math.max(uplineCap, previousCap) : previousCap;
 
       preview.push({
+        agent_id: uplineAgent._id,
         agent_name: uplineAgent.name,
         rank: uplineAgent.rank?.name || 'B.EX',
         role: `Upline (${level})`,
@@ -354,6 +356,7 @@ async function previewCommissionForData({
       : Math.max((Number(commissionPool) || 0) - paidRatePerSqft, 0);
   if (companyRate > 0) {
     preview.push({
+      agent_id: null,
       agent_name: 'Company',
       rank: null,
       role: 'Company',
@@ -471,16 +474,35 @@ async function previewCommission(booking) {
   });
   const depositMap = new Map(depositRows.map((d) => [d.agent_name, d.commission]));
 
+  // Registry (the final settlement amount) generates real commission too —
+  // processEmiCommission() runs for every paid Emi regardless of emiNumber,
+  // including emiNumber 99 (Registry). This preview was previously missing
+  // it entirely, so "Grand Total" always undercounted once Registry got paid.
+  const registryAmount = Number(booking.registryAmount || 0);
+  const registrySqft = pricePerSqft > 0 ? registryAmount / pricePerSqft : 0;
+  const registryRows = await previewDepositCommissionForData({
+    agentId: booking.agent._id,
+    agentRankId: booking.agentRank?._id || null,
+    pricePerSqft,
+    depositSqft: registrySqft,
+    paymentMode: booking.paymentMode,
+    companyRateOverride: companyRateSnapshot,
+  });
+  const registryMap = new Map(registryRows.map((r) => [r.agent_name, r.commission]));
+
   const rows = emiRows.map((row) => {
     const depositCommission = depositMap.get(row.agent_name) || 0;
+    const registryCommission = registryMap.get(row.agent_name) || 0;
     return {
       ...row,
       deposit_commission: depositCommission,
-      grand_total: depositCommission + row.total_commission,
+      registry_commission: registryCommission,
+      grand_total: depositCommission + registryCommission + row.total_commission,
     };
   });
 
   const totalDepositCommission = depositRows.reduce((s, d) => s + d.commission, 0);
+  const totalRegistryCommission = registryRows.reduce((s, r) => s + r.commission, 0);
   const totalEmiCommission = emiRows.reduce((s, r) => s + r.total_commission, 0);
 
   return {
@@ -488,9 +510,11 @@ async function previewCommission(booking) {
     summary: {
       totalBookingAmount: Number(booking.totalAmount) || 0,
       bookingDepositAmount: depositAmount,
+      registryAmount,
       totalDepositCommission,
+      totalRegistryCommission,
       totalEmiCommission,
-      grandTotalCommission: totalDepositCommission + totalEmiCommission,
+      grandTotalCommission: totalDepositCommission + totalRegistryCommission + totalEmiCommission,
     },
   };
 }

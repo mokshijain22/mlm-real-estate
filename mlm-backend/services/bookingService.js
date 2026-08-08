@@ -240,7 +240,19 @@ async function createBooking(data, actingUser) {
 
 async function generateEmis(booking, session = null, additionalDownPayments = []) {
   const pricePerSqft = Number(booking.pricePerSqft) || 0;
-  const sqftFor = (amount) => (pricePerSqft > 0 ? Math.round((Number(amount) / pricePerSqft) * 100) / 100 : 0);
+  // PLC is a location premium the customer pays on top of the base plot
+  // price — it should NOT inflate the sqft that commissions are calculated
+  // on. Scale every payment line down to its base-price share before
+  // converting to sqft, so PLC money is collected and tracked (still shows
+  // on the booking, still counts toward totalAmount) but contributes zero
+  // extra commissionable sqft. Without this, every commission on this
+  // booking silently included the PLC premium.
+  const totalAmount = Number(booking.totalAmount) || 0;
+  const plcAmount = Number(booking.plcAmount) || 0;
+  const baseAmount = Math.max(totalAmount - plcAmount, 0);
+  const commissionRatio = totalAmount > 0 ? baseAmount / totalAmount : 1;
+  const sqftFor = (amount) =>
+    pricePerSqft > 0 ? Math.round(((Number(amount) * commissionRatio) / pricePerSqft) * 100) / 100 : 0;
 
   const emis = [];
 

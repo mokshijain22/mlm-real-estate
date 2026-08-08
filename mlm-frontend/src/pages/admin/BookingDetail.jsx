@@ -19,6 +19,7 @@ function BookingDetail() {
   const [booking, setBooking] = useState(null);
   const [emis, setEmis] = useState([]);
   const [commissionPreview, setCommissionPreview] = useState({ rows: [], summary: null });
+  const [commissionProgress, setCommissionProgress] = useState({ paidEmisCount: 0, totalEmisCount: 0, actualCreditedByAgent: {} });
   const [error, setError] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -42,6 +43,7 @@ function BookingDetail() {
         setBooking(res.data.booking);
         setEmis(res.data.emis);
         setCommissionPreview(res.data.commissionPreview || { rows: [], summary: null });
+        setCommissionProgress(res.data.commissionProgress || { paidEmisCount: 0, totalEmisCount: 0, actualCreditedByAgent: {} });
       })
       .catch((err) => setError(err.response?.data?.message || err.message));
   };
@@ -523,7 +525,11 @@ function BookingDetail() {
                         <label className="form-label">Payment Mode</label>
                         <select className="form-select" value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)} required>
                           <option value="cash">Cash</option>
-                          <option value="online">Online</option>
+                          <option value="upi">UPI</option>
+                          <option value="net_banking">Net Banking</option>
+                          <option value="bank_transfer">Bank Transfer</option>
+                          <option value="cheque">Cheque</option>
+                          <option value="card">Card</option>
                         </select>
                       </div>
                       <div className="col-md-4">
@@ -553,6 +559,32 @@ function BookingDetail() {
 
             {/* Commission preview */}
             <h5 className="text-primary mt-4 mb-3 d-print-none">Commission Distribution Preview</h5>
+
+            {(() => {
+              const paidLines = emis.filter((e) => e.status === "paid");
+              const totalLines = emis.length;
+              const paidAmount = paidLines.reduce((s, e) => s + (e.amount || 0), 0);
+              const totalAmount = emis.reduce((s, e) => s + (e.amount || 0), 0);
+              const progressPct = totalAmount > 0 ? Math.round((paidAmount / totalAmount) * 1000) / 10 : 0;
+              return totalLines > 0 ? (
+                <div className="alert alert-light border d-print-none mb-3 py-2 px-3">
+                  <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <span className="small">
+                      <strong>{paidLines.length} of {totalLines}</strong> payment lines collected —{" "}
+                      ₹{fmtMoney(paidAmount)} of ₹{fmtMoney(totalAmount)} ({progressPct}%)
+                    </span>
+                  </div>
+                  <div className="progress mt-2" style={{ height: 6 }}>
+                    <div className="progress-bar bg-success" role="progressbar" style={{ width: `${progressPct}%` }}></div>
+                  </div>
+                  <p className="text-muted fs-12 mb-0 mt-2">
+                    The commission numbers below are the FULL projected total across every EMI in this booking —
+                    not just what's been collected so far. As more EMIs get paid, more of this commission actually
+                    gets credited to each agent's wallet.
+                  </p>
+                </div>
+              ) : null;
+            })()}
 
             {commissionPreview.summary && (
               <div className="row bg-light rounded p-3 mx-0 mb-3 g-3 d-print-none">
@@ -592,23 +624,61 @@ function BookingDetail() {
                     <th>Pts / sqft</th>
                     <th>Comm / EMI</th>
                     <th>Deposit Comm</th>
-                    <th>EMI Total</th>
-                    <th>Grand Total</th>
+                    <th>Registry Comm</th>
+                    <th>EMI Total (projected)</th>
+                    <th>Grand Total (projected)</th>
+                    <th>EMIs Paid</th>
+                    <th>Actually Credited</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {commissionPreview.rows.map((item, idx) => (
-                    <tr key={idx} className={item.role === "Selling Agent" ? "table-primary" : ""}>
-                      <td>{item.agent_name}</td>
-                      <td>{item.rank}</td>
-                      <td>{item.role}</td>
-                      <td>{Number(item.points_per_sf).toFixed(2)}</td>
-                      <td>₹ {fmtMoney(item.commission_per_emi)}</td>
-                      <td>₹ {fmtMoney(item.deposit_commission)}</td>
-                      <td>₹ {fmtMoney(item.total_commission)}</td>
-                      <td className="text-success fw-bold">₹ {fmtMoney(item.grand_total)}</td>
+                  {commissionPreview.rows.map((item, idx) => {
+                    const creditedSoFar = item.agent_id ? commissionProgress.actualCreditedByAgent[String(item.agent_id)] || 0 : null;
+                    return (
+                      <tr key={idx} className={item.role === "Selling Agent" ? "table-primary" : ""}>
+                        <td>{item.agent_name}</td>
+                        <td>{item.rank}</td>
+                        <td>{item.role}</td>
+                        <td>{Number(item.points_per_sf).toFixed(2)}</td>
+                        <td>₹ {fmtMoney(item.commission_per_emi)}</td>
+                        <td>₹ {fmtMoney(item.deposit_commission)}</td>
+                        <td>₹ {fmtMoney(item.registry_commission)}</td>
+                        <td>₹ {fmtMoney(item.total_commission)}</td>
+                        <td className="text-success fw-bold">₹ {fmtMoney(item.grand_total)}</td>
+                        <td>
+                          {item.isCompany
+                            ? "—"
+                            : `${commissionProgress.paidEmisCount} / ${commissionProgress.totalEmisCount}`}
+                        </td>
+                        <td className="fw-bold">
+                          {item.isCompany ? (
+                            "—"
+                          ) : (
+                            <>
+                              ₹ {fmtMoney(creditedSoFar)} <span className="text-muted fw-normal">of ₹{fmtMoney(item.grand_total)}</span>
+                              <div className="text-muted fw-normal fs-12">
+                                ({item.grand_total > 0 ? Math.round(((creditedSoFar || 0) / item.grand_total) * 1000) / 10 : 0}% received)
+                              </div>
+                            </>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {commissionPreview.rows.length > 0 && (
+                    <tr className="border-top fw-bold table-light">
+                      <td colSpan={5}>Total (should match Grand Total Commission above)</td>
+                      <td>
+                        ₹ {fmtMoney(commissionPreview.rows.reduce((s, r) => s + (r.deposit_commission || 0), 0))}
+                      </td>
+                      <td>
+                        ₹ {fmtMoney(commissionPreview.rows.reduce((s, r) => s + (r.total_commission || 0), 0))}
+                      </td>
+                      <td className="text-success">
+                        ₹ {fmtMoney(commissionPreview.rows.reduce((s, r) => s + (r.grand_total || 0), 0))}
+                      </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
             </div>
@@ -632,8 +702,17 @@ function BookingDetail() {
             </div>
             <div className="mb-3">
               <label className="text-muted small">Payment Mode</label>
-              <p className="mb-0 fw-semibold text-uppercase">
-                {booking.paymentMode} ({booking.paymentMode === "cash" ? "Cash" : "Online"})
+              <p className="mb-0 fw-semibold">
+                {
+                  {
+                    cash: "Cash",
+                    upi: "UPI",
+                    net_banking: "Net Banking",
+                    bank_transfer: "Bank Transfer",
+                    cheque: "Cheque",
+                    card: "Card",
+                  }[booking.paymentMode] || booking.paymentMode
+                }
               </p>
             </div>
             {booking.notes && (

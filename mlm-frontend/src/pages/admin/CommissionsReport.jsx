@@ -8,12 +8,15 @@ function CommissionsReport() {
   const [meta, setMeta] = useState(null);
   const [summary, setSummary] = useState(null);
   const [agents, setAgents] = useState([]);
+  const [projects, setProjects] = useState([]);
   const [error, setError] = useState(null);
 
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [agentId, setAgentId] = useState("");
+  const [projectId, setProjectId] = useState("");
   const [category, setCategory] = useState("all");
+  const [paymentType, setPaymentType] = useState("all");
   const [pointsType, setPointsType] = useState("all");
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
@@ -32,6 +35,10 @@ function CommissionsReport() {
       .get("/admin/agents")
       .then((res) => setAgents(res.data.data || res.data))
       .catch(() => {});
+    api
+      .get("/admin/projects")
+      .then((res) => setProjects(res.data.data || res.data))
+      .catch(() => {});
   }, []);
 
   const buildParams = () => {
@@ -39,7 +46,9 @@ function CommissionsReport() {
     if (dateFrom) params.date_from = dateFrom;
     if (dateTo) params.date_to = dateTo;
     if (agentId) params.agent_id = agentId;
+    if (projectId) params.project_id = projectId;
     if (category !== "all") params.category = category;
+    if (paymentType !== "all") params.payment_type = paymentType;
     if (pointsType !== "all") params.points_type = pointsType;
     if (search.trim()) params.search = search.trim();
     return params;
@@ -55,7 +64,7 @@ function CommissionsReport() {
       })
       .catch((err) => setError(err.response?.data?.message || err.message));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dateFrom, dateTo, agentId, category, pointsType, search, page]);
+  }, [dateFrom, dateTo, agentId, projectId, category, paymentType, pointsType, search, page]);
 
   const resetToPage1 = (setter) => (val) => {
     setPage(1);
@@ -67,7 +76,9 @@ function CommissionsReport() {
     setDateFrom("");
     setDateTo("");
     setAgentId("");
+    setProjectId("");
     setCategory("all");
+    setPaymentType("all");
     setPointsType("all");
     setSearchInput("");
     setSearch("");
@@ -183,6 +194,17 @@ function CommissionsReport() {
                     ))}
                   </select>
                 </div>
+                <div className="col-md-2">
+                  <label className="form-label text-white-50 text-uppercase small fw-bold">Project</label>
+                  <select className="form-select" value={projectId} onChange={(e) => resetToPage1(setProjectId)(e.target.value)}>
+                    <option value="">All Projects</option>
+                    {projects.map((p) => (
+                      <option key={p._id} value={p._id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <div className="col-md-3">
                   <label className="form-label text-white-50 text-uppercase small fw-bold">Date</label>
                   <div className="input-group">
@@ -199,6 +221,16 @@ function CommissionsReport() {
                       onChange={(e) => resetToPage1(setDateTo)(e.target.value)}
                     />
                   </div>
+                </div>
+                <div className="col-md-2">
+                  <label className="form-label text-white-50 text-uppercase small fw-bold">Payment Type</label>
+                  <select className="form-select" value={paymentType} onChange={(e) => resetToPage1(setPaymentType)(e.target.value)}>
+                    <option value="all">All</option>
+                    <option value="token">Booking Token</option>
+                    <option value="down_payment">Down Payment</option>
+                    <option value="emi">EMI</option>
+                    <option value="registry">Registry</option>
+                  </select>
                 </div>
                 <div className="col-md-2">
                   <label className="form-label text-white-50 text-uppercase small fw-bold">Points Type</label>
@@ -223,26 +255,27 @@ function CommissionsReport() {
                   <thead className="table-light">
                     <tr>
                       <th>Executive</th>
+                      <th>Type</th>
                       <th>Project / Plot</th>
                       <th>Plot Area</th>
                       <th>Rate Value</th>
                       <th>Rate Type</th>
                       <th>Formatted Rate</th>
                       <th>Amount (INR)</th>
-                      <th>Status</th>
+                      <th>Wallet</th>
                       <th>Date</th>
                     </tr>
                   </thead>
                   <tbody>
                     {!transactions ? (
                       <tr>
-                        <td colSpan="9" className="text-center py-4">
+                        <td colSpan="10" className="text-center py-4">
                           Loading...
                         </td>
                       </tr>
                     ) : transactions.length === 0 ? (
                       <tr>
-                        <td colSpan="9" className="text-center py-4">
+                        <td colSpan="10" className="text-center py-4">
                           <div className="my-3">
                             <iconify-icon icon="solar:document-text-line-duotone" className="text-muted fs-32"></iconify-icon>
                             <h5 className="mt-2">No Commission Records</h5>
@@ -254,13 +287,28 @@ function CommissionsReport() {
                       transactions.map((t) => {
                         const sqft = t.sqftPortion != null ? Number(t.sqftPortion) : Number(t.emi?.sqftPortion) || 0;
                         const rateValue = sqft > 0 ? Math.round((t.amount / sqft) * 100) / 100 : 0;
-                        const status = (t.emi?.status || "pending").toUpperCase();
+                        // Every row in this table is, by definition, already credited to
+                        // the agent's wallet (commission rows only exist once their linked
+                        // EMI is paid) — so a status badge here can never show anything but
+                        // "credited" and carries no real information. Whether it's later
+                        // been withdrawn to the agent's bank is tracked separately on the
+                        // Withdrawals page, not per-transaction here.
                         return (
                           <tr key={t._id} className={t.isCompany ? "table-dark bg-opacity-10" : ""}>
                             <td>
                               <span className="fw-bold">
                                 {t.isCompany ? "Company" : `${t.agent?.name || "N/A"}${t.agent?.referralCode ? `(${t.agent.referralCode})` : ""}`}
                               </span>
+                            </td>
+                            <td>
+                              {(() => {
+                                const n = t.emi?.emiNumber;
+                                if (n === undefined || n === null) return <span className="text-muted">-</span>;
+                                if (n === 0) return <span className="badge bg-info-subtle text-info">Booking Token</span>;
+                                if (n < 0) return <span className="badge bg-warning-subtle text-warning">Down Payment</span>;
+                                if (n === 99) return <span className="badge bg-dark-subtle text-dark">Registry</span>;
+                                return <span className="badge bg-success-subtle text-success">EMI {n}</span>;
+                              })()}
                             </td>
                             <td>
                               {t.booking ? (
@@ -286,15 +334,7 @@ function CommissionsReport() {
                                 <span className="text-info">{fmt(t.amount)}</span>
                               )}
                             </td>
-                            <td>
-                              <span
-                                className={`badge ${
-                                  status === "PAID" ? "bg-success-subtle text-success" : status === "PENDING" ? "bg-warning-subtle text-warning" : "bg-danger-subtle text-danger"
-                                }`}
-                              >
-                                {status}
-                              </span>
-                            </td>
+                            <td className="text-muted small">In wallet</td>
                             <td>{new Date(t.createdAt).toLocaleDateString("en-IN")}</td>
                           </tr>
                         );

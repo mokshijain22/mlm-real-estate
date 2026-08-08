@@ -14,7 +14,7 @@
   <rect width="100%" height="100%" fill="#f8fafc" rx="12" />
   <text x="170" y="35" text-anchor="middle" style="font-family: sans-serif; font-weight: bold; font-size: 18px; fill: #334155;">The Crown City Site Layout</text>
   <g class="plot-group" id="plot-group-6a74185caee46225cefd6aca" data-plot-id="6a74185caee46225cefd6aca" data-plot-number="P-118">
-    <rect id="plot-P-118" class="plot available" x="40" y="100" width="120" height="100" rx="8" />
+    <rect id="plot-P-118" class="plot sold" x="40" y="100" width="120" height="100" rx="8" />
     <text x="100" y="145" class="plot-text">P-118</text>
     <text x="100" y="165" class="plot-area">2,400 sqft</text>
   </g>
@@ -24,7 +24,7 @@
     <text x="240" y="165" class="plot-area">1,000 sqft</text>
   </g>
   <g class="plot-group" id="plot-group-6a7457b2aee46225cefd7bd5" data-plot-id="6a7457b2aee46225cefd7bd5" data-plot-number="P-95">
-    <rect id="plot-P-95" class="plot available" x="40" y="220" width="120" height="100" rx="8" />
+    <rect id="plot-P-95" class="plot sold" x="40" y="220" width="120" height="100" rx="8" />
     <text x="100" y="265" class="plot-text">P-95</text>
     <text x="100" y="285" class="plot-area">1,000 sqft</text>
   </g>

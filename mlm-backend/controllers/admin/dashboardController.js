@@ -63,7 +63,11 @@ async function index(req, res) {
       Project.countDocuments({ status: 'active' }),
       Plot.countDocuments({}),
       Plot.countDocuments({ status: 'available' }),
-      Plot.countDocuments({ status: 'booked' }),
+      // Admin-created bookings mark the plot straight to 'sold' (see
+      // bookingService.js's plotStatus logic), skipping 'booked' entirely —
+      // so "Booked Plots" here counts both statuses together, i.e. every
+      // plot that's no longer available, not just the transitional state.
+      Plot.countDocuments({ status: { $in: ['booked', 'sold'] } }),
       Plot.countDocuments({ status: 'sold' }),
       Customer.countDocuments({ status: 'active' }),
       WalletTransaction.aggregate([

@@ -104,10 +104,14 @@ function BookingCreate() {
     const list = sourcePlans || plans;
     const p = list.find((pl) => pl._id === id);
     if (p) {
+      // Only set what does NOT depend on sellingPrice here. sellingPrice is
+      // still 0 at this point (this runs on project select, before a plot —
+      // and therefore a price — has been chosen), so any ₹ amount computed
+      // from it right now would be wrong. The % fields get converted into
+      // real ₹ amounts by the recalcPlanAmounts effect below, which re-runs
+      // once sellingPrice is actually known.
       setBookingAmount(p.bookingAmount || "");
-      setDownPaymentAmount(p.downPaymentAmount || 0);
       setEmiCount(p.emiCount || 0);
-      setEmiAmountEach(Math.round((sellingPrice * (Number(p.emiPercent) || 0)) / 100));
     }
   }
 
@@ -261,6 +265,29 @@ function BookingCreate() {
   const baseAmount = selectedPlot ? Number(plotArea || 0) * Number(plotRate || 0) : 0;
   const plcAmount = selectedPlot ? Math.round((baseAmount * Number(plotPlcPercent || 0)) / 100) : 0;
   const sellingPrice = baseAmount + plcAmount;
+
+  // Re-derive ₹ amounts from the selected plan's percentages every time
+  // sellingPrice changes (e.g. once a plot is picked in step 1, or its rate
+  // loads) — not just once at plan-selection time when sellingPrice may
+  // still be 0. Placed here (after sellingPrice is declared) deliberately —
+  // referencing it any earlier in this component throws a
+  // "Cannot access 'sellingPrice' before initialization" error, since it's
+  // a const declared further down in the same function.
+  useEffect(() => {
+    if (!selectedPlanId || !sellingPrice) return;
+    const p = plans.find((pl) => pl._id === selectedPlanId);
+    if (!p) return;
+    const token = Number(p.bookingAmount) || 0;
+    if (Number(p.downPaymentPercent) > 0) {
+      const totalDp = Math.round((sellingPrice * Number(p.downPaymentPercent)) / 100);
+      setDownPaymentAmount(Math.max(totalDp - token, 0));
+    } else {
+      setDownPaymentAmount(p.downPaymentAmount || 0);
+    }
+    setEmiAmountEach(Math.round((sellingPrice * (Number(p.emiPercent) || 0)) / 100));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPlanId, plans, sellingPrice]);
+
   const emiPercent = sellingPrice > 0 ? Math.round(((emiAmountEach / sellingPrice) * 100) * 100) / 100 : 0; // display-only
   const totalSqftForToggle = Number(selectedPlot?.totalArea) || 0;
 
@@ -407,6 +434,10 @@ function BookingCreate() {
         emi_amount: emiAmount,
         emi_months: emiMonths,
         payment_mode: paymentMode,
+        // PLC is a premium on top of base price and should not count toward
+        // commission — this tells the backend what fraction of each ₹ is
+        // actual base price vs PLC, so it can strip PLC out before computing.
+        commission_ratio: sellingPrice > 0 ? Math.max(sellingPrice - plcAmount, 0) / sellingPrice : 1,
       })
       .then((res) => {
         const rows = res.data.preview || [];
@@ -420,6 +451,12 @@ function BookingCreate() {
       .finally(() => setCommissionLoading(false));
   }, [step, projectId, agentId, emiMonths]);
 
+  // Commission is calculated on the plot's actual physical area only — PLC
+  // (a location premium on top of base price) is excluded from commission
+  // entirely, even though the customer still pays it and it's still part of
+  // sellingPrice/totalAmount. This matches generateEmis()'s commissionRatio
+  // logic on the backend, and the commission-preview call above sends that
+  // same ratio so this preview and the saved booking always agree.
   const totalSqft = Number(selectedPlot?.totalArea) || 0;
   let uplineRunningIndex = 0;
   let previousCap = 0;
@@ -1458,6 +1495,14 @@ function BookingCreate() {
               Pool {money(commissionPoolPerSqft * totalSqft)} · {money(commissionPoolPerSqft)}/sq.ft
             </span>
           </div>
+          {Number(plotPlcPercent) > 0 && (
+            <div className="alert alert-light border small mb-3">
+              <iconify-icon icon="solar:info-circle-bold" className="align-middle me-1"></iconify-icon>
+              PLC of {plotPlcPercent}% (₹{money(plcAmount)}) is added to the customer's selling price but does{" "}
+              <strong>not</strong> count toward commission — commission below is calculated on the plot's base area
+              only ({selectedPlot?.totalArea} sq.ft).
+            </div>
+          )}
 
           {commissionLoading && <div className="text-muted small mb-3">Calculating…</div>}
           {commissionError && <div className="alert alert-danger">{commissionError}</div>}
