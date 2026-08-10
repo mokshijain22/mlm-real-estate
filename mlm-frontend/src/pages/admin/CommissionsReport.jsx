@@ -100,7 +100,33 @@ function CommissionsReport() {
       <div className="row mb-3">
         <div className="col-12 d-flex justify-content-between align-items-center">
           <h3 className="mt-2 mb-4">Commissions Report</h3>
-          <ExportButton url="/admin/reports/commissions/export" params={getExportParams()} title="Commissions Report" filenamePrefix="commissions" />
+          <ExportButton
+            url="/admin/reports/commissions/export"
+            params={getExportParams()}
+            title="Commissions Report"
+            filenamePrefix="commissions"
+            pdfPeriodLabel={
+              dateFrom || dateTo
+                ? `Payment period: ${dateFrom ? new Date(dateFrom).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "Beginning"} to ${dateTo ? new Date(dateTo).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "Today"}`
+                : "Payment period: All time"
+            }
+            pdfSummary={
+              summary
+                ? {
+                    left: [
+                      { label: "Total Online Dist.", value: fmt(summary.total_bv) },
+                      { label: "Total Cash Dist.", value: fmt(summary.total_pv) },
+                      { label: "EMI Commissions", value: `₹${fmt(summary.emi_commissions)}` },
+                      { label: "Rank Difference", value: `₹${fmt(summary.rank_difference)}` },
+                    ],
+                    right: [
+                      { label: "Agents Earning", value: summary.agents_earning },
+                      { label: "Company Share", value: `₹${fmt(summary.total_company_commission)}` },
+                    ],
+                  }
+                : undefined
+            }
+          />
         </div>
       </div>
 

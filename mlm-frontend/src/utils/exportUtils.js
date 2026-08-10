@@ -2,28 +2,27 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
 export function parseCsv(text) {
-  const lines = text.replace(/\r\n/g, "\n").split("\n").filter((l) => l.length > 0);
-  if (!lines.length) return { headers: [], rows: [] };
-  const parseLine = (line) => {
-    const cells = [];
-    let cur = "";
-    let inQuotes = false;
-    for (let i = 0; i < line.length; i++) {
-      const ch = line[i];
-      if (inQuotes) {
-        if (ch === '"') {
-          if (line[i + 1] === '"') { cur += '"'; i++; } else { inQuotes = false; }
-        } else cur += ch;
-      } else if (ch === '"') inQuotes = true;
-      else if (ch === ",") { cells.push(cur); cur = ""; }
-      else cur += ch;
-    }
-    cells.push(cur);
-    return cells;
-  };
-  const headers = parseLine(lines[0]);
-  const rows = lines.slice(1).map(parseLine);
-  return { headers, rows };
+  const normalized = text.replace(/\r\n/g, "\n");
+  const rows = [];
+  let row = [];
+  let cur = "";
+  let inQuotes = false;
+  for (let i = 0; i < normalized.length; i++) {
+    const ch = normalized[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (normalized[i + 1] === '"') { cur += '"'; i++; } else { inQuotes = false; }
+      } else cur += ch;
+    } else if (ch === '"') inQuotes = true;
+    else if (ch === ",") { row.push(cur); cur = ""; }
+    else if (ch === "\n") { row.push(cur); rows.push(row); row = []; cur = ""; }
+    else cur += ch;
+  }
+  if (cur.length > 0 || row.length > 0) { row.push(cur); rows.push(row); }
+  const nonEmpty = rows.filter((r) => !(r.length === 1 && r[0] === ""));
+  if (!nonEmpty.length) return { headers: [], rows: [] };
+  const [headers, ...dataRows] = nonEmpty;
+  return { headers, rows: dataRows };
 }
 
 export function buildCsvBlob(headers, rows) {
@@ -89,19 +88,31 @@ function computeAmountSummary(headers, rows) {
 const formatInr = (n) =>
   "\u20B9" + n.toLocaleString("en-IN", { maximumFractionDigits: 2 });
 
-export function downloadPdfTable(title, headers, rows, filename, periodLabel) {
+export function downloadPdfTable(title, headers, rows, filename, periodLabel, opts = {}) {
+  const { subtitle, summaryLeft, summaryRight, footerRow } = opts;
   const displayHeaders = headers.map(mapHeaderLabel);
   const doc = new jsPDF({ orientation: headers.length > 6 ? "landscape" : "portrait", unit: "pt", format: "a4" });
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 32;
 
   // ---- Header band ----
-  const summary = computeAmountSummary(headers, rows);
-  const bandHeight = periodLabel || summary ? 84 : 64;
+  const hasCustomSummary = Boolean(summaryLeft || summaryRight);
+  const summary = hasCustomSummary ? null : computeAmountSummary(headers, rows);
+  let cursorY = 30;
   doc.setTextColor(20, 20, 20);
   doc.setFontSize(16);
   doc.setFont(undefined, "bold");
-  doc.text(title.toUpperCase(), pageWidth / 2, 30, { align: "center" });
+  doc.text(title.toUpperCase(), pageWidth / 2, cursorY, { align: "center" });
+  cursorY += 18;
+
+  if (subtitle) {
+    doc.setFontSize(11);
+    doc.setFont(undefined, "normal");
+    doc.setTextColor(70, 70, 70);
+    doc.text(subtitle, pageWidth / 2, cursorY, { align: "center" });
+    cursorY += 16;
+  }
+
   doc.setFontSize(9);
   doc.setFont(undefined, "normal");
   doc.setTextColor(90, 90, 90);
@@ -109,14 +120,47 @@ export function downloadPdfTable(title, headers, rows, filename, periodLabel) {
   const headerLine = periodLabel
     ? `Generated on: ${generatedOn}   ${periodLabel}   Total Records: ${rows.length}`
     : `Generated on: ${generatedOn}   Total Records: ${rows.length}`;
-  doc.text(headerLine, pageWidth / 2, 48, { align: "center" });
+  doc.text(headerLine, pageWidth / 2, cursorY, { align: "center" });
+  cursorY += 16;
+
   if (summary) {
     const summaryText = `Total Amount: ${formatInr(summary.total)}   |   Pending: ${formatInr(summary.pending)}   |   Paid: ${formatInr(summary.paid)}`;
     doc.setFont(undefined, "bold");
     doc.setTextColor(20, 20, 20);
-    doc.text(summaryText, pageWidth / 2, 64, { align: "center" });
+    doc.text(summaryText, pageWidth / 2, cursorY, { align: "center" });
     doc.setFont(undefined, "normal");
+    cursorY += 16;
   }
+
+  if (hasCustomSummary) {
+    cursorY += 6;
+    let leftY = cursorY;
+    let rightY = cursorY;
+    doc.setFontSize(10);
+    (summaryLeft || []).forEach((item) => {
+      const label = `${item.label}: `;
+      doc.setFont(undefined, "bold");
+      doc.setTextColor(20, 20, 20);
+      doc.text(label, margin, leftY);
+      const labelWidth = doc.getTextWidth(label);
+      doc.setFont(undefined, "normal");
+      doc.text(String(item.value), margin + labelWidth, leftY);
+      leftY += 15;
+    });
+    (summaryRight || []).forEach((item) => {
+      const label = `${item.label}: `;
+      const value = String(item.value);
+      doc.setFont(undefined, "bold");
+      const fullWidth = doc.getTextWidth(label) + doc.getTextWidth(value);
+      doc.text(label, pageWidth - margin - fullWidth, rightY);
+      doc.setFont(undefined, "normal");
+      doc.text(value, pageWidth - margin - doc.getTextWidth(value), rightY);
+      rightY += 15;
+    });
+    cursorY = Math.max(leftY, rightY);
+  }
+
+  const bandHeight = cursorY - 30 + 14;
 
   // ---- Table ----
   autoTable(doc, {
@@ -124,9 +168,12 @@ export function downloadPdfTable(title, headers, rows, filename, periodLabel) {
     margin: { left: margin, right: margin },
     head: [displayHeaders],
     body: rows,
+    foot: footerRow ? [footerRow] : undefined,
+    showFoot: footerRow ? "lastPage" : undefined,
     theme: "grid",
     styles: { fontSize: 8, cellPadding: 6, overflow: "linebreak", lineColor: [0, 0, 0], lineWidth: 0.4, textColor: [20, 20, 20] },
     headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: "bold", halign: "left", lineColor: [0, 0, 0], lineWidth: 0.4 },
+    footStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: "bold", halign: "left", lineColor: [0, 0, 0], lineWidth: 0.4 },
     didDrawPage: () => {
       const pageCount = doc.internal.getNumberOfPages();
       const pageHeight = doc.internal.pageSize.getHeight();

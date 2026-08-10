@@ -2,14 +2,12 @@ import { useState } from "react";
 import api from "../../api/axios.js";
 import { fetchCsvForPreview, downloadBlob, downloadPdfTable } from "../../utils/exportUtils.js";
 
-// Display-only label mapping — matches "Online"/"Cash" convention used across the app
-// (Withdrawals, PayoutsReport, Dashboard, etc). CSV download keeps raw backend headers.
 const mapHeaderLabel = (h) =>
   String(h)
     .replace(/\bBV\b/g, "Online")
     .replace(/\bPV\b/g, "Cash");
 
-function ExportButton({ url, params, title, filenamePrefix, className = "btn btn-success", label = "Export" }) {
+function ExportButton({ url, params, title, filenamePrefix, className = "btn btn-success", label = "Export", pdfSubtitle, pdfPeriodLabel, pdfSummary, pdfFooterRow, pdfFooterLabel }) {
   const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState(null);
   const [show, setShow] = useState(false);
@@ -31,7 +29,12 @@ function ExportButton({ url, params, title, filenamePrefix, className = "btn btn
   const handleDownloadCsv = () => preview && downloadBlob(preview.blob, `${filenamePrefix}_${Date.now()}.csv`);
   const handleDownloadPdf = () =>
     preview &&
-    downloadPdfTable(title || filenamePrefix, preview.headers, preview.rows, `${filenamePrefix}_${Date.now()}.pdf`, dateRangeLabel);
+    downloadPdfTable(title || filenamePrefix, preview.headers, preview.rows, `${filenamePrefix}_${Date.now()}.pdf`, pdfPeriodLabel || dateRangeLabel, {
+      subtitle: pdfSubtitle,
+      summaryLeft: pdfSummary?.left,
+      summaryRight: pdfSummary?.right,
+      footerRow: pdfFooterRow,
+    });
 
   const hasDateRange = params?.date_from || params?.date_to;
   const dateRangeLabel = hasDateRange
@@ -80,13 +83,33 @@ function ExportButton({ url, params, title, filenamePrefix, className = "btn btn
                   {title || "Export Preview"}
                 </h5>
                 <p className="mb-0 small text-muted text-center">
-                  Generated on: {new Date().toLocaleDateString("en-IN")} &nbsp;&nbsp; {dateRangeLabel} &nbsp;&nbsp; Total Records: {preview.rows.length}
+                  Generated on: {new Date().toLocaleDateString("en-IN")} &nbsp;&nbsp; {pdfPeriodLabel || dateRangeLabel} &nbsp;&nbsp; Total Records: {preview.rows.length}
                 </p>
-                {!hasDateRange && amountSummary === null && null}
-                {amountSummary && (
+                {!pdfSummary && !hasDateRange && amountSummary === null && null}
+                {!pdfSummary && amountSummary && (
                   <p className="mb-0 small fw-bold text-center mt-1" style={{ color: "#1e1b4b" }}>
                     Total Amount: {formatInr(amountSummary.total)} &nbsp;|&nbsp; Pending: {formatInr(amountSummary.pending)} &nbsp;|&nbsp; Paid: {formatInr(amountSummary.paid)}
                   </p>
+                )}
+                {pdfSummary && (
+                  <div className="d-flex justify-content-between w-100 px-4 mt-2">
+                    <div className="text-start">
+                      {pdfSummary.left?.map((item, i) => (
+                        <div key={i} className="small">
+                          <span className="fw-bold" style={{ color: "#1e1b4b" }}>{item.label}: </span>
+                          <span style={{ color: "#1e1b4b" }}>{item.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="text-end">
+                      {pdfSummary.right?.map((item, i) => (
+                        <div key={i} className="small">
+                          <span className="fw-bold" style={{ color: "#1e1b4b" }}>{item.label}: </span>
+                          <span style={{ color: "#1e1b4b" }}>{item.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </div>
               <div className="modal-body p-0" style={{ maxHeight: "60vh", overflow: "auto" }}>
@@ -109,6 +132,15 @@ function ExportButton({ url, params, title, filenamePrefix, className = "btn btn
                         </tr>
                       </thead>
                       <tbody>
+                        {pdfFooterRow && (
+                          <tr style={{ background: "#eef0ff", fontWeight: "bold" }}>
+                            {pdfFooterRow.map((cell, ci) => (
+                              <td key={ci} className="px-3 py-2">
+                                {ci === 0 ? pdfFooterLabel || cell : cell}
+                              </td>
+                            ))}
+                          </tr>
+                        )}
                         {preview.rows.slice(0, 100).map((row, ri) => (
                           <tr key={ri} style={{ background: ri % 2 ? "#fafaff" : "#fff" }}>
                             {row.map((cell, ci) => {

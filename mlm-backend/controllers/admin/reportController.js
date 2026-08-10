@@ -422,20 +422,23 @@ async function bookedPlots(req, res) {
       const key = String(b._id);
       const p = paidByBooking[key] || { received: 0, cash: 0, bank: 0, cheque: 0 };
       const bankNames = banksByBooking[key] ? Array.from(banksByBooking[key]).filter(Boolean).join(', ') : '-';
+      const sellingPrice = b.totalAmount || 0;
       return {
         plot: b.plot?.plotNumber || 'N/A',
         area: b.plot?.plotDimensions ? `${b.plot.totalArea} (${b.plot.plotDimensions})` : b.plot?.totalArea || 'N/A',
+        areaSqft: b.plot?.totalArea || 0,
         project: b.project?.name || 'N/A',
         client: b.customer?.name || 'N/A',
         mobile: b.customer?.mobile || 'N/A',
         status: b.status === 'active' ? 'Booked' : b.status === 'completed' ? 'Completed' : 'Cancelled',
         bookingDate: b.createdAt,
-        sellingPrice: b.totalAmount || 0,
+        sellingPrice,
         dpAmount: (b.downPaymentAmount || 0) + (b.bookingAmount || 0),
         received: p.received,
         cash: p.cash,
         bank: p.bank,
         cheque: p.cheque,
+        remaining: sellingPrice - p.received,
         bankAccount: bankNames,
       };
     });
@@ -445,6 +448,13 @@ async function bookedPlots(req, res) {
       cancelled_plots: rows.filter((r) => r.status === 'Cancelled').length,
       total_selling_price: rows.reduce((s, r) => s + r.sellingPrice, 0),
       total_received: rows.reduce((s, r) => s + r.received, 0),
+      total_dp_amount: rows.reduce((s, r) => s + r.dpAmount, 0),
+      total_cash: rows.reduce((s, r) => s + r.cash, 0),
+      total_bank: rows.reduce((s, r) => s + r.bank, 0),
+      total_cheque: rows.reduce((s, r) => s + r.cheque, 0),
+      total_remaining: rows.reduce((s, r) => s + r.remaining, 0),
+      booked_area: rows.filter((r) => r.status === 'Booked' || r.status === 'Completed').reduce((s, r) => s + r.areaSqft, 0),
+      total_area: rows.reduce((s, r) => s + r.areaSqft, 0),
     };
 
     return res.json({ data: rows, summary });
@@ -461,11 +471,11 @@ async function bookedPlotsExport(req, res) {
     const result = await bookedPlots(req, fakeRes);
     const rows = result?.data || [];
 
-    const headers = ['Plot', 'Area', 'Project', 'Client', 'Mobile', 'Status', 'Booking Date', 'Selling Price', 'DP Amount', 'Received', 'Cash', 'Bank', 'Cheque', 'Bank Account'];
+    const headers = ['Plot', 'Area', 'Booking Date', 'Client', 'Selling Price', 'DP Amount', 'Received', 'Cash', 'Bank', 'Cheque', 'Remaining', 'Bank Account', 'Mobile'];
     const csvRows = rows.map((r) => [
-      r.plot, r.area, r.project, r.client, r.mobile, r.status,
+      r.plot, r.area,
       r.bookingDate ? new Date(r.bookingDate).toISOString().slice(0, 10) : '-',
-      r.sellingPrice, r.dpAmount, r.received, r.cash, r.bank, r.cheque, r.bankAccount,
+      r.client, r.sellingPrice, r.dpAmount, r.received, r.cash, r.bank, r.cheque, r.remaining, r.bankAccount, r.mobile,
     ]);
     return sendCsv(res, `booked_plots_${timestamp()}.csv`, toCsv(headers, csvRows));
   } catch (err) {

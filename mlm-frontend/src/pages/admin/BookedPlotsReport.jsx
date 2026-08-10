@@ -91,6 +91,38 @@ function BookedPlotsReport() {
                 filenamePrefix="booked_plots_report"
                 className="btn btn-sm btn-success"
                 label="Export"
+                pdfSubtitle={projects.find((p) => p._id === projectId)?.name || "All projects"}
+                pdfPeriodLabel={
+                  dateFrom || dateTo
+                    ? `Period: ${dateFrom ? new Date(dateFrom).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "Beginning"} to ${dateTo ? new Date(dateTo).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "Today"}`
+                    : "Period: All time"
+                }
+                pdfSummary={{
+                  left: [
+                    { label: "Booked plots", value: data.summary.booked_plots },
+                    { label: "Cancelled (re-open)", value: data.summary.cancelled_plots },
+                  ],
+                  right: [
+                    { label: "Booked area", value: `${fmt(data.summary.booked_area)} sq ft` },
+                    { label: "Total area", value: `${fmt(data.summary.total_area)} sq ft` },
+                  ],
+                }}
+                pdfFooterLabel="Page 1 total"
+                pdfFooterRow={[
+                  "Page 1 total",
+                  "",
+                  "",
+                  "",
+                  `₹${fmt(data.summary.total_selling_price)}`,
+                  `₹${fmt(data.summary.total_dp_amount)}`,
+                  `₹${fmt(data.summary.total_received)}`,
+                  `₹${fmt(data.summary.total_cash)}`,
+                  `₹${fmt(data.summary.total_bank)}`,
+                  `₹${fmt(data.summary.total_cheque)}`,
+                  `₹${fmt(data.summary.total_remaining)}`,
+                  "",
+                  "",
+                ]}
               />
             </div>
           )}

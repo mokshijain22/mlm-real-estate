@@ -91,6 +91,25 @@ function ExecutiveCommissionReport() {
                 filenamePrefix="executive_commission_report"
                 className="btn btn-sm btn-success"
                 label="Export"
+                pdfSubtitle="All executives"
+                pdfPeriodLabel={
+                  dateFrom || dateTo
+                    ? `Payment period: ${dateFrom ? new Date(dateFrom).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "Beginning"} to ${dateTo ? new Date(dateTo).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "Today"}`
+                    : "Payment period: All time"
+                }
+                pdfSummary={{
+                  left: [
+                    { label: "Total plots", value: data.summary.total_plots },
+                    { label: "Sale value", value: `₹${fmt(data.summary.sale_value)}` },
+                    { label: "Customer received", value: `₹${fmt(data.summary.customer_received)}` },
+                    { label: "Customer outstanding", value: `₹${fmt(data.summary.customer_outstanding)}` },
+                  ],
+                  right: [
+                    { label: "Gross commission", value: `₹${fmt(data.summary.gross_commission)}` },
+                    { label: "Commission paid", value: `₹${fmt(data.summary.commission_paid)}` },
+                    { label: "Commission outstanding", value: `₹${fmt(data.summary.commission_outstanding)}` },
+                  ],
+                }}
               />
             </div>
           )}
