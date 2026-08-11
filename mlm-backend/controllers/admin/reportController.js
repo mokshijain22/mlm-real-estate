@@ -823,6 +823,7 @@ async function commissions(req, res) {
         rank_difference: rankDifference,
         agents_earning: uniqueAgents.length,
         total_company_commission: totalCompanyCommission,
+        total_commission_generated: (totalBv + totalPv) - rankDifference,
       },
     });
     } catch (err) {

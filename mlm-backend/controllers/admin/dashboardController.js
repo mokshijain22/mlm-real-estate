@@ -159,9 +159,14 @@ async function index(req, res) {
         { $match: { status: 'paid' } },
         { $group: { _id: null, total: { $sum: '$amount' } } },
       ]),
-      // All-time commission generated (credited to agent wallets)
+      // All-time commission generated (credited to agent wallets) — must
+      // include every category actually credited, not just the two that
+      // came from a direct sale. rank_difference is upline commission and
+      // is just as real; leaving it out understates "Generated" and can make
+      // "Pending" (Generated - Received) go negative once an agent withdraws
+      // rank_difference earnings.
       WalletTransaction.aggregate([
-        { $match: { type: 'credit', category: { $in: ['emi_commission', 'deposit_commission'] } } },
+        { $match: { type: 'credit', category: { $in: ['emi_commission', 'deposit_commission', 'rank_difference'] } } },
         { $group: { _id: null, total: { $sum: '$amount' } } },
       ]),
       // All-time commission actually paid out (approved withdrawals)

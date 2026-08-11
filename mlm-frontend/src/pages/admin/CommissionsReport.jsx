@@ -133,6 +133,14 @@ function CommissionsReport() {
       {summary && (
         <div className="row">
           <div className="col-md-2 col-6">
+            <div className="card bg-dark text-white border-0">
+              <div className="card-body">
+                <p className="fw-semibold mb-1">Total Commission Generated</p>
+                <h4 className="fs-20 fw-bold mb-0">₹{fmt(summary.total_commission_generated)}</h4>
+              </div>
+            </div>
+          </div>
+          <div className="col-md-2 col-6">
             <div className="card bg-primary-subtle border-0">
               <div className="card-body">
                 <p className="text-primary-emphasis fw-semibold mb-1">Total Online Dist.</p>
@@ -349,7 +357,7 @@ function CommissionsReport() {
                                 <span className="text-muted">-</span>
                               )}
                             </td>
-                            <td>{t.booking?.totalArea ? `${t.booking.totalArea} sq.ft` : "N/A"}</td>
+                            <td>{sqft > 0 ? `${sqft} sq.ft (of ${t.booking?.totalArea || "N/A"})` : "N/A"}</td>
                             <td>{rateValue}</td>
                             <td>Per Sq.Ft</td>
                             <td>₹{fmt(rateValue)}/sq.ft</td>
