@@ -114,8 +114,8 @@ function Dashboard() {
           Overall Business Summary <span className="fs-13 fw-normal opacity-75">(All-time totals)</span>
         </h5>
       </div>
-      <div className="row mb-4">
-        <div className="col-md-3 col-6 mb-3">
+      <div className="row mb-2">
+        <div className="col-6 col-lg-3 mb-3">
           <Link to="/admin/reports/project-sales" className="dash-stat-card dash-animate d-block">
             <div className="dash-stat-body">
               <div className="dash-stat-icon dash-grad-blue">
@@ -130,7 +130,7 @@ function Dashboard() {
             </div>
           </Link>
         </div>
-        <div className="col-md-3 col-6 mb-3">
+        <div className="col-6 col-lg-3 mb-3">
           <Link to="/admin/reports/date-range?purpose=all&date_from=2000-01-01&date_to=2099-12-31" className="dash-stat-card dash-animate d-block">
             <div className="dash-stat-body">
               <div className="dash-stat-icon dash-grad-green">
@@ -145,7 +145,7 @@ function Dashboard() {
             </div>
           </Link>
         </div>
-        <div className="col-md-3 col-6 mb-3">
+        <div className="col-6 col-lg-3 mb-3">
           <Link to="/admin/reports/commissions" className="dash-stat-card dash-animate d-block">
             <div className="dash-stat-body">
               <div className="dash-stat-icon dash-grad-purple">
@@ -162,7 +162,7 @@ function Dashboard() {
         </div>
         
         
-        <div className="col-md-3 col-6 mb-3">
+        <div className="col-6 col-lg-3 mb-3">
           <Link to="/admin/reports/emi-collections" className="dash-stat-card dash-animate d-block">
             <div className="dash-stat-body">
               <div className="dash-stat-icon dash-grad-red">
@@ -189,9 +189,9 @@ function Dashboard() {
           This Month at a Glance <span className="fs-13 fw-normal opacity-75">(Click a card to view reports)</span>
         </h5>
       </div>
-      <div className="row mb-4">
+      <div className="row row-cols-2 row-cols-lg-5 g-3 mb-2">
         {can("reports") && (
-        <div className="col-md-3 col-6 mb-3">
+        <div className="mb-3">
           <Link to="/admin/reports/emi-collections" className="dash-stat-card dash-animate d-block">
             <div className="dash-stat-body">
               <div className="dash-stat-icon dash-grad-green">
@@ -208,7 +208,7 @@ function Dashboard() {
         </div>
         )}
         {can("reports") && (
-        <div className="col-md-3 col-6 mb-3">
+        <div className="mb-3">
           <Link to="/admin/reports/date-range?purpose=token_dp" className="dash-stat-card dash-animate d-block">
             <div className="dash-stat-body">
               <div className="dash-stat-icon dash-grad-blue">
@@ -225,7 +225,7 @@ function Dashboard() {
         </div>
         )}
         {can("reports") && (
-        <div className="col-md-3 col-6 mb-3">
+        <div className="mb-3">
           <Link to="/admin/withdrawals?status=approved" className="dash-stat-card dash-animate d-block">
             <div className="dash-stat-body">
               <div className="dash-stat-icon dash-grad-blue">
@@ -235,14 +235,14 @@ function Dashboard() {
                 <p className="dash-stat-value">
                   <CountUp value={stats.commission_distributed_this_month} format={inr} />
                 </p>
-                <p className="dash-stat-label">Commission Withdrawn</p>
+                <p className="dash-stat-label">Commission Paid</p>
               </div>
             </div>
           </Link>
         </div>
         )}
         {can("withdrawals") && (
-        <div className="col-md-3 col-6 mb-3">
+        <div className="mb-3">
           <Link to="/admin/withdrawals?status=pending" className="dash-stat-card dash-animate d-block">
             <div className="dash-stat-body">
               <div className="dash-stat-icon dash-grad-amber">
@@ -259,7 +259,7 @@ function Dashboard() {
         </div>
         )}
         {can("reports") && (
-        <div className="col-md-3 col-6 mb-3">
+        <div className="mb-3">
           <Link to="/admin/reports/project-sales" className="dash-stat-card dash-animate d-block">
             <div className="dash-stat-body">
               <div className="dash-stat-icon dash-grad-orange">
@@ -361,112 +361,28 @@ function Dashboard() {
         </div>
         )}
 
-        {can("reports") && (
-        <div className="col-md-6 col-xl-3 mb-3">
-          <div className="dash-hero-card dash-grad-green dash-animate">
-            <div className="dash-stat-body">
-              <div className="dash-hero-icon">
-                <iconify-icon icon="solar:wallet-bold-duotone"></iconify-icon>
-              </div>
-              <div>
-                <p className="dash-stat-value text-white">{num(stats.distributed_bv)}</p>
-                <p className="dash-stat-label text-white opacity-75">Distributed Online</p>
-              </div>
-            </div>
-          </div>
-        </div>
-        )}
+        
 
-        {can("reports") && (
-        <div className="col-md-6 col-xl-3 mb-3">
-          <div className="dash-hero-card dash-grad-blue dash-animate">
-            <div className="dash-stat-body">
-              <div className="dash-hero-icon">
-                <iconify-icon icon="solar:safe-2-bold-duotone"></iconify-icon>
-              </div>
-              <div>
-                <p className="dash-stat-value text-white">{num(stats.distributed_pv)}</p>
-                <p className="dash-stat-label text-white opacity-75">Distributed Cash</p>
-              </div>
-            </div>
-          </div>
-        </div>
-        )}
+        
 
-        {can("withdrawals") && (
-        <div className="col-md-6 col-xl-3 mb-3">
-          <div className="dash-hero-card dash-grad-red dash-animate">
-            <div className="dash-stat-body">
-              <div className="dash-hero-icon">
-                <iconify-icon icon="solar:clock-circle-bold-duotone"></iconify-icon>
-              </div>
-              <div>
-                <p className="dash-stat-value text-white">{stats.pending_withdrawals ?? 0}</p>
-                <p className="dash-stat-label text-white opacity-75">Pending Withdrawals</p>
-              </div>
-            </div>
-          </div>
-        </div>
-        )}
+        
 
-        {can("bookings") && (
-        <div className="col-md-6 col-xl-3 mb-3">
-          <div className="dash-hero-card dash-grad-amber dash-animate">
-            <div className="dash-stat-body">
-              <div className="dash-hero-icon">
-                <iconify-icon icon="solar:bill-list-bold-duotone"></iconify-icon>
-              </div>
-              <div>
-                <p className="dash-stat-value text-white">{stats.pending_bookings ?? 0}</p>
-                <p className="dash-stat-label text-white opacity-75">Pending Bookings</p>
-              </div>
-            </div>
-          </div>
-        </div>
-        )}
+        
 
-        {can("reports") && (
-        <div className="col-md-6 col-xl-4 mb-3">
-          <div className="dash-hero-card dash-grad-green dash-animate" style={{ minHeight: "100%" }}>
-            <div className="dash-stat-body">
-              <div className="dash-hero-icon">
-                <iconify-icon icon="solar:cash-out-bold-duotone"></iconify-icon>
-              </div>
-              <div>
-                <p className="text-white opacity-75 fw-semibold mb-1 fs-13">Online Paid Out (This Month)</p>
-                <h3 className="mb-0 text-white fw-bold">{num(stats.total_bv_paid_out)}</h3>
-              </div>
-            </div>
-          </div>
-        </div>
-        )}
+        
 
-        {can("reports") && (
-        <div className="col-md-6 col-xl-4 mb-3">
-          <div className="dash-hero-card dash-grad-blue dash-animate" style={{ minHeight: "100%" }}>
-            <div className="dash-stat-body">
-              <div className="dash-hero-icon">
-                <iconify-icon icon="solar:wad-of-money-bold-duotone"></iconify-icon>
-              </div>
-              <div>
-                <p className="text-white opacity-75 fw-semibold mb-1 fs-13">Cash Paid Out (This Month)</p>
-                <h3 className="mb-0 text-white fw-bold">{num(stats.total_pv_paid_out)}</h3>
-              </div>
-            </div>
-          </div>
-        </div>
-        )}
+        
 
         {can("tickets") && (
-        <div className="col-md-6 col-xl-4 mb-3">
-          <Link to="/admin/tickets?status=open" className="dash-hero-card dash-grad-amber dash-animate d-block" style={{ minHeight: "100%" }}>
+        <div className="col-md-6 col-xl-3 mb-3">
+          <Link to="/admin/tickets?status=open" className="dash-stat-card dash-animate d-block">
             <div className="dash-stat-body">
-              <div className="dash-hero-icon">
+              <div className="dash-stat-icon dash-grad-amber">
                 <iconify-icon icon="solar:chat-round-dots-bold-duotone"></iconify-icon>
               </div>
               <div>
-                <p className="text-white opacity-75 fw-semibold mb-1 fs-13">Open Support Tickets</p>
-                <h3 className="mb-0 text-white fw-bold">{stats.open_tickets ?? 0}</h3>
+                <p className="dash-stat-value">{stats.open_tickets ?? 0}</p>
+                <p className="dash-stat-label">Open Support Tickets</p>
               </div>
             </div>
           </Link>
