@@ -58,7 +58,6 @@ async function index(req, res) {
       totalRevenueAgg,
       totalOutstandingAgg,
       totalCommissionGeneratedAgg,
-      totalCommissionReceivedAgg,
     ] = await Promise.all([
       Project.countDocuments({ status: 'active' }),
       Plot.countDocuments({}),
@@ -169,12 +168,7 @@ async function index(req, res) {
         { $match: { type: 'credit', category: { $in: ['emi_commission', 'deposit_commission', 'rank_difference'] } } },
         { $group: { _id: null, total: { $sum: '$amount' } } },
       ]),
-      // All-time commission actually paid out (approved withdrawals)
-      WithdrawalRequest.aggregate([
-        { $match: { status: 'approved' } },
-        { $group: { _id: null, total: { $sum: '$netAmount' } } },
-      ]),
-    ]);
+      ]);
 
     const sumOf = (agg) => (agg[0] ? agg[0].total : 0);
 
@@ -203,8 +197,6 @@ async function index(req, res) {
       total_revenue_collected: sumOf(totalOutstandingAgg),
       total_outstanding: sumOf(totalRevenueAgg) - sumOf(totalOutstandingAgg),
       total_commission_generated: sumOf(totalCommissionGeneratedAgg),
-      total_commission_received: sumOf(totalCommissionReceivedAgg),
-      total_commission_pending: sumOf(totalCommissionGeneratedAgg) - sumOf(totalCommissionReceivedAgg),
     };
 
     const overdueDues = overdueDuesRaw.map((e) => ({

@@ -205,7 +205,11 @@ async function buildEmiCollectionsQuery(filters) {
   // reports/pages, not here.
   const query = { emiNumber: { $gt: 0, $ne: 99 }, ...dateRangeFilter('paidDate', date_from, date_to) };
   if (agent_id) query.agent = agent_id;
-  if (payment_mode && payment_mode !== 'all') query.paymentMode = payment_mode;
+  // 'online' isn't a literal stored paymentMode value — it's an umbrella over
+  // every non-cash mode (upi, net_banking, bank_transfer, card). Matching it
+  // literally (as before) always returned zero rows.
+  if (payment_mode === 'cash') query.paymentMode = 'cash';
+  else if (payment_mode === 'online') query.paymentMode = { $in: ['upi', 'net_banking', 'bank_transfer', 'card'] };
 
   if (project_id) {
     const bookingIds = await Booking.find({ project: project_id }).distinct('_id');
@@ -1234,13 +1238,25 @@ async function payoutsExport(req, res) {
 // line) in the range — mirrors the reference app's "Date range report"
 // which shows one row per payment received, not per booking.
 async function buildDateRangeTransactions(filters) {
-  const { date_from, date_to, project_id, sort_by = 'paidOn', order = 'desc' } = filters;
+  const { date_from, date_to, project_id, sort_by = 'paidOn', order = 'desc', purpose } = filters;
 
   const emiDateFilter = dateRangeFilter('paidDate', date_from, date_to);
   const emiQuery = { status: 'paid', ...emiDateFilter };
   if (project_id) {
     const bookingIds = await Booking.find({ project: project_id }).distinct('_id');
     emiQuery.booking = { $in: bookingIds };
+  }
+
+  // Same purpose buckets as the row-level "purpose" field below: token (0),
+  // down_payment (<0), registry (99), installment (>0 and !=99). token_dp is
+  // the combined bucket the Dashboard's "Token / DP Collected" card links to
+  // (mirrors tokenDpCollectedAgg in dashboardController.js).
+  if (purpose && purpose !== 'all') {
+    if (purpose === 'token') emiQuery.emiNumber = 0;
+    else if (purpose === 'down_payment') emiQuery.emiNumber = { $lt: 0 };
+    else if (purpose === 'registry') emiQuery.emiNumber = 99;
+    else if (purpose === 'installment') emiQuery.emiNumber = { $gt: 0, $ne: 99 };
+    else if (purpose === 'token_dp') emiQuery.$or = [{ emiNumber: { $lte: 0 } }, { emiNumber: 99 }];
   }
 
   const emis = await Emi.find(emiQuery)
@@ -1264,7 +1280,7 @@ async function buildDateRangeTransactions(filters) {
       plot: e.booking.plot?.plotNumber || 'N/A',
       area: e.booking.plot?.totalArea || 0,
       purpose:
-        e.emiNumber === 0 ? 'booking' : e.emiNumber < 0 ? `down payment ${Math.abs(e.emiNumber)}` : e.emiNumber === 99 ? 'registry' : 'installment',
+        e.emiNumber === 0 ? 'booking token' : e.emiNumber < 0 ? `down payment ${Math.abs(e.emiNumber)}` : e.emiNumber === 99 ? 'registry' : 'installment',
       method: e.paymentMode || 'N/A',
       bank: e.bank?.name || '-',
       amount: e.amount || 0,

@@ -290,6 +290,7 @@ function CommissionsReport() {
                     <tr>
                       <th>Executive</th>
                       <th>Type</th>
+                      <th>Category</th>
                       <th>Project / Plot</th>
                       <th>Plot Area</th>
                       <th>Rate Value</th>
@@ -342,6 +343,18 @@ function CommissionsReport() {
                                 if (n < 0) return <span className="badge bg-warning-subtle text-warning">Down Payment</span>;
                                 if (n === 99) return <span className="badge bg-dark-subtle text-dark">Registry</span>;
                                 return <span className="badge bg-success-subtle text-success">EMI {n}</span>;
+                              })()}
+                            </td>
+                            <td>
+                              {(() => {
+                                const catLabels = {
+                                  emi_commission: { label: "EMI Commission", cls: "bg-primary-subtle text-primary" },
+                                  deposit_commission: { label: "Deposit Commission", cls: "bg-warning-subtle text-warning" },
+                                  rank_difference: { label: "Rank Difference", cls: "bg-purple-subtle text-purple" },
+                                  company_commission: { label: "Company Share", cls: "bg-dark-subtle text-dark" },
+                                };
+                                const info = catLabels[t.category] || { label: t.category || "-", cls: "bg-secondary-subtle text-secondary" };
+                                return <span className={`badge ${info.cls}`}>{info.label}</span>;
                               })()}
                             </td>
                             <td>

@@ -131,7 +131,7 @@ function Dashboard() {
           </Link>
         </div>
         <div className="col-md-3 col-6 mb-3">
-          <Link to="/admin/reports/emi-collections" className="dash-stat-card dash-animate d-block">
+          <Link to="/admin/reports/date-range?purpose=all&date_from=2000-01-01&date_to=2099-12-31" className="dash-stat-card dash-animate d-block">
             <div className="dash-stat-body">
               <div className="dash-stat-icon dash-grad-green">
                 <iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon>
@@ -160,36 +160,8 @@ function Dashboard() {
             </div>
           </Link>
         </div>
-        <div className="col-md-3 col-6 mb-3">
-          <Link to="/admin/withdrawals?status=approved" className="dash-stat-card dash-animate d-block">
-            <div className="dash-stat-body">
-              <div className="dash-stat-icon dash-grad-teal">
-                <iconify-icon icon="solar:hand-money-bold-duotone"></iconify-icon>
-              </div>
-              <div>
-                <p className="dash-stat-value">
-                  <CountUp value={stats.total_commission_received} format={inr} />
-                </p>
-                <p className="dash-stat-label">Total Commission Received</p>
-              </div>
-            </div>
-          </Link>
-        </div>
-        <div className="col-md-3 col-6 mb-3">
-          <Link to="/admin/reports/agent-earnings" className="dash-stat-card dash-animate d-block">
-            <div className="dash-stat-body">
-              <div className="dash-stat-icon dash-grad-orange">
-                <iconify-icon icon="solar:wallet-2-bold-duotone"></iconify-icon>
-              </div>
-              <div>
-                <p className="dash-stat-value">
-                  <CountUp value={stats.total_commission_pending} format={inr} />
-                </p>
-                <p className="dash-stat-label">Total Commission Pending</p>
-              </div>
-            </div>
-          </Link>
-        </div>
+        
+        
         <div className="col-md-3 col-6 mb-3">
           <Link to="/admin/reports/emi-collections" className="dash-stat-card dash-animate d-block">
             <div className="dash-stat-body">
@@ -237,7 +209,7 @@ function Dashboard() {
         )}
         {can("reports") && (
         <div className="col-md-3 col-6 mb-3">
-          <Link to="/admin/reports/emi-collections" className="dash-stat-card dash-animate d-block">
+          <Link to="/admin/reports/date-range?purpose=token_dp" className="dash-stat-card dash-animate d-block">
             <div className="dash-stat-body">
               <div className="dash-stat-icon dash-grad-blue">
                 <iconify-icon icon="solar:card-transfer-bold-duotone"></iconify-icon>
@@ -254,7 +226,7 @@ function Dashboard() {
         )}
         {can("reports") && (
         <div className="col-md-3 col-6 mb-3">
-          <Link to="/admin/reports/commissions" className="dash-stat-card dash-animate d-block">
+          <Link to="/admin/withdrawals?status=approved" className="dash-stat-card dash-animate d-block">
             <div className="dash-stat-body">
               <div className="dash-stat-icon dash-grad-blue">
                 <iconify-icon icon="solar:graph-up-bold-duotone"></iconify-icon>
@@ -263,7 +235,7 @@ function Dashboard() {
                 <p className="dash-stat-value">
                   <CountUp value={stats.commission_distributed_this_month} format={inr} />
                 </p>
-                <p className="dash-stat-label">Commission Paid</p>
+                <p className="dash-stat-label">Commission Withdrawn</p>
               </div>
             </div>
           </Link>

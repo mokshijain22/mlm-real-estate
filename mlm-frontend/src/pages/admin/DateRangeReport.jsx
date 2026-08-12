@@ -1,6 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import api from "../../api/axios.js";
 import ExportButton from "../../components/shared/ExportButton.jsx";
+
+const PURPOSE_OPTIONS = [
+  { value: "all", label: "All" },
+  { value: "token", label: "Booking Token" },
+  { value: "down_payment", label: "Down Payment" },
+  { value: "registry", label: "Registry" },
+  { value: "installment", label: "EMI Installment" },
+  { value: "token_dp", label: "Token + DP + Registry" },
+];
 
 const ALL_COLUMNS = [
   { key: "paidOn", label: "Paid On" },
@@ -26,10 +36,16 @@ function lastOfMonth() {
 }
 
 function DateRangeReport() {
-  const [dateFrom, setDateFrom] = useState(firstOfMonth());
-  const [dateTo, setDateTo] = useState(lastOfMonth());
+  const [searchParams] = useSearchParams();
+  const initialPurpose = searchParams.get("purpose") || "all";
+  const initialDateFrom = searchParams.get("date_from") || firstOfMonth();
+  const initialDateTo = searchParams.get("date_to") || lastOfMonth();
+
+  const [dateFrom, setDateFrom] = useState(initialDateFrom);
+  const [dateTo, setDateTo] = useState(initialDateTo);
   const [projects, setProjects] = useState([]);
   const [projectId, setProjectId] = useState("");
+  const [purpose, setPurpose] = useState(initialPurpose);
   const [sortBy, setSortBy] = useState("paidOn");
   const [order, setOrder] = useState("asc");
   const [data, setData] = useState(null);
@@ -40,6 +56,15 @@ function DateRangeReport() {
 
   useState(() => {
     api.get("/admin/projects").then((res) => setProjects(res.data.data || res.data)).catch(() => {});
+  }, []);
+
+  // Auto-run once on mount when arriving via a Dashboard card link (?purpose=...)
+  // so the filtered report shows immediately instead of an empty state.
+  useEffect(() => {
+    if (searchParams.get("purpose") || searchParams.get("date_from")) {
+      runReport();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fmt = (n) => Number(n || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -54,6 +79,7 @@ function DateRangeReport() {
   const buildParams = () => {
     const params = { date_from: dateFrom, date_to: dateTo, sort_by: sortBy, order };
     if (projectId) params.project_id = projectId;
+    if (purpose && purpose !== "all") params.purpose = purpose;
     return params;
   };
 
@@ -134,6 +160,14 @@ function DateRangeReport() {
               </select>
             </div>
             <div className="col-md-2">
+              <label className="form-label">Purpose</label>
+              <select className="form-select" value={purpose} onChange={(e) => setPurpose(e.target.value)}>
+                {PURPOSE_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="col-md-2">
               <button type="button" className="btn btn-primary w-100" onClick={runReport} disabled={loading}>
                 {loading ? "Loading..." : "Apply"}
               </button>
@@ -141,7 +175,7 @@ function DateRangeReport() {
           </div>
 
           <div className="d-flex gap-2 mt-3 position-relative flex-wrap">
-            <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => { setDateFrom(firstOfMonth()); setDateTo(lastOfMonth()); setProjectId(""); setSortBy("paidOn"); setOrder("asc"); }}>
+            <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => { setDateFrom(firstOfMonth()); setDateTo(lastOfMonth()); setProjectId(""); setPurpose("all"); setSortBy("paidOn"); setOrder("asc"); }}>
               <iconify-icon icon="solar:restart-bold-duotone" className="me-1"></iconify-icon>
               Reset
             </button>
