@@ -200,7 +200,10 @@ async function overview(req, res) {
 async function buildEmiCollectionsQuery(filters) {
   const { date_from, date_to, project_id, agent_id, payment_mode, search } = filters;
 
-  const query = { ...dateRangeFilter('paidDate', date_from, date_to) };
+  // This report is scoped to actual monthly EMIs only — Booking Token (0),
+  // Down Payments (negative), and Registry (99) belong on other
+  // reports/pages, not here.
+  const query = { emiNumber: { $gt: 0, $ne: 99 }, ...dateRangeFilter('paidDate', date_from, date_to) };
   if (agent_id) query.agent = agent_id;
   if (payment_mode && payment_mode !== 'all') query.paymentMode = payment_mode;
 
@@ -823,7 +826,7 @@ async function commissions(req, res) {
         rank_difference: rankDifference,
         agents_earning: uniqueAgents.length,
         total_company_commission: totalCompanyCommission,
-        total_commission_generated: (totalBv + totalPv) - rankDifference,
+        total_commission_generated: totalBv + totalPv,
       },
     });
     } catch (err) {

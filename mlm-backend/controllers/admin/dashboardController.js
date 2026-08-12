@@ -94,9 +94,9 @@ async function index(req, res) {
         { $match: { status: 'paid', paidDate: { $gte: startOfMonth, $lt: startOfNextMonth }, $or: [{ emiNumber: { $lte: 0 } }, { emiNumber: 99 }] } },
         { $group: { _id: null, total: { $sum: '$amount' } } },
       ]),
-      WalletTransaction.aggregate([
-        { $match: { type: 'credit', category: { $in: ['emi_commission', 'deposit_commission'] }, createdAt: { $gte: startOfMonth, $lt: startOfNextMonth } } },
-        { $group: { _id: null, total: { $sum: '$amount' } } },
+      WithdrawalRequest.aggregate([
+        { $match: { status: 'approved', reviewedAt: { $gte: startOfMonth, $lt: startOfNextMonth } } },
+        { $group: { _id: null, total: { $sum: '$netAmount' } } },
       ]),
       Booking.countDocuments({ bookingDate: { $gte: startOfMonth, $lt: startOfNextMonth } }),
       WithdrawalRequest.aggregate([

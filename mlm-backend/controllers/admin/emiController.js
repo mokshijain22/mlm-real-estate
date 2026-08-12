@@ -30,14 +30,12 @@ async function releaseDownPaymentCommission(downPaymentEmi) {
 
 // GET /api/admin/emis
 async function index(req, res) {
-  const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-
-  const dateFrom = req.query.date_from ? new Date(req.query.date_from) : startOfMonth;
-  const dateTo = req.query.date_to ? new Date(req.query.date_to) : endOfMonth;
-
-  const filter = { dueDate: { $gte: dateFrom, $lte: dateTo } };
+  const filter = {};
+  if (req.query.date_from || req.query.date_to) {
+    filter.dueDate = {};
+    if (req.query.date_from) filter.dueDate.$gte = new Date(req.query.date_from);
+    if (req.query.date_to) filter.dueDate.$lte = new Date(req.query.date_to);
+  }
   if (req.query.status) filter.status = req.query.status;
   if (req.query.booking_id) filter.booking = req.query.booking_id;
   if (req.query.agent_id) filter.agent = req.query.agent_id;
@@ -56,7 +54,7 @@ async function index(req, res) {
     Emi.countDocuments(filter),
   ]);
 
-  res.json({ data: emis, meta: { page, limit, total, lastPage: Math.ceil(total / limit) }, dateFrom, dateTo });
+  res.json({ data: emis, meta: { page, limit, total, lastPage: Math.ceil(total / limit) } });
 }
 
 // GET /api/admin/bookings/:id/emis

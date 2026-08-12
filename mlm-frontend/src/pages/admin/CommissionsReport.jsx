@@ -136,7 +136,7 @@ function CommissionsReport() {
             <div className="card bg-dark text-white border-0">
               <div className="card-body">
                 <p className="fw-semibold mb-1">Total Commission Generated</p>
-                <h4 className="fs-20 fw-bold mb-0">₹{fmt(summary.total_commission_generated)}</h4>
+                <h4 className="fs-20 fw-bold text-white mb-0">₹{fmt(summary.total_commission_generated)}</h4>
               </div>
             </div>
           </div>
