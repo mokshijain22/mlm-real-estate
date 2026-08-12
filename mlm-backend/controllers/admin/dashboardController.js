@@ -8,6 +8,7 @@ const WithdrawalRequest = require('../../models/WithdrawalRequest');
 const SupportTicket = require('../../models/SupportTicket');
 const User = require('../../models/User');
 const Role = require('../../models/Role');
+const { buildCompanyRows } = require('./reportController');
 
 // GET /api/admin/dashboard
 async function index(req, res) {
@@ -58,6 +59,7 @@ async function index(req, res) {
       totalRevenueAgg,
       totalOutstandingAgg,
       totalCommissionGeneratedAgg,
+      companyEligibleTxns,
     ] = await Promise.all([
       Project.countDocuments({ status: 'active' }),
       Plot.countDocuments({}),
@@ -168,9 +170,17 @@ async function index(req, res) {
         { $match: { type: 'credit', category: { $in: ['emi_commission', 'deposit_commission', 'rank_difference'] } } },
         { $group: { _id: null, total: { $sum: '$amount' } } },
       ]),
+      // All-time company share is virtual (computed per-transaction, not
+      // stored) — reuse the same builder the Commissions Report uses so
+      // both numbers stay in sync.
+      WalletTransaction.find({ type: 'credit', category: { $in: ['emi_commission', 'deposit_commission'] } })
+        .select('category booking emi sqftPortion pointsType createdAt')
+        .populate('emi'),
       ]);
 
     const sumOf = (agg) => (agg[0] ? agg[0].total : 0);
+    const companyRowsAllTime = await buildCompanyRows(companyEligibleTxns);
+    const totalCompanyCommission = companyRowsAllTime.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
 
     const stats = {
       total_projects: totalProjects,
@@ -196,7 +206,8 @@ async function index(req, res) {
       total_revenue_sale: sumOf(totalRevenueAgg),
       total_revenue_collected: sumOf(totalOutstandingAgg),
       total_outstanding: sumOf(totalRevenueAgg) - sumOf(totalOutstandingAgg),
-      total_commission_generated: sumOf(totalCommissionGeneratedAgg),
+      total_commission_generated: sumOf(totalCommissionGeneratedAgg) + totalCompanyCommission,
+      total_company_commission: totalCompanyCommission,
     };
 
     const overdueDues = overdueDuesRaw.map((e) => ({

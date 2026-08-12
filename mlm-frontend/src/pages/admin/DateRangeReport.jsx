@@ -10,6 +10,7 @@ const PURPOSE_OPTIONS = [
   { value: "registry", label: "Registry" },
   { value: "installment", label: "EMI Installment" },
   { value: "token_dp", label: "Token + DP + Registry" },
+  { value: "token_dp_only", label: "Token + DP" },
 ];
 
 const ALL_COLUMNS = [

@@ -114,14 +114,15 @@ function CommissionsReport() {
               summary
                 ? {
                     left: [
+                      { label: "Total Commission Generated", value: `₹${fmt(summary.total_commission_generated)}` },
                       { label: "Total Online Dist.", value: fmt(summary.total_bv) },
                       { label: "Total Cash Dist.", value: fmt(summary.total_pv) },
-                      { label: "EMI Commissions", value: `₹${fmt(summary.emi_commissions)}` },
-                      { label: "Rank Difference", value: `₹${fmt(summary.rank_difference)}` },
+                      { label: "Company Share", value: `₹${fmt(summary.total_company_commission)}` },
                     ],
                     right: [
+                      { label: "EMI Commissions", value: `₹${fmt(summary.emi_commissions)}` },
+                      { label: "Rank Difference", value: `₹${fmt(summary.rank_difference)}` },
                       { label: "Agents Earning", value: summary.agents_earning },
-                      { label: "Company Share", value: `₹${fmt(summary.total_company_commission)}` },
                     ],
                   }
                 : undefined
@@ -132,27 +133,22 @@ function CommissionsReport() {
 
       {summary && (
         <div className="row">
-          <div className="col-md-2 col-6">
+          <div className="col-md-3 col-6">
             <div className="card bg-dark text-white border-0">
               <div className="card-body">
                 <p className="fw-semibold mb-1">Total Commission Generated</p>
                 <h4 className="fs-20 fw-bold text-white mb-0">₹{fmt(summary.total_commission_generated)}</h4>
-              </div>
-            </div>
-          </div>
-          <div className="col-md-2 col-6">
-            <div className="card bg-primary-subtle border-0">
-              <div className="card-body">
-                <p className="text-primary-emphasis fw-semibold mb-1">Total Online Dist.</p>
-                <h4 className="fs-20 fw-bold text-primary mb-0">{fmt(summary.total_bv)}</h4>
-              </div>
-            </div>
-          </div>
-          <div className="col-md-2 col-6">
-            <div className="card bg-info-subtle border-0">
-              <div className="card-body">
-                <p className="text-info-emphasis fw-semibold mb-1">Total Cash Dist.</p>
-                <h4 className="fs-20 fw-bold text-info mb-0">{fmt(summary.total_pv)}</h4>
+                <div className="d-flex flex-wrap gap-2 mt-2">
+                  <small className="text-white-50">
+                    Online: <span className="text-white fw-semibold">₹{fmt(summary.total_bv)}</span>
+                  </small>
+                  <small className="text-white-50">
+                    Cash: <span className="text-white fw-semibold">₹{fmt(summary.total_pv)}</span>
+                  </small>
+                  <small className="text-white-50">
+                    Company: <span className="text-white fw-semibold">₹{fmt(summary.total_company_commission)}</span>
+                  </small>
+                </div>
               </div>
             </div>
           </div>
@@ -180,15 +176,7 @@ function CommissionsReport() {
               </div>
             </div>
           </div>
-          <div className="col-md-2 col-12">
-            <div className="card bg-dark-subtle border-0">
-              <div className="card-body">
-                <p className="text-dark-emphasis fw-semibold mb-1">Company Share</p>
-                <h4 className="fs-20 fw-bold text-dark mb-0">₹{fmt(summary.total_company_commission)}</h4>
-              </div>
-            </div>
           </div>
-        </div>
       )}
 
       <div className="row mt-3">

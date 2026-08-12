@@ -830,7 +830,7 @@ async function commissions(req, res) {
         rank_difference: rankDifference,
         agents_earning: uniqueAgents.length,
         total_company_commission: totalCompanyCommission,
-        total_commission_generated: totalBv + totalPv,
+        total_commission_generated: totalBv + totalPv + totalCompanyCommission,
       },
     });
     } catch (err) {
@@ -1257,6 +1257,7 @@ async function buildDateRangeTransactions(filters) {
     else if (purpose === 'registry') emiQuery.emiNumber = 99;
     else if (purpose === 'installment') emiQuery.emiNumber = { $gt: 0, $ne: 99 };
     else if (purpose === 'token_dp') emiQuery.$or = [{ emiNumber: { $lte: 0 } }, { emiNumber: 99 }];
+    else if (purpose === 'token_dp_only') emiQuery.emiNumber = { $lte: 0 };
   }
 
   const emis = await Emi.find(emiQuery)
@@ -1630,6 +1631,7 @@ async function executiveTdsExport(req, res) {
 }
 
 module.exports = {
+  buildCompanyRows,
   overview,
   emiCollections,
   emiCollectionsExport,
