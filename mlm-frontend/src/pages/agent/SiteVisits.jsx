@@ -19,7 +19,6 @@ function SiteVisits() {
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
   const [projectId, setProjectId] = useState("");
-  const [visitDate, setVisitDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [photo, setPhoto] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
@@ -46,7 +45,6 @@ function SiteVisits() {
     setEmail("");
     setAddress("");
     setProjectId("");
-    setVisitDate(new Date().toISOString().slice(0, 10));
     setPhoto(null);
     setFieldErrors({});
   }
@@ -64,7 +62,6 @@ function SiteVisits() {
     if (email) payload.append("email", email);
     if (address) payload.append("address", address);
     payload.append("project_id", projectId);
-    if (visitDate) payload.append("visit_date", visitDate);
     if (photo) payload.append("photo", photo);
 
     api
@@ -152,7 +149,7 @@ function SiteVisits() {
             </div>
 
             <div className="row g-3 mb-2">
-              <div className="col-md-4">
+              <div className="col-md-6">
                 <label className="form-label">
                   Project <span className="text-danger">*</span>
                 </label>
@@ -170,11 +167,7 @@ function SiteVisits() {
                 </select>
                 {fieldErrors.project_id && <div className="invalid-feedback">{fieldErrors.project_id}</div>}
               </div>
-              <div className="col-md-4">
-                <label className="form-label">Visit date</label>
-                <input type="date" className="form-control" value={visitDate} onChange={(e) => setVisitDate(e.target.value)} />
-              </div>
-              <div className="col-md-4">
+              <div className="col-md-6">
                 <label className="form-label">Photo</label>
                 <input
                   type="file"

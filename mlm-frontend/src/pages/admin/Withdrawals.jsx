@@ -58,7 +58,7 @@ function Withdrawals() {
             <div className="card border-0 shadow-sm">
               <div className="card-body text-center">
                 <h3 className="fw-bold mb-0 text-success">{stats.approved_this_month}</h3>
-                <p className="text-muted small mb-0">Approved This Month</p>
+                <p className="text-muted small mb-0">Paid This Month</p>
               </div>
             </div>
           </div>
@@ -109,7 +109,7 @@ function Withdrawals() {
               >
                 <option value="">All Status</option>
                 <option value="pending">Pending</option>
-                <option value="approved">Approved</option>
+                <option value="approved">Paid</option>
                 <option value="rejected">Rejected</option>
               </select>
             </div>
@@ -181,7 +181,7 @@ function Withdrawals() {
                             : "bg-warning-subtle text-warning"
                         }`}
                       >
-                        {w.status.charAt(0).toUpperCase() + w.status.slice(1)}
+                        {w.status === "approved" ? "Paid" : w.status.charAt(0).toUpperCase() + w.status.slice(1)}
                       </span>
                     </td>
                     <td className="text-muted small">{new Date(w.requestedAt).toLocaleDateString("en-IN")}</td>

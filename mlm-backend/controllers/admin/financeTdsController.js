@@ -1,5 +1,7 @@
 const WithdrawalRequest = require('../../models/WithdrawalRequest');
+const WalletTransaction = require('../../models/WalletTransaction');
 const settingService = require('../../services/settingService');
+const { buildCompanyRows } = require('./reportController');
 
 function periodRange(period) {
   const now = new Date();
@@ -63,4 +65,60 @@ async function overview(req, res) {
   });
 }
 
-module.exports = { overview };
+// GET /api/admin/finance-tds/owner-overview?period=&project_id=
+async function ownerOverview(req, res) {
+  const { period = 'this_month', project_id } = req.query;
+  const range = periodRange(period);
+
+  const query = {
+    type: 'credit',
+    category: { $in: ['emi_commission', 'deposit_commission'] },
+    ...(range ? { createdAt: { $gte: range.start, $lt: range.end } } : {}),
+  };
+
+  const txns = await WalletTransaction.find(query)
+    .select('category booking emi sqftPortion pointsType createdAt')
+    .populate({ path: 'booking', select: 'bookingNumber project plot', populate: [{ path: 'project', select: 'name' }, { path: 'plot', select: 'plotNumber' }] })
+    .populate('emi')
+    .sort({ createdAt: -1 });
+
+  let companyRows = await buildCompanyRows(txns);
+
+  if (project_id) {
+    companyRows = companyRows.filter((r) => String(r.booking?.project?._id || r.booking?.project) === String(project_id));
+  }
+
+  const ownerTdsRate = await settingService.get('owner_tds_percentage', 10);
+
+  const rows = companyRows.map((r) => {
+    const gross = Number(r.amount) || 0;
+    const tds = Math.round(gross * (ownerTdsRate / 100) * 100) / 100;
+    return {
+      date: r.createdAt,
+      reference: r.booking?.bookingNumber || '-',
+      project: r.booking?.project?.name || '-',
+      plot: r.booking?.plot?.plotNumber || '-',
+      pointsType: r.pointsType,
+      grossAmount: gross,
+      tdsAmount: tds,
+      netAmount: gross - tds,
+    };
+  });
+
+  const totalGross = rows.reduce((s, r) => s + r.grossAmount, 0);
+  const totalTds = rows.reduce((s, r) => s + r.tdsAmount, 0);
+  const totalNet = rows.reduce((s, r) => s + r.netAmount, 0);
+
+  res.json({
+    data: rows,
+    meta: {
+      count: rows.length,
+      totalGross,
+      totalTds,
+      totalNet,
+      currentRate: ownerTdsRate,
+    },
+  });
+}
+
+module.exports = { overview, ownerOverview };

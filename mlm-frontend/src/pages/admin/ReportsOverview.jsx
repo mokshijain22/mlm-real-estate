@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../../api/axios.js";
+import { getStoredUser } from "../../utils/userHelpers.js";
 
 function ReportsOverview() {
+  const adminUser = getStoredUser({});
+  const isSuperAdmin = adminUser.role === "super_admin";
   const [stats, setStats] = useState(null);
   const [error, setError] = useState(null);
 
@@ -106,6 +109,7 @@ function ReportsOverview() {
             </div>
           </div>
         </div>
+        {isSuperAdmin && (
         <div className="col">
           <div className="card bg-primary-subtle border-0 h-100">
             <div className="card-body">
@@ -114,6 +118,7 @@ function ReportsOverview() {
             </div>
           </div>
         </div>
+        )}
         <div className="col">
           <div className="card bg-warning-subtle border-0 h-100">
             <div className="card-body">

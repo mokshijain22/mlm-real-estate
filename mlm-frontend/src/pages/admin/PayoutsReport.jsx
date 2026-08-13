@@ -104,7 +104,7 @@ function PayoutsReport() {
           <div className="col-md col-6">
             <div className="card bg-success-subtle border-0">
               <div className="card-body">
-                <p className="text-success-emphasis fw-semibold mb-1">Total Approved</p>
+                <p className="text-success-emphasis fw-semibold mb-1">Total Paid</p>
                 <h4 className="fs-20 fw-bold text-success mb-0">₹{fmt(summary.approved_sum)}</h4>
               </div>
             </div>
@@ -120,7 +120,7 @@ function PayoutsReport() {
           <div className="col-md col-6">
             <div className="card bg-primary-subtle border-0">
               <div className="card-body">
-                <p className="text-primary-emphasis fw-semibold mb-1">Net Paid (Approved)</p>
+                <p className="text-primary-emphasis fw-semibold mb-1">Net Paid</p>
                 <h4 className="fs-20 fw-bold text-primary mb-0">₹{fmt(summary.approved_sum - summary.tds_deducted)}</h4>
               </div>
             </div>
@@ -161,7 +161,7 @@ function PayoutsReport() {
                 </li>
                 <li className="nav-item">
                   <button className={`nav-link ${status === "approved" ? "active" : ""}`} onClick={() => goTab("approved")}>
-                    Approved <span className="badge bg-success ms-1">{summary?.approved_count ?? 0}</span>
+                    Paid <span className="badge bg-success ms-1">{summary?.approved_count ?? 0}</span>
                   </button>
                 </li>
                 <li className="nav-item">
@@ -241,7 +241,7 @@ function PayoutsReport() {
                       <th className="text-end">Net Amount</th>
                       <th>Status</th>
                       <th>Requested Date</th>
-                      <th>Approved Date</th>
+                      <th>Paid Date</th>
                       <th>Payment Ref</th>
                       <th>Reviewed By</th>
                     </tr>
@@ -289,7 +289,7 @@ function PayoutsReport() {
                           <td className="text-end fw-bold text-success">₹ {fmt(p.netAmount)}</td>
                           <td>
                             {p.status === "approved" ? (
-                              <span className="badge bg-success-subtle text-success border border-success border-opacity-25">Approved</span>
+                              <span className="badge bg-success-subtle text-success border border-success border-opacity-25">Paid</span>
                             ) : p.status === "pending" ? (
                               <span className="badge bg-warning-subtle text-warning border border-warning border-opacity-25">Pending</span>
                             ) : p.status === "rejected" ? (

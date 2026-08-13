@@ -281,24 +281,21 @@ function CommissionsReport() {
                       <th>Category</th>
                       <th>Project / Plot</th>
                       <th>Plot Area</th>
-                      <th>Rate Value</th>
-                      <th>Rate Type</th>
-                      <th>Formatted Rate</th>
+                      <th>Discount Rate</th>
                       <th>Amount (INR)</th>
-                      <th>Wallet</th>
                       <th>Date</th>
                     </tr>
                   </thead>
                   <tbody>
                     {!transactions ? (
                       <tr>
-                        <td colSpan="10" className="text-center py-4">
+                        <td colSpan="8" className="text-center py-4">
                           Loading...
                         </td>
                       </tr>
                     ) : transactions.length === 0 ? (
                       <tr>
-                        <td colSpan="10" className="text-center py-4">
+                        <td colSpan="8" className="text-center py-4">
                           <div className="my-3">
                             <iconify-icon icon="solar:document-text-line-duotone" className="text-muted fs-32"></iconify-icon>
                             <h5 className="mt-2">No Commission Records</h5>
@@ -359,8 +356,6 @@ function CommissionsReport() {
                               )}
                             </td>
                             <td>{sqft > 0 ? `${sqft} sq.ft (of ${t.booking?.totalArea || "N/A"})` : "N/A"}</td>
-                            <td>{rateValue}</td>
-                            <td>Per Sq.Ft</td>
                             <td>₹{fmt(rateValue)}/sq.ft</td>
                             <td className="fw-bold">
                               {t.pointsType === "BV" ? (
@@ -369,7 +364,6 @@ function CommissionsReport() {
                                 <span className="text-info">{fmt(t.amount)}</span>
                               )}
                             </td>
-                            <td className="text-muted small">In wallet</td>
                             <td>{new Date(t.createdAt).toLocaleDateString("en-IN")}</td>
                           </tr>
                         );

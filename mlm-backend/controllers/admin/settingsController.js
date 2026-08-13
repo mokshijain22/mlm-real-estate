@@ -28,6 +28,7 @@ async function update(req, res) {
     const {
       agent_approval_required,
       tds_percentage,
+      owner_tds_percentage,
       min_withdrawal_amount,
       site_title,
       site_phone,
@@ -42,6 +43,9 @@ async function update(req, res) {
     }
     if (tds_percentage === undefined || isNaN(tds_percentage) || Number(tds_percentage) < 0 || Number(tds_percentage) > 100) {
       errors.tds_percentage = 'TDS percentage is required and must be between 0 and 100.';
+    }
+    if (owner_tds_percentage === undefined || isNaN(owner_tds_percentage) || Number(owner_tds_percentage) < 0 || Number(owner_tds_percentage) > 100) {
+      errors.owner_tds_percentage = 'Owner TDS percentage is required and must be between 0 and 100.';
     }
     if (min_withdrawal_amount === undefined || isNaN(min_withdrawal_amount) || Number(min_withdrawal_amount) < 0) {
       errors.min_withdrawal_amount = 'Minimum withdrawal amount is required and must be a non-negative number.';
@@ -71,6 +75,7 @@ async function update(req, res) {
     await Promise.all([
       settingService.set('agent_approval_required', String(agent_approval_required) === '1', 'boolean', 'agent'),
       settingService.set('tds_percentage', Number(tds_percentage), 'float', 'withdrawal'),
+      settingService.set('owner_tds_percentage', Number(owner_tds_percentage), 'float', 'withdrawal'),
       settingService.set('min_withdrawal_amount', Number(min_withdrawal_amount), 'float', 'withdrawal'),
       settingService.set('site_title', site_title.trim(), 'string', 'business'),
       settingService.set('site_phone', site_phone || '', 'string', 'business'),

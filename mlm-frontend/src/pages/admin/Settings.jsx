@@ -20,6 +20,7 @@ function Settings() {
 
   const [agentApprovalRequired, setAgentApprovalRequired] = useState(false);
   const [tdsPercentage, setTdsPercentage] = useState("");
+  const [ownerTdsPercentage, setOwnerTdsPercentage] = useState("");
   const [minWithdrawalAmount, setMinWithdrawalAmount] = useState("");
 
   const load = () => {
@@ -36,6 +37,7 @@ function Settings() {
         setExistingLogo(s.site_logo || "");
         setAgentApprovalRequired(s.agent_approval_required == 1 || s.agent_approval_required === true);
         setTdsPercentage(s.tds_percentage ?? "");
+        setOwnerTdsPercentage(s.owner_tds_percentage ?? "");
         setMinWithdrawalAmount(s.min_withdrawal_amount ?? "");
       })
       .catch((err) => setError(err.response?.data?.message || err.message))
@@ -56,6 +58,7 @@ function Settings() {
     const formData = new FormData();
     formData.append("agent_approval_required", agentApprovalRequired ? "1" : "0");
     formData.append("tds_percentage", tdsPercentage);
+    formData.append("owner_tds_percentage", ownerTdsPercentage);
     formData.append("min_withdrawal_amount", minWithdrawalAmount);
     formData.append("site_title", siteTitle);
     formData.append("site_phone", sitePhone);
@@ -244,6 +247,22 @@ function Settings() {
               />
               <small className="text-muted">Deducted from withdrawal amount</small>
               {errors.tds_percentage && <div className="invalid-feedback">{errors.tds_percentage}</div>}
+            </div>
+            <div className="col-md-6 mb-3">
+              <label htmlFor="owner_tds_percentage" className="form-label">
+                Owner TDS Percentage (%) <span className="text-danger">*</span>
+              </label>
+              <input
+                type="number"
+                id="owner_tds_percentage"
+                step="0.01"
+                className={`form-control ${errors.owner_tds_percentage ? "is-invalid" : ""}`}
+                value={ownerTdsPercentage}
+                onChange={(e) => setOwnerTdsPercentage(e.target.value)}
+                required
+              />
+              <small className="text-muted">Applied to Company's commission share</small>
+              {errors.owner_tds_percentage && <div className="invalid-feedback">{errors.owner_tds_percentage}</div>}
             </div>
             <div className="col-md-6 mb-3">
               <label htmlFor="min_withdrawal_amount" className="form-label">

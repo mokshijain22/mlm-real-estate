@@ -128,8 +128,8 @@ function AgentEarningsReport() {
           <div className="col-md-3 col-6">
             <div className="card bg-success-subtle border-0">
               <div className="card-body">
-                <p className="text-success-emphasis fw-semibold mb-1">Avg Earned ({periodLabel})</p>
-                <h4 className="fs-20 fw-bold text-success mb-0">{fmt(summary.avg_bv_this_month)} Online</h4>
+                <p className="text-success-emphasis fw-semibold mb-1">Total Distributed ({periodLabel})</p>
+                <h4 className="fs-20 fw-bold text-success mb-0">₹{fmt(summary.total_distributed_this_month)}</h4>
               </div>
             </div>
           </div>

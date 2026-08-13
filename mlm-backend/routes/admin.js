@@ -136,6 +136,7 @@ router.get('/account-ledger/dp-emis', accountLedgerController.dpEmis);
 router.get('/account-ledger/receivables', accountLedgerController.receivables);
 router.get('/account-ledger/commission', accountLedgerController.commission);
 router.get('/finance-tds/overview', financeTdsController.overview);
+router.get('/finance-tds/owner-overview', financeTdsController.ownerOverview);
 // Withdrawals
 router.use('/withdrawals', requirePermission('withdrawals'));
 router.get('/withdrawals', withdrawalController.index);

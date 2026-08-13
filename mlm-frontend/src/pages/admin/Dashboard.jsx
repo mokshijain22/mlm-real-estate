@@ -224,7 +224,7 @@ function Dashboard() {
           </Link>
         </div>
         )}
-        {can("reports") && (
+        {isSuperAdmin && can("reports") && (
         <div className="mb-3">
           <Link to="/admin/withdrawals?status=approved" className="dash-stat-card dash-animate d-block">
             <div className="dash-stat-body">
@@ -241,7 +241,7 @@ function Dashboard() {
           </Link>
         </div>
         )}
-        {can("withdrawals") && (
+        {isSuperAdmin && can("withdrawals") && (
         <div className="mb-3">
           <Link to="/admin/withdrawals?status=pending" className="dash-stat-card dash-animate d-block">
             <div className="dash-stat-body">
@@ -614,10 +614,10 @@ function Dashboard() {
         )}
       </div>
 
-      {/* Recent Bookings + Recent Withdrawals */}
+      {/* Recent Bookings */}
       <div className="row">
         {can("bookings") && (
-        <div className="col-lg-6 mb-3">
+        <div className="col-lg-12 mb-3">
           <div className="card dash-animate h-100">
             <div className="card-header d-flex align-items-center justify-content-between">
               <h4 className="header-title mb-0">Recent Bookings</h4>
@@ -665,51 +665,7 @@ function Dashboard() {
         </div>
         )}
 
-        {can("withdrawals") && (
-        <div className="col-lg-6 mb-3">
-          <div className="card dash-animate h-100">
-            <div className="card-header d-flex align-items-center justify-content-between">
-              <h4 className="header-title mb-0">Recent Withdrawals</h4>
-              <Link to="/admin/withdrawals" className="fs-12 fw-semibold">
-                View All
-              </Link>
-            </div>
-            <div className="card-body p-0">
-              <div className="table-responsive">
-                <table className="table table-hover mb-0 align-middle">
-                  <thead>
-                    <tr>
-                      <th>Agent</th>
-                      <th>Amount</th>
-                      <th>Requested On</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {recentWithdrawals.length === 0 ? (
-                      <tr>
-                        <td colSpan={4} className="text-center text-muted py-4">
-                          No withdrawal requests found.
-                        </td>
-                      </tr>
-                    ) : (
-                      recentWithdrawals.map((w) => (
-                        <tr key={w.id}>
-                          <td className="fw-semibold">{w.agent}</td>
-                          <td>{inrShort(w.amount)}</td>
-                          <td>{fmtDate(w.requestedOn)}</td>
-                          <td>{statusBadge(w.status)}</td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
         </div>
-        )}
-      </div>
     </>
   );
 }

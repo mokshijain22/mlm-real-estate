@@ -16,6 +16,8 @@ function Rank() {
   if (!data) return <div className="text-center py-5">Loading...</div>;
 
   const { agent, rankHistory, nextRank, progressPercent, sqftNeeded, allRanks } = data;
+  const currentRankIndex = allRanks.findIndex((r) => r._id === agent.rank?._id);
+  const visibleRanks = currentRankIndex >= 0 ? allRanks.slice(currentRankIndex) : allRanks;
 
   return (
     <>
@@ -78,7 +80,7 @@ function Rank() {
                     </tr>
                   </thead>
                   <tbody>
-                    {allRanks.map((r) => (
+                    {visibleRanks.map((r) => (
                       <tr key={r._id} className={r._id === agent.rank?._id ? "table-primary" : ""}>
                         <td className="fw-semibold">
                           {r.name} <span className="text-muted fs-12">({r.abbreviation})</span>

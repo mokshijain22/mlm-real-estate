@@ -238,7 +238,7 @@ function AccountLedger() {
           ) : (
             <>
               <div className="row g-3 mb-3">
-                <div className="col-md-3">
+                <div className="col-md-4">
                   <div className="card border-0 shadow-sm h-100">
                     <div className="card-body">
                       <div className="text-muted small text-uppercase">
@@ -250,7 +250,7 @@ function AccountLedger() {
                     </div>
                   </div>
                 </div>
-                <div className="col-md-3">
+                <div className="col-md-4">
                   <div className="card border-0 shadow-sm h-100">
                     <div className="card-body">
                       <div className="text-muted small text-uppercase">
@@ -262,7 +262,7 @@ function AccountLedger() {
                     </div>
                   </div>
                 </div>
-                <div className="col-md-3">
+                <div className="col-md-4">
                   <div className="card border-0 shadow-sm h-100">
                     <div className="card-body">
                       <div className="text-muted small text-uppercase">
@@ -271,20 +271,6 @@ function AccountLedger() {
                       </div>
                       <div className="fs-3 fw-bold">{pct(data.collectionRate)}</div>
                       <div className="text-muted small">{money(data.receivables.receivedToDate)} received</div>
-                    </div>
-                  </div>
-                </div>
-                <div className="col-md-3">
-                  <div className="card border-0 shadow-sm h-100">
-                    <div className="card-body">
-                      <div className="text-muted small text-uppercase">
-                        <iconify-icon icon="solar:percentage-square-bold-duotone" className="align-middle me-1"></iconify-icon>
-                        Commission
-                      </div>
-                      <div className="fs-3 fw-bold">{money(data.commission)}</div>
-                      <div className="text-muted small">
-                        Paid {money(data.commissionPaid)} · Pending {money(data.commissionPending)}
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -337,18 +323,6 @@ function AccountLedger() {
                           <div
                             className="progress-bar bg-success"
                             style={{ width: `${Math.min(data.receivables.collectionProgressPct, 100)}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                      <div className="mb-3">
-                        <div className="d-flex justify-content-between small mb-1">
-                          <span>Commission paid out</span>
-                          <strong>{pct(data.receivables.commissionPaidOutPct)}</strong>
-                        </div>
-                        <div className="progress" style={{ height: 6 }}>
-                          <div
-                            className="progress-bar bg-warning"
-                            style={{ width: `${Math.min(data.receivables.commissionPaidOutPct, 100)}%` }}
                           ></div>
                         </div>
                       </div>
@@ -541,7 +515,7 @@ function AccountLedger() {
             </h5>
             {commissionMeta && (
               <span className="text-muted small">
-                {commissionMeta.count} entries · BV {moneyFull(commissionMeta.totalBV)} · PV {moneyFull(commissionMeta.totalPV)}
+                {commissionMeta.count} entries · Online {moneyFull(commissionMeta.totalBV)} · Cash {moneyFull(commissionMeta.totalPV)}
               </span>
             )}
           </div>

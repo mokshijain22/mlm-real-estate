@@ -59,6 +59,7 @@ async function buildCompanyRows(transactions) {
       category: 'company_commission',
       pointsType: t.pointsType,
       amount,
+      sqftPortion,
       booking: t.booking,
       emi: t.emi,
       remark: `Company share - ${t.booking?.bookingNumber || ''}`,
@@ -151,6 +152,7 @@ async function overview(req, res) {
       totalPlotsSold,
       activeAgents,
       totalCustomers,
+      totalSaleThisMonth,
     ] = await Promise.all([
       sumAmount(Emi, { status: 'paid', paidDate: { $gte: startOfMonth, $lt: endOfMonth } }),
       sumAmount(WalletTransaction, {
@@ -173,6 +175,7 @@ async function overview(req, res) {
       Plot.countDocuments({ status: 'sold' }),
       User.countDocuments({ role: agentRoleId, status: 'active', isKycVerified: true }),
       Customer.countDocuments(),
+      sumAmount(Booking, { createdAt: { $gte: startOfMonth, $lt: endOfMonth } }, 'totalAmount'),
     ]);
 
     return res.json({
@@ -183,6 +186,7 @@ async function overview(req, res) {
         withdrawals_paid: withdrawalsPaidThisMonth,
         new_bookings: newBookingsThisMonth,
         new_agents: newAgentsThisMonth,
+        total_sale: totalSaleThisMonth,
       },
       all_time: {
         total_emi_collected: totalEmiCollected,
@@ -952,9 +956,10 @@ async function agentEarnings(req, res) {
 
     const topBV = enriched[0] || null;
     const topPV = [...enriched].sort((a, b) => b.total_pv_earned - a.total_pv_earned)[0] || null;
-    const totalAgentsEarning = enriched.filter((a) => a.total_bv_earned > 0).length;
+    const totalAgentsEarning = enriched.filter((a) => a.total_bv_earned > 0 || a.total_pv_earned > 0).length;
     const totalBvPeriod = enriched.reduce((sum, a) => sum + a.this_month_bv, 0);
-    const avgBV = enriched.length > 0 ? totalBvPeriod / enriched.length : 0;
+    const totalPvPeriod = enriched.reduce((sum, a) => sum + a.this_month_pv, 0);
+    const totalDistributedThisMonth = totalBvPeriod + totalPvPeriod;
 
     const ranks = await Rank.find().sort({ sortOrder: 1 });
 
@@ -964,7 +969,7 @@ async function agentEarnings(req, res) {
       summary: {
         top_earner_bv: topBV,
         top_earner_pv: topPV,
-        avg_bv_this_month: avgBV,
+        total_distributed_this_month: totalDistributedThisMonth,
         total_agents_earning: totalAgentsEarning,
       },
       ranks,
