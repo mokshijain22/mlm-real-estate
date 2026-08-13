@@ -15,6 +15,11 @@ function moneyFull(n) {
 function pct(n) {
   return (Number(n) || 0).toFixed(1) + "%";
 }
+function pointsLabel(p) {
+  if (p === "BV") return "Online";
+  if (p === "PV") return "Cash";
+  return p || "-";
+}
 function fmtDate(d) {
   if (!d) return "-";
   return new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
@@ -25,7 +30,7 @@ const TABS = [
   { key: "collections", label: "Collections", icon: "solar:wallet-money-bold-duotone" },
   { key: "dp_emis", label: "DP/EMIs", icon: "solar:checklist-bold-duotone" },
   { key: "receivables", label: "Receivables", icon: "solar:bill-list-bold-duotone" },
-  { key: "commission", label: "Commission", icon: "solar:percentage-square-bold-duotone" },
+  { key: "owner_tds", label: "Owner TDS", icon: "solar:percentage-square-bold-duotone" },
 ];
 
 function AccountLedger() {
@@ -49,8 +54,8 @@ function AccountLedger() {
   const [receivableRows, setReceivableRows] = useState(null);
   const [receivableMeta, setReceivableMeta] = useState(null);
 
-  const [commissionRows, setCommissionRows] = useState(null);
-  const [commissionMeta, setCommissionMeta] = useState(null);
+  const [ownerTdsRows, setOwnerTdsRows] = useState(null);
+  const [ownerTdsMeta, setOwnerTdsMeta] = useState(null);
 
   useEffect(() => {
     api
@@ -117,15 +122,15 @@ function AccountLedger() {
       .catch((err) => setError(err.response?.data?.message || err.message));
   };
 
-  const loadCommission = () => {
-    setCommissionRows(null);
+  const loadOwnerTds = () => {
+    setOwnerTdsRows(null);
     api
-      .get("/admin/account-ledger/commission", {
+      .get("/admin/finance-tds/owner-overview", {
         params: periodParams(),
       })
       .then((res) => {
-        setCommissionRows(res.data.data);
-        setCommissionMeta(res.data.meta);
+        setOwnerTdsRows(res.data.data);
+        setOwnerTdsMeta(res.data.meta);
       })
       .catch((err) => setError(err.response?.data?.message || err.message));
   };
@@ -140,7 +145,7 @@ function AccountLedger() {
     if (tab === "collections") loadCollections();
     if (tab === "dp_emis") loadDpEmis();
     if (tab === "receivables") loadReceivables();
-    if (tab === "commission") loadCommission();
+    if (tab === "owner_tds") loadOwnerTds();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, period, projectId, dateFrom, dateTo]);
 
@@ -148,8 +153,22 @@ function AccountLedger() {
     <div>
       <style>{`
         @media print {
+          @page {
+            size: A4;
+            margin: 12mm;
+          }
           .no-print { display: none !important; }
-          .card { border: none !important; box-shadow: none !important; }
+          .table-responsive {
+            overflow-x: visible !important;
+          }
+          table {
+            width: 100% !important;
+            font-size: 11px !important;
+          }
+          table th, table td {
+            padding: 4px 6px !important;
+            white-space: normal !important;
+          }
         }
       `}</style>
       <div className="card border-0 shadow-sm mb-3 no-print">
@@ -198,8 +217,8 @@ function AccountLedger() {
                 ))}
               </select>
             </div>
-            <div className="col-md-1">
-              <button className="btn btn-warning w-100" onClick={load} disabled={loading}>
+            <div className="col-md-2">
+              <button className="btn btn-warning w-100 text-nowrap" onClick={load} disabled={loading}>
                 <iconify-icon icon="solar:refresh-bold" className="align-middle me-1"></iconify-icon>
                 {loading ? "..." : "Refresh"}
               </button>
@@ -506,48 +525,50 @@ function AccountLedger() {
         </div>
       )}
 
-      {tab === "commission" && (
+      {tab === "owner_tds" && (
         <div className="card border-0 shadow-sm">
           <div className="card-header bg-white py-3 d-flex justify-content-between align-items-center">
             <h5 className="card-title mb-0">
               <iconify-icon icon="solar:percentage-square-bold-duotone" className="align-middle me-1"></iconify-icon>
-              Commission
+              Owner TDS
             </h5>
-            {commissionMeta && (
+            {ownerTdsMeta && (
               <span className="text-muted small">
-                {commissionMeta.count} entries · Online {moneyFull(commissionMeta.totalBV)} · Cash {moneyFull(commissionMeta.totalPV)}
+                {ownerTdsMeta.count} entries · Rate {pct(ownerTdsMeta.currentRate)} · Gross {moneyFull(ownerTdsMeta.totalGross)} · TDS {moneyFull(ownerTdsMeta.totalTds)} · Net {moneyFull(ownerTdsMeta.totalNet)}
               </span>
             )}
           </div>
           <div className="card-body">
-            {!commissionRows ? (
+            {!ownerTdsRows ? (
               <div className="text-center py-4">Loading...</div>
-            ) : commissionRows.length === 0 ? (
-              <div className="text-center text-muted py-4">No commission entries in this period.</div>
+            ) : ownerTdsRows.length === 0 ? (
+              <div className="text-center text-muted py-4">No owner TDS entries in this period.</div>
             ) : (
               <div className="table-responsive">
                 <table className="table table-centered table-nowrap mb-0">
                   <thead className="table-light">
                     <tr>
                       <th>Date</th>
-                      <th>Agent</th>
                       <th>Reference</th>
                       <th>Project</th>
-                      <th>Category</th>
+                      <th>Plot</th>
                       <th>Points</th>
-                      <th className="text-end">Amount</th>
+                      <th className="text-end">Gross Amount</th>
+                      <th className="text-end">TDS Amount</th>
+                      <th className="text-end">Net Amount</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {commissionRows.map((r, i) => (
+                    {ownerTdsRows.map((r, i) => (
                       <tr key={i}>
                         <td>{fmtDate(r.date)}</td>
-                        <td>{r.agent}</td>
                         <td>{r.reference}</td>
                         <td>{r.project}</td>
-                        <td className="text-capitalize">{(r.category || "-").replace("_", " ")}</td>
-                        <td>{r.pointsType}</td>
-                        <td className="text-end">{moneyFull(r.amount)}</td>
+                        <td>{r.plot}</td>
+                        <td>{pointsLabel(r.pointsType)}</td>
+                        <td className="text-end">{moneyFull(r.grossAmount)}</td>
+                        <td className="text-end text-danger">{moneyFull(r.tdsAmount)}</td>
+                        <td className="text-end fw-bold">{moneyFull(r.netAmount)}</td>
                       </tr>
                     ))}
                   </tbody>
