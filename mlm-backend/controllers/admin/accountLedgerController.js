@@ -34,6 +34,109 @@ async function projectBookingIds(projectId) {
   return bookings.map((b) => b._id);
 }
 
+function toCsv(headers, rows) {
+  const escape = (val) => {
+    const s = val === null || val === undefined ? '' : String(val);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const lines = [headers.map(escape).join(',')];
+  for (const row of rows) {
+    lines.push(row.map(escape).join(','));
+  }
+  return lines.join('\n');
+}
+
+function sendCsv(res, filename, csvContent) {
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  return res.send(csvContent);
+}
+
+function timestamp() {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}`;
+}
+
+async function buildCollectionsRows(query) {
+  const { period = 'this_month', project_id, date_from, date_to } = query;
+  const range = periodRange(period, date_from, date_to);
+  const bookingIds = await projectBookingIds(project_id);
+
+  const bookingProjectFilter = project_id ? { project: project_id } : {};
+  const emiProjectFilter = bookingIds ? { booking: { $in: bookingIds } } : {};
+
+  const bookingPaymentMatch = {
+    ...bookingProjectFilter,
+    approvalStatus: 'approved',
+    ...(range ? { paymentDate: { $gte: range.start, $lt: range.end } } : {}),
+  };
+  const bookingPayments = await Booking.find(bookingPaymentMatch)
+    .select('bookingNumber bookingAmount paymentMode paymentDate customer project')
+    .populate('customer', 'name')
+    .populate('project', 'name')
+    .sort({ paymentDate: -1 });
+
+  const emiPaidMatch = {
+    ...emiProjectFilter,
+    status: 'paid',
+    ...(range ? { paidDate: { $gte: range.start, $lt: range.end } } : {}),
+  };
+  const emiPayments = await Emi.find(emiPaidMatch)
+    .select('amount paymentMode paidDate emiNumber booking')
+    .populate({ path: 'booking', select: 'bookingNumber customer project', populate: [{ path: 'customer', select: 'name' }, { path: 'project', select: 'name' }] })
+    .sort({ paidDate: -1 });
+
+  const rows = [];
+  for (const b of bookingPayments) {
+    rows.push({
+      date: b.paymentDate,
+      type: 'Booking amount',
+      reference: b.bookingNumber,
+      customer: b.customer?.name || '-',
+      project: b.project?.name || '-',
+      mode: b.paymentMode,
+      amount: b.bookingAmount || 0,
+    });
+  }
+  for (const e of emiPayments) {
+    rows.push({
+      date: e.paidDate,
+      type: `EMI #${e.emiNumber}`,
+      reference: e.booking?.bookingNumber || '-',
+      customer: e.booking?.customer?.name || '-',
+      project: e.booking?.project?.name || '-',
+      mode: e.paymentMode,
+      amount: e.amount || 0,
+    });
+  }
+
+  rows.sort((a, b) => new Date(b.date) - new Date(a.date));
+  return rows;
+}
+
+// GET /api/admin/account-ledger/collections/export
+async function collectionsExport(req, res) {
+  try {
+    const rows = await buildCollectionsRows(req.query);
+
+    const headers = ['Date', 'Type', 'Reference', 'Customer', 'Project', 'Mode', 'Amount'];
+    const csvRows = rows.map((r) => [
+      r.date ? new Date(r.date).toISOString().slice(0, 10) : '-',
+      r.type,
+      r.reference,
+      r.customer,
+      r.project,
+      (r.mode || '-').replace('_', ' '),
+      r.amount,
+    ]);
+
+    return sendCsv(res, `collections_${timestamp()}.csv`, toCsv(headers, csvRows));
+  } catch (err) {
+    return res.status(500).json({ message: 'Failed to export collections report.', error: err.message });
+  }
+}
+
 // GET /api/admin/account-ledger/overview?period=&project_id=
 async function overview(req, res) {
   const { period = 'this_month', project_id, date_from, date_to } = req.query;
@@ -140,60 +243,7 @@ async function overview(req, res) {
 
 // GET /api/admin/account-ledger/collections?period=&project_id=
 async function collections(req, res) {
-  const { period = 'this_month', project_id, date_from, date_to } = req.query;
-  const range = periodRange(period, date_from, date_to);
-  const bookingIds = await projectBookingIds(project_id);
-
-  const bookingProjectFilter = project_id ? { project: project_id } : {};
-  const emiProjectFilter = bookingIds ? { booking: { $in: bookingIds } } : {};
-
-  const bookingPaymentMatch = {
-    ...bookingProjectFilter,
-    approvalStatus: 'approved',
-    ...(range ? { paymentDate: { $gte: range.start, $lt: range.end } } : {}),
-  };
-  const bookingPayments = await Booking.find(bookingPaymentMatch)
-    .select('bookingNumber bookingAmount paymentMode paymentDate customer project')
-    .populate('customer', 'name')
-    .populate('project', 'name')
-    .sort({ paymentDate: -1 });
-
-  const emiPaidMatch = {
-    ...emiProjectFilter,
-    status: 'paid',
-    ...(range ? { paidDate: { $gte: range.start, $lt: range.end } } : {}),
-  };
-  const emiPayments = await Emi.find(emiPaidMatch)
-    .select('amount paymentMode paidDate emiNumber booking')
-    .populate({ path: 'booking', select: 'bookingNumber customer project', populate: [{ path: 'customer', select: 'name' }, { path: 'project', select: 'name' }] })
-    .sort({ paidDate: -1 });
-
-  const rows = [];
-  for (const b of bookingPayments) {
-    rows.push({
-      date: b.paymentDate,
-      type: 'Booking amount',
-      reference: b.bookingNumber,
-      customer: b.customer?.name || '-',
-      project: b.project?.name || '-',
-      mode: b.paymentMode,
-      amount: b.bookingAmount || 0,
-    });
-  }
-  for (const e of emiPayments) {
-    rows.push({
-      date: e.paidDate,
-      type: `EMI #${e.emiNumber}`,
-      reference: e.booking?.bookingNumber || '-',
-      customer: e.booking?.customer?.name || '-',
-      project: e.booking?.project?.name || '-',
-      mode: e.paymentMode,
-      amount: e.amount || 0,
-    });
-  }
-
-  rows.sort((a, b) => new Date(b.date) - new Date(a.date));
-
+  const rows = await buildCollectionsRows(req.query);
   const total = rows.reduce((s, r) => s + r.amount, 0);
   res.json({ data: rows, meta: { count: rows.length, total } });
 }
@@ -352,4 +402,4 @@ async function commission(req, res) {
   res.json({ data: rows, meta: { count: rows.length, totalBV, totalPV, total: totalBV + totalPV } });
 }
 
-module.exports = { overview, collections, dpEmis, receivables, commission };
+module.exports = { overview, collections, collectionsExport, dpEmis, receivables, commission };

@@ -88,8 +88,51 @@ function computeAmountSummary(headers, rows) {
 const formatInr = (n) =>
   "\u20B9" + n.toLocaleString("en-IN", { maximumFractionDigits: 2 });
 
+// jsPDF's built-in fonts don't have a glyph for ₹, which makes it insert
+// stray spacing between every character in the same text run. Use "Rs."
+// instead of the ₹ symbol only for text drawn inside the PDF.
+const formatInrPdf = (n) =>
+  "Rs. " + n.toLocaleString("en-IN", { maximumFractionDigits: 2 });
+
+// Sums every numeric column (e.g. Amount) across all rows and returns a
+// footer row aligned to `headers`; non-numeric columns (Status, Month,
+// Customer, etc.) are left blank. First cell is always the "TOTAL" label.
+export function computeColumnTotals(headers, rows) {
+  if (!rows.length) return null;
+
+  const isNumericCol = (idx) => {
+    let hasValue = false;
+    const allNumericOrBlank = rows.every((r) => {
+      const raw = String(r[idx] ?? "").trim();
+      if (raw === "" || raw === "-") return true;
+      hasValue = true;
+      return /^-?[\d,]+(\.\d+)?$/.test(raw.replace(/[₹\s]/g, ""));
+    });
+    return hasValue && allNumericOrBlank;
+  };
+
+  return headers.map((h, idx) => {
+    if (idx === 0) return "TOTAL";
+    if (!isNumericCol(idx)) return "";
+    const sum = rows.reduce((acc, r) => {
+      const n = parseFloat(String(r[idx] ?? "").replace(/[₹,\s]/g, ""));
+      return acc + (Number.isFinite(n) ? n : 0);
+    }, 0);
+    return sum.toLocaleString("en-IN", { maximumFractionDigits: 2 });
+  });
+}
+
+// jsPDF's built-in fonts have no ₹ glyph, which makes it insert stray
+// spacing between every character in that text run. Swap ₹ for "Rs." in
+// anything drawn inside the PDF (summary lines, table cells, footer).
+const sanitizeForPdf = (v) => (typeof v === "string" ? v.replace(/₹/g, "Rs. ") : v);
+
 export function downloadPdfTable(title, headers, rows, filename, periodLabel, opts = {}) {
-  const { subtitle, summaryLeft, summaryRight, footerRow } = opts;
+  const { subtitle } = opts;
+  const summaryLeft = opts.summaryLeft?.map((item) => ({ ...item, value: sanitizeForPdf(item.value) }));
+  const summaryRight = opts.summaryRight?.map((item) => ({ ...item, value: sanitizeForPdf(item.value) }));
+  rows = rows.map((r) => r.map(sanitizeForPdf));
+  const footerRow = (opts.footerRow || computeColumnTotals(headers, rows))?.map(sanitizeForPdf);
   const displayHeaders = headers.map(mapHeaderLabel);
   const doc = new jsPDF({ orientation: headers.length > 6 ? "landscape" : "portrait", unit: "pt", format: "a4" });
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -124,7 +167,7 @@ export function downloadPdfTable(title, headers, rows, filename, periodLabel, op
   cursorY += 16;
 
   if (summary) {
-    const summaryText = `Total Amount: ${formatInr(summary.total)}   |   Pending: ${formatInr(summary.pending)}   |   Paid: ${formatInr(summary.paid)}`;
+    const summaryText = `Total Amount: ${formatInrPdf(summary.total)}   |   Pending: ${formatInrPdf(summary.pending)}   |   Paid: ${formatInrPdf(summary.paid)}`;
     doc.setFont(undefined, "bold");
     doc.setTextColor(20, 20, 20);
     doc.text(summaryText, pageWidth / 2, cursorY, { align: "center" });

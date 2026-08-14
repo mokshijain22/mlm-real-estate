@@ -78,7 +78,7 @@ function FullTree() {
     doc.text("FULL COMPANY TREE", pageWidth / 2, 26, { align: "center" });
     doc.setFontSize(10);
     doc.setFont(undefined, "normal");
-    const rootLabel = `${selectedProject?.name?.toUpperCase() || "PROJECT"} (Pool ₹${selectedProject?.commissionPool ?? "—"}/sqft)`;
+    const rootLabel = `${selectedProject?.name?.toUpperCase() || "PROJECT"} (Pool Rs. ${selectedProject?.commissionPool ?? "—"}/sqft)`;
     doc.text(rootLabel, pageWidth / 2, 46, { align: "center" });
 
     // ---- Summary strip ----
@@ -96,10 +96,10 @@ function FullTree() {
       margin: { left: margin, right: margin },
       head: [["Name", "Designation", "Status", "Cap"]],
       body: rows.map((r) => [
-        `${r.level > 1 ? "  ".repeat(r.level - 1) + "\u2514 " : ""}${r.name}`,
+        `${r.level > 1 ? "  ".repeat(r.level - 1) + "- " : ""}${r.name}`,
         r.designation,
         r.status?.charAt(0).toUpperCase() + r.status?.slice(1),
-        r.cap != null ? `₹${r.cap.toLocaleString("en-IN")}` : "—",
+        r.cap != null ? `Rs. ${r.cap.toLocaleString("en-IN")}` : "—",
       ]),
       theme: "striped",
       styles: { fontSize: 9, cellPadding: 6, lineColor: [230, 230, 230], lineWidth: 0.5 },

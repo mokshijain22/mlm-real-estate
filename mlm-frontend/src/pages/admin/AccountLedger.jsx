@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../../api/axios.js";
+import ExportButton from "../../components/shared/ExportButton.jsx";
 
 function money(n) {
   const num = Number(n) || 0;
@@ -369,11 +370,19 @@ function AccountLedger() {
               <iconify-icon icon="solar:wallet-money-bold-duotone" className="align-middle me-1"></iconify-icon>
               Collections
             </h5>
-            {collectionMeta && (
-              <span className="text-muted small">
-                {collectionMeta.count} entries · {moneyFull(collectionMeta.total)}
-              </span>
-            )}
+            <div className="d-flex align-items-center gap-3">
+              {collectionMeta && (
+                <span className="text-muted small">
+                  {collectionMeta.count} entries · {moneyFull(collectionMeta.total)}
+                </span>
+              )}
+              <ExportButton
+                url="/admin/account-ledger/collections/export"
+                params={periodParams()}
+                title="Collections Report"
+                filenamePrefix="collections"
+              />
+            </div>
           </div>
           <div className="card-body">
             {!collectionRows ? (

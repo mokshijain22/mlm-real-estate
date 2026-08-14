@@ -110,13 +110,13 @@ function AgentDetail() {
       margin: { left: margin, right: margin },
       head: [["Name", "Designation", "Status", "Cap", "Team"]],
       body: rows.map((r) => [
-        `${r.level > 1 ? "  ".repeat(r.level - 1) + "\u2514 " : ""}${r.name}${
+        `${r.level > 1 ? "  ".repeat(r.level - 1) + "- " : ""}${r.name}${
           r.referralCode ? ` (${r.referralCode})` : ""
         }`,
         r.designation,
         r.status?.charAt(0).toUpperCase() + r.status?.slice(1),
-        r.cap != null ? `₹${r.cap.toLocaleString("en-IN")}` : "—",
-        r.team != null ? `₹${r.team.toLocaleString("en-IN")}` : "—",
+        r.cap != null ? `Rs. ${r.cap.toLocaleString("en-IN")}` : "—",
+        r.team != null ? `Rs. ${r.team.toLocaleString("en-IN")}` : "—",
       ]),
       theme: "striped",
       styles: { fontSize: 9, cellPadding: 6, lineColor: [230, 230, 230], lineWidth: 0.5 },

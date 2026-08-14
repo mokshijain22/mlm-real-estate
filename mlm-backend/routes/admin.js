@@ -132,6 +132,7 @@ router.put('/banks/:id', bankController.update);
 router.delete('/banks/:id', bankController.remove);
 router.get('/account-ledger/overview', accountLedgerController.overview);
 router.get('/account-ledger/collections', accountLedgerController.collections);
+router.get('/account-ledger/collections/export', accountLedgerController.collectionsExport);
 router.get('/account-ledger/dp-emis', accountLedgerController.dpEmis);
 router.get('/account-ledger/receivables', accountLedgerController.receivables);
 router.get('/account-ledger/commission', accountLedgerController.commission);

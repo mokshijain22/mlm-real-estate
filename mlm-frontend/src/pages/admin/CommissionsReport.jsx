@@ -277,6 +277,7 @@ function CommissionsReport() {
                   <thead className="table-light">
                     <tr>
                       <th>Executive</th>
+                      <th>Customer</th>
                       <th>Type</th>
                       <th>Category</th>
                       <th>Project / Plot</th>
@@ -289,13 +290,13 @@ function CommissionsReport() {
                   <tbody>
                     {!transactions ? (
                       <tr>
-                        <td colSpan="8" className="text-center py-4">
+                        <td colSpan="9" className="text-center py-4">
                           Loading...
                         </td>
                       </tr>
                     ) : transactions.length === 0 ? (
                       <tr>
-                        <td colSpan="8" className="text-center py-4">
+                        <td colSpan="9" className="text-center py-4">
                           <div className="my-3">
                             <iconify-icon icon="solar:document-text-line-duotone" className="text-muted fs-32"></iconify-icon>
                             <h5 className="mt-2">No Commission Records</h5>
@@ -318,6 +319,11 @@ function CommissionsReport() {
                             <td>
                               <span className="fw-bold">
                                 {t.isCompany ? (t.agent?.name || "Company") : `${t.agent?.name || "N/A"}${t.agent?.referralCode ? `(${t.agent.referralCode})` : ""}`}
+                              </span>
+                            </td>
+                            <td>
+                              <span className="text-muted">
+                                {t.booking?.customer?.name || "N/A"}
                               </span>
                             </td>
                             <td>

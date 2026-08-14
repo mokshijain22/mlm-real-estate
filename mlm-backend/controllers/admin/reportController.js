@@ -366,9 +366,8 @@ async function emiCollectionsExport(req, res) {
       return `Step ${n}`;
     };
 
-    const headers = ['EMI #', 'Booking #', 'Customer', 'Project', 'Plot', 'Agent', 'Month', 'Amount', 'Mode', 'Due Date', 'Paid Date', 'Status'];
+    const headers = ['Booking #', 'Customer', 'Project', 'Plot', 'Agent', 'Month', 'Amount', 'Mode', 'Due Date', 'Paid Date', 'Status'];
     const rows = emis.map((e) => [
-      e._id,
       e.booking?.bookingNumber || 'N/A',
       e.booking?.customer?.name || 'N/A',
       e.booking?.project?.name || 'N/A',
@@ -809,7 +808,7 @@ async function commissions(req, res) {
     const [transactions, total] = await Promise.all([
       WalletTransaction.find(query)
         .populate({ path: 'agent', select: 'name referralCode', populate: { path: 'rank' } })
-        .populate({ path: 'booking', populate: [{ path: 'plot' }, { path: 'project', select: 'name' }] })
+        .populate({ path: 'booking', populate: [{ path: 'plot' }, { path: 'project', select: 'name' }, { path: 'customer', select: 'name' }] })
         .populate('emi')
         .sort({ createdAt: -1 })
         .skip(skip)

@@ -351,7 +351,7 @@ function EmiCollectionsReport() {
                   <table className="table table-centered table-nowrap table-hover mb-0">
                     <thead className="table-light">
                       <tr>
-                        <th>EMI # / Month</th>
+                        <th>Month</th>
                         <th>Booking #</th>
                         <th>Customer</th>
                         <th>Project / Plot</th>
@@ -384,9 +384,7 @@ function EmiCollectionsReport() {
                         emis.map((emi) => (
                           <tr key={emi._id}>
                             <td>
-                              <span className="fw-bold fs-14">#{emi._id.slice(-6)}</span>
-                              <br />
-                              <span className="text-muted">{emiLabel(emi.emiNumber)}</span>
+                              <span className="fw-bold fs-14">{emiLabel(emi.emiNumber)}</span>
                             </td>
                             <td>
                               {emi.booking ? (
