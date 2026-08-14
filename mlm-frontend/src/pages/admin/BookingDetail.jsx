@@ -12,6 +12,41 @@ function fmtMoney(n) {
   return Number(n).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+function emiStepLabel(emiNumber) {
+  if (emiNumber === -2) return "Down Payment 2";
+  if (emiNumber === -1) return "Down Payment";
+  if (emiNumber === 0) return "Booking amount (token)";
+  if (emiNumber === 99) return "Registry";
+  return `EMI ${emiNumber}`;
+}
+
+function numberToWordsIndian(num) {
+  num = Math.round(Number(num) || 0);
+  if (num === 0) return "Zero Rupees Only";
+  const ones = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
+  const tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
+  const twoDigits = (n) => (n < 20 ? ones[n] : tens[Math.floor(n / 10)] + (n % 10 ? " " + ones[n % 10] : ""));
+  const threeDigits = (n) =>
+    n >= 100 ? ones[Math.floor(n / 100)] + " Hundred" + (n % 100 ? " " + twoDigits(n % 100) : "") : twoDigits(n);
+
+  let n = num;
+  const crore = Math.floor(n / 10000000);
+  n %= 10000000;
+  const lakh = Math.floor(n / 100000);
+  n %= 100000;
+  const thousand = Math.floor(n / 1000);
+  n %= 1000;
+  const hundred = n;
+
+  const parts = [];
+  if (crore) parts.push(threeDigits(crore) + " Crore");
+  if (lakh) parts.push(threeDigits(lakh) + " Lakh");
+  if (thousand) parts.push(threeDigits(thousand) + " Thousand");
+  if (hundred) parts.push(threeDigits(hundred));
+
+  return parts.join(" ") + " Rupees Only";
+}
+
 function BookingDetail() {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
@@ -36,6 +71,11 @@ function BookingDetail() {
   const [paymentReference, setPaymentReference] = useState("");
   const [payError, setPayError] = useState("");
 
+  const [siteSettings, setSiteSettings] = useState({});
+  const [printModalOpen, setPrintModalOpen] = useState(false);
+  const [selectedReceipt, setSelectedReceipt] = useState(null);
+  const [printMode, setPrintMode] = useState("receipt"); // "receipt" | "statement"
+
   const load = () => {
     api
       .get(`/admin/bookings/${id}`)
@@ -50,13 +90,63 @@ function BookingDetail() {
 
   useEffect(() => {
     load();
+    api
+      .get("/admin/settings")
+      .then((res) => setSiteSettings(res.data.settings || {}))
+      .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
+  // Every payment already received — booking token/deposit + each paid EMI —
+  // shown as its own printable receipt, newest first.
+  const buildReceipts = () => {
+    if (!booking) return [];
+    const list = [];
+    if (booking.approvalStatus === "approved" && booking.bookingAmount) {
+      list.push({
+        receiptNo: `${booking.bookingNumber}-BK`,
+        stepLabel: "Booking amount (token)",
+        date: booking.bookingDate,
+        amount: booking.bookingAmount,
+        mode: booking.paymentMode,
+        reference: "-",
+      });
+    }
+    emis
+      .filter((e) => e.status === "paid")
+      .forEach((e) => {
+        list.push({
+          receiptNo: `${booking.bookingNumber}-${e.emiNumber}`,
+          stepLabel: emiStepLabel(e.emiNumber),
+          date: e.paidDate,
+          amount: e.amount,
+          mode: e.paymentMode,
+          reference: e.paymentReference || "-",
+        });
+      });
+    return list.sort((a, b) => new Date(b.date) - new Date(a.date));
+  };
+
+  const openPrintModal = () => setPrintModalOpen(true);
+
+  const printReceipt = (receipt) => {
+    setSelectedReceipt(receipt);
+    setPrintMode("receipt");
+    setPrintModalOpen(false);
+    setTimeout(() => window.print(), 150);
+  };
+
+  const printFullStatement = () => {
+    setPrintMode("statement");
+    setTimeout(() => window.print(), 150);
+  };
+
   useEffect(() => {
     if (booking && searchParams.get("print") === "1") {
-      setTimeout(() => window.print(), 300);
+      const receipts = buildReceipts();
+      if (receipts.length) printReceipt(receipts[receipts.length - 1]);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [booking, searchParams]);
 
   const handleApprove = (e) => {
@@ -153,49 +243,354 @@ function BookingDetail() {
           .d-print-none {
             display: none !important;
           }
+          html, body, #root {
+            height: auto !important;
+            max-height: none !important;
+            overflow: visible !important;
+          }
+          * {
+            overflow: visible !important;
+            max-height: none !important;
+          }
+          .wrapper, .content-page, .content, .main-content,
+          .simplebar-wrapper, .simplebar-mask, .simplebar-offset,
+          .simplebar-content-wrapper, .simplebar-content {
+            height: auto !important;
+            max-height: none !important;
+            overflow: visible !important;
+            display: block !important;
+            transform: none !important;
+            position: static !important;
+          }
+          .simplebar-placeholder {
+            display: none !important;
+          }
           .page-content {
             margin: 0 !important;
             padding: 0 !important;
+            overflow: visible !important;
+            height: auto !important;
           }
           .container-fluid {
             padding: 0 !important;
             max-width: 100% !important;
+            overflow: visible !important;
+          }
+          .row {
+            display: block !important;
           }
           .card {
             border: none !important;
             box-shadow: none !important;
+            overflow: visible !important;
+            height: auto !important;
+          }
+          .card-body {
+            overflow: visible !important;
+            height: auto !important;
           }
           .col-xl-9 {
             width: 100% !important;
             max-width: 100% !important;
             flex: 0 0 100% !important;
           }
+          table {
+            page-break-inside: auto !important;
+          }
+          tr {
+            page-break-inside: avoid !important;
+            page-break-after: auto !important;
+          }
+          .table-responsive {
+            overflow: visible !important;
+          }
+          .receipt-print {
+            display: block !important;
+            max-width: 480px;
+            margin: 0 auto;
+            border: 1px solid #e8c9a0;
+            background: #fdf3e7;
+            font-family: Georgia, 'Times New Roman', serif;
+            color: #4a2c1a;
+            height: auto !important;
+            overflow: visible !important;
+            page-break-inside: avoid;
+          }
+          .receipt-banner {
+            position: relative;
+            height: 90px;
+            background: linear-gradient(115deg, #5c1010 0%, #7a1414 35%, #c9932f 65%, #f0cd7a 100%);
+            clip-path: polygon(0 0, 100% 0, 100% 55%, 0 100%);
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 14px;
+          }
+          .receipt-banner-title {
+            color: #ffffff;
+            font-size: 20px;
+            font-weight: bold;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+          }
+          .receipt-body {
+            padding: 18px 24px 24px;
+          }
+          .receipt-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 14px;
+          }
+          .receipt-box {
+            flex: 1;
+            border: 1px solid #d9a86a;
+            border-radius: 4px;
+            padding: 4px 10px;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+          }
+          .receipt-fields {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 12px;
+          }
+          .receipt-fields td, .receipt-fields th {
+            border: 1px solid #d9a86a;
+            padding: 5px 8px;
+            font-size: 12px;
+          }
+          .receipt-fields-3col th {
+            background: #f6e3c8;
+            font-weight: bold;
+            text-align: left;
+          }
+          .receipt-label {
+            color: #8a5a2a;
+            font-weight: bold;
+          }
+          .receipt-line {
+            font-size: 12px;
+            margin: 6px 0;
+            display: flex;
+            align-items: baseline;
+          }
+          .receipt-dots {
+            flex: 1;
+            border-bottom: 1px dotted #b9895a;
+            margin: 0 6px;
+            height: 1px;
+          }
+          .receipt-line-italic {
+            font-style: italic;
+            color: #6b6b6b;
+          }
+          .receipt-company-footer {
+            margin-top: 24px;
+            padding-top: 10px;
+            border-top: 1px solid #d9a86a;
+            text-align: center;
+            font-size: 10px;
+            color: #8a5a2a;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+          }
+          .receipt-payment-title {
+            color: #7a1414;
+            font-weight: bold;
+            text-decoration: underline;
+            margin: 14px 0 8px;
+            font-size: 13px;
+          }
+          .receipt-amount-box {
+            border: 1px solid #d9a86a;
+            border-radius: 6px;
+            padding: 10px 14px;
+            font-size: 18px;
+            font-weight: bold;
+            width: 160px;
+            margin-top: 10px;
+          }
+          .receipt-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-top: 40px;
+            font-size: 11px;
+            color: #8a5a2a;
+          }
+          .receipt-signatory {
+            border-top: 1px solid #8a5a2a;
+            padding-top: 4px;
+            white-space: nowrap;
+          }
         }
       `}</style>
       <div className="col-xl-9">
         <div className="card border-0 shadow-sm">
-          <div className="card-header bg-white d-flex justify-content-between align-items-center py-3 d-print-none">
+          <div className="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2 py-3 d-print-none">
             <h4 className="card-title mb-0">Booking Details: {booking.bookingNumber}</h4>
-            <div>
+            <div className="d-flex flex-wrap gap-2">
               {booking.status === "active" && (
                 <button className="btn btn-soft-danger btn-sm" onClick={handleCancel} disabled={actionLoading}>
                   Cancel Booking
                 </button>
               )}
-              <Link to="/admin/bookings" className="btn btn-light btn-sm ms-2">
+              <Link to="/admin/bookings" className="btn btn-light btn-sm">
                 Back to List
               </Link>
-              <button className="btn btn-primary btn-sm ms-2" onClick={() => window.print()}>
-                Print
+              <button className="btn btn-outline-primary btn-sm" onClick={printFullStatement}>
+                <iconify-icon icon="solar:document-text-bold" className="align-middle me-1"></iconify-icon>
+                Print Full Statement
+              </button>
+              <button className="btn btn-primary btn-sm" onClick={openPrintModal}>
+                <iconify-icon icon="solar:printer-bold" className="align-middle me-1"></iconify-icon>
+                Print Receipt
               </button>
             </div>
           </div>
-          <div className="d-none d-print-block p-4 pb-0 text-center">
-            <h3 className="mb-1">{booking.project?.name}</h3>
-            <p className="text-muted mb-0">Booking Receipt</p>
-            <hr />
-          </div>
-          <div className="card-body">
+          {printModalOpen && (
+            <div
+              className="d-print-none"
+              style={{
+                position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)",
+                display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1050,
+              }}
+              onClick={() => setPrintModalOpen(false)}
+            >
+              <div
+                className="bg-white rounded shadow-lg p-4"
+                style={{ width: "480px", maxWidth: "92vw", maxHeight: "80vh", overflowY: "auto" }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h4 className="text-center mb-4">Select Receipt to Print</h4>
+                {buildReceipts().length === 0 ? (
+                  <p className="text-muted text-center">No payments received yet for this booking.</p>
+                ) : (
+                  buildReceipts().map((r, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      className="btn btn-light w-100 d-flex justify-content-between align-items-center mb-2 text-start"
+                      onClick={() => printReceipt(r)}
+                    >
+                      <span>
+                        <span className="fw-bold d-block">{r.stepLabel}</span>
+                        <span className="text-muted small">Date: {fmtDate(r.date)}</span>
+                      </span>
+                      <span className="fw-bold">₹ {fmtMoney(r.amount)}</span>
+                    </button>
+                  ))
+                )}
+                <button className="btn btn-secondary w-100 mt-2" onClick={() => setPrintModalOpen(false)}>
+                  Close
+                </button>
+              </div>
+            </div>
+          )}
+
+          {selectedReceipt && printMode === "receipt" && (
+            <div className="d-none d-print-block receipt-print">
+              <div className="receipt-banner">
+                <div className="receipt-banner-title">Payment Receipt</div>
+              </div>
+              <div className="receipt-body">
+                <div className="receipt-row">
+                  <div className="receipt-box">
+                    <span className="receipt-label">Receipt No.</span>
+                    <span className="receipt-value">{selectedReceipt.receiptNo}</span>
+                  </div>
+                  <div className="receipt-box">
+                    <span className="receipt-label">Date -</span>
+                    <span className="receipt-value">{fmtDate(selectedReceipt.date)}</span>
+                  </div>
+                </div>
+
+                <table className="receipt-fields">
+                  <tbody>
+                    <tr>
+                      <td className="receipt-label" style={{ width: "110px" }}>Name</td>
+                      <td className="receipt-value">{booking.customer?.name}</td>
+                    </tr>
+                    <tr>
+                      <td className="receipt-label">Address</td>
+                      <td className="receipt-value">{booking.customer?.address || "-"}</td>
+                    </tr>
+                    <tr>
+                      <td className="receipt-label">Contact No.</td>
+                      <td className="receipt-value">{booking.customer?.phone || "-"}</td>
+                    </tr>
+                    <tr>
+                      <td className="receipt-label">Installment Step</td>
+                      <td className="receipt-value">{selectedReceipt.stepLabel}</td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <table className="receipt-fields receipt-fields-3col">
+                  <thead>
+                    <tr>
+                      <th>Plot No.</th>
+                      <th>Area</th>
+                      <th>Rate Per Sq. Ft.</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>{booking.plot?.plotNumber}</td>
+                      <td>{fmtMoney(booking.totalArea)} sqft</td>
+                      <td>Rs. {fmtMoney(booking.pricePerSqft)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <p className="receipt-line">
+                  Total Amount<span className="receipt-dots"></span> Rs. {fmtMoney(booking.totalAmount)}
+                </p>
+                <p className="receipt-line receipt-line-italic">
+                  Amount in Words<span className="receipt-dots"></span> {numberToWordsIndian(booking.totalAmount)}
+                </p>
+                <p className="receipt-line">
+                  Sum of Received Amount<span className="receipt-dots"></span> Rs. {fmtMoney(selectedReceipt.amount)}
+                </p>
+                <p className="receipt-line receipt-line-italic">
+                  Sum in Words<span className="receipt-dots"></span> {numberToWordsIndian(selectedReceipt.amount)}
+                </p>
+                <p className="receipt-line">
+                  PLC Charges<span className="receipt-dots"></span>
+                </p>
+
+                <div className="receipt-payment-title">Payment Details</div>
+                <table className="receipt-fields">
+                  <tbody>
+                    <tr>
+                      <td className="receipt-label" style={{ width: "140px" }}>Mode of Payment</td>
+                      <td className="receipt-value text-capitalize">
+                        {{ cash: "Cash", bank: "Bank Transfer", cheque: "Cheque" }[selectedReceipt.mode] || selectedReceipt.mode}
+                      </td>
+                    </tr>
+                    {selectedReceipt.reference !== "-" && (
+                      <tr>
+                        <td className="receipt-label">Reference</td>
+                        <td className="receipt-value">{selectedReceipt.reference}</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+
+                <div className="receipt-amount-box">Rs. {fmtMoney(selectedReceipt.amount)}</div>
+
+                <div className="receipt-footer">
+                  <span>Thank You For Your Payment ...!<br />Condition Apply****</span>
+                  <span className="receipt-signatory">Authorized Signatory</span>
+                </div>
+
+                
+              </div>
+            </div>
+          )}
+          <div className={`card-body ${printMode === "statement" ? "" : "d-print-none"}`}>
             {/* Status banners */}
             {booking.approvalStatus === "pending" && (
               <div className="alert alert-warning border-0 mb-4 d-print-none">

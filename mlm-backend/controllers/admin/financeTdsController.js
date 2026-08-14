@@ -92,7 +92,10 @@ async function ownerOverview(req, res) {
 
   const rows = companyRows.map((r) => {
     const gross = Number(r.amount) || 0;
-    const tds = Math.round(gross * (ownerTdsRate / 100) * 100) / 100;
+    // TDS only applies to Online (BV) payments — Cash (PV) receipts are not
+    // subject to owner TDS deduction.
+    const isCash = r.pointsType === 'PV';
+    const tds = isCash ? 0 : Math.round(gross * (ownerTdsRate / 100) * 100) / 100;
     return {
       date: r.createdAt,
       reference: r.booking?.bookingNumber || '-',

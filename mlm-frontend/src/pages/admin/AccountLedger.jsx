@@ -152,27 +152,7 @@ function AccountLedger() {
 
   return (
     <div>
-      <style>{`
-        @media print {
-          @page {
-            size: A4;
-            margin: 12mm;
-          }
-          .no-print { display: none !important; }
-          .table-responsive {
-            overflow-x: visible !important;
-          }
-          table {
-            width: 100% !important;
-            font-size: 11px !important;
-          }
-          table th, table td {
-            padding: 4px 6px !important;
-            white-space: normal !important;
-          }
-        }
-      `}</style>
-      <div className="card border-0 shadow-sm mb-3 no-print">
+      <div className="card border-0 shadow-sm mb-3">
         <div className="card-body">
           <div className="row g-3 align-items-end">
             <div className="col-md-2">
@@ -222,12 +202,6 @@ function AccountLedger() {
               <button className="btn btn-warning w-100 text-nowrap" onClick={load} disabled={loading}>
                 <iconify-icon icon="solar:refresh-bold" className="align-middle me-1"></iconify-icon>
                 {loading ? "..." : "Refresh"}
-              </button>
-            </div>
-            <div className="col-md-2">
-              <button className="btn btn-outline-secondary w-100" onClick={() => window.print()}>
-                <iconify-icon icon="solar:printer-bold" className="align-middle me-1"></iconify-icon>
-                Print
               </button>
             </div>
           </div>
@@ -430,12 +404,20 @@ function AccountLedger() {
               <iconify-icon icon="solar:checklist-bold-duotone" className="align-middle me-1"></iconify-icon>
               DP / EMIs
             </h5>
-            {dpEmiMeta && (
-              <span className="text-muted small">
-                {dpEmiMeta.count} entries · Due {moneyFull(dpEmiMeta.totalDue)} · Pending {moneyFull(dpEmiMeta.totalPending)} · Overdue{" "}
-                {moneyFull(dpEmiMeta.totalOverdue)}
-              </span>
-            )}
+            <div className="d-flex align-items-center gap-3">
+              {dpEmiMeta && (
+                <span className="text-muted small">
+                  {dpEmiMeta.count} entries · Due {moneyFull(dpEmiMeta.totalDue)} · Pending {moneyFull(dpEmiMeta.totalPending)} · Overdue{" "}
+                  {moneyFull(dpEmiMeta.totalOverdue)}
+                </span>
+              )}
+              <ExportButton
+                url="/admin/account-ledger/dp-emis/export"
+                params={periodParams()}
+                title="DP / EMIs Report"
+                filenamePrefix="dp_emis"
+              />
+            </div>
           </div>
           <div className="card-body">
             {!dpEmiRows ? (
@@ -491,11 +473,19 @@ function AccountLedger() {
               <iconify-icon icon="solar:bill-list-bold-duotone" className="align-middle me-1"></iconify-icon>
               Receivables
             </h5>
-            {receivableMeta && (
-              <span className="text-muted small">
-                {receivableMeta.count} bookings · {moneyFull(receivableMeta.totalOutstanding)} outstanding
-              </span>
-            )}
+            <div className="d-flex align-items-center gap-3">
+              {receivableMeta && (
+                <span className="text-muted small">
+                  {receivableMeta.count} bookings · {moneyFull(receivableMeta.totalOutstanding)} outstanding
+                </span>
+              )}
+              <ExportButton
+                url="/admin/account-ledger/receivables/export"
+                params={{ project_id: projectId || undefined }}
+                title="Receivables Report"
+                filenamePrefix="receivables"
+              />
+            </div>
           </div>
           <div className="card-body">
             {!receivableRows ? (
@@ -541,11 +531,19 @@ function AccountLedger() {
               <iconify-icon icon="solar:percentage-square-bold-duotone" className="align-middle me-1"></iconify-icon>
               Owner TDS
             </h5>
-            {ownerTdsMeta && (
-              <span className="text-muted small">
-                {ownerTdsMeta.count} entries · Rate {pct(ownerTdsMeta.currentRate)} · Gross {moneyFull(ownerTdsMeta.totalGross)} · TDS {moneyFull(ownerTdsMeta.totalTds)} · Net {moneyFull(ownerTdsMeta.totalNet)}
-              </span>
-            )}
+            <div className="d-flex align-items-center gap-3">
+              {ownerTdsMeta && (
+                <span className="text-muted small">
+                  {ownerTdsMeta.count} entries · Rate {pct(ownerTdsMeta.currentRate)} · Gross {moneyFull(ownerTdsMeta.totalGross)} · TDS {moneyFull(ownerTdsMeta.totalTds)} · Net {moneyFull(ownerTdsMeta.totalNet)}
+                </span>
+              )}
+              <ExportButton
+                url="/admin/finance-tds/owner-overview/export"
+                params={periodParams()}
+                title="Owner TDS Report"
+                filenamePrefix="owner_tds"
+              />
+            </div>
           </div>
           <div className="card-body">
             {!ownerTdsRows ? (

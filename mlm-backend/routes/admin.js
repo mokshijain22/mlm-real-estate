@@ -134,10 +134,13 @@ router.get('/account-ledger/overview', accountLedgerController.overview);
 router.get('/account-ledger/collections', accountLedgerController.collections);
 router.get('/account-ledger/collections/export', accountLedgerController.collectionsExport);
 router.get('/account-ledger/dp-emis', accountLedgerController.dpEmis);
+router.get('/account-ledger/dp-emis/export', accountLedgerController.dpEmisExport);
 router.get('/account-ledger/receivables', accountLedgerController.receivables);
+router.get('/account-ledger/receivables/export', accountLedgerController.receivablesExport);
 router.get('/account-ledger/commission', accountLedgerController.commission);
 router.get('/finance-tds/overview', financeTdsController.overview);
 router.get('/finance-tds/owner-overview', financeTdsController.ownerOverview);
+router.get('/finance-tds/owner-overview/export', financeTdsController.ownerOverviewExport);
 // Withdrawals
 router.use('/withdrawals', requirePermission('withdrawals'));
 router.get('/withdrawals', withdrawalController.index);

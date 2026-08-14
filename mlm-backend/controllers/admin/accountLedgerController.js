@@ -248,9 +248,8 @@ async function collections(req, res) {
   res.json({ data: rows, meta: { count: rows.length, total } });
 }
 
-// GET /api/admin/account-ledger/dp-emis?period=&project_id=
-async function dpEmis(req, res) {
-  const { period = 'this_month', project_id, date_from, date_to } = req.query;
+async function buildDpEmiRows(query) {
+  const { period = 'this_month', project_id, date_from, date_to } = query;
   const range = periodRange(period, date_from, date_to);
   const bookingIds = await projectBookingIds(project_id);
   const bookingProjectFilter = project_id ? { project: project_id } : {};
@@ -314,6 +313,12 @@ async function dpEmis(req, res) {
   }
 
   rows.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+  return rows;
+}
+
+// GET /api/admin/account-ledger/dp-emis?period=&project_id=
+async function dpEmis(req, res) {
+  const rows = await buildDpEmiRows(req.query);
 
   const totalDue = rows.reduce((s, r) => s + (r.amount || 0), 0);
   const totalPending = rows.filter((r) => r.status === 'pending' || r.status === 'overdue').reduce((s, r) => s + (r.amount || 0), 0);
@@ -325,10 +330,30 @@ async function dpEmis(req, res) {
   });
 }
 
-// GET /api/admin/account-ledger/receivables?period=&project_id=
-// Per-booking outstanding balance snapshot (all-time, not period-boxed).
-async function receivables(req, res) {
-  const { project_id } = req.query;
+// GET /api/admin/account-ledger/dp-emis/export
+async function dpEmisExport(req, res) {
+  try {
+    const rows = await buildDpEmiRows(req.query);
+
+    const headers = ['Due Date', 'Type', 'Reference', 'Customer', 'Project', 'Status', 'Amount'];
+    const csvRows = rows.map((r) => [
+      r.dueDate ? new Date(r.dueDate).toISOString().slice(0, 10) : '-',
+      r.type,
+      r.reference,
+      r.customer,
+      r.project,
+      r.status,
+      r.amount,
+    ]);
+
+    return sendCsv(res, `dp_emis_${timestamp()}.csv`, toCsv(headers, csvRows));
+  } catch (err) {
+    return res.status(500).json({ message: 'Failed to export DP/EMIs report.', error: err.message });
+  }
+}
+
+async function buildReceivableRows(query) {
+  const { project_id } = query;
   const bookingProjectFilter = project_id ? { project: project_id } : {};
 
   const bookings = await Booking.find({ ...bookingProjectFilter, approvalStatus: 'approved', status: { $ne: 'cancelled' } })
@@ -344,7 +369,7 @@ async function receivables(req, res) {
   const emiPaidMap = {};
   for (const row of emiPaidAgg) emiPaidMap[row._id.toString()] = row.total;
 
-  const rows = bookings
+  return bookings
     .map((b) => {
       const paid = (b.bookingAmount || 0) + (emiPaidMap[b._id.toString()] || 0);
       const outstanding = Math.max((b.totalAmount || 0) - paid, 0);
@@ -359,9 +384,35 @@ async function receivables(req, res) {
     })
     .filter((r) => r.outstanding > 0)
     .sort((a, b) => b.outstanding - a.outstanding);
+}
 
+// GET /api/admin/account-ledger/receivables?period=&project_id=
+// Per-booking outstanding balance snapshot (all-time, not period-boxed).
+async function receivables(req, res) {
+  const rows = await buildReceivableRows(req.query);
   const totalOutstanding = rows.reduce((s, r) => s + r.outstanding, 0);
   res.json({ data: rows, meta: { count: rows.length, totalOutstanding } });
+}
+
+// GET /api/admin/account-ledger/receivables/export
+async function receivablesExport(req, res) {
+  try {
+    const rows = await buildReceivableRows(req.query);
+
+    const headers = ['Reference', 'Customer', 'Project', 'Total Amount', 'Paid', 'Outstanding'];
+    const csvRows = rows.map((r) => [
+      r.reference,
+      r.customer,
+      r.project,
+      r.totalAmount,
+      r.paid,
+      r.outstanding,
+    ]);
+
+    return sendCsv(res, `receivables_${timestamp()}.csv`, toCsv(headers, csvRows));
+  } catch (err) {
+    return res.status(500).json({ message: 'Failed to export receivables report.', error: err.message });
+  }
 }
 
 // GET /api/admin/account-ledger/commission?period=&project_id=
@@ -402,4 +453,4 @@ async function commission(req, res) {
   res.json({ data: rows, meta: { count: rows.length, totalBV, totalPV, total: totalBV + totalPV } });
 }
 
-module.exports = { overview, collections, collectionsExport, dpEmis, receivables, commission };
+module.exports = { overview, collections, collectionsExport, dpEmis, dpEmisExport, receivables, receivablesExport, commission };
