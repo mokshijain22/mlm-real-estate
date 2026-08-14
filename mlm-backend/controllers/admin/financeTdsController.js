@@ -124,4 +124,88 @@ async function ownerOverview(req, res) {
   });
 }
 
-module.exports = { overview, ownerOverview };
+function toCsv(headers, rows) {
+  const escape = (val) => {
+    const s = val === null || val === undefined ? '' : String(val);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const lines = [headers.map(escape).join(',')];
+  for (const row of rows) {
+    lines.push(row.map(escape).join(','));
+  }
+  return lines.join('\n');
+}
+
+function sendCsv(res, filename, csvContent) {
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  return res.send(csvContent);
+}
+
+function timestamp() {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}`;
+}
+
+// GET /api/admin/finance-tds/owner-overview/export?period=&project_id=
+async function ownerOverviewExport(req, res) {
+  try {
+    const { period = 'this_month', project_id } = req.query;
+    const range = periodRange(period);
+
+    const query = {
+      type: 'credit',
+      category: { $in: ['emi_commission', 'deposit_commission'] },
+      ...(range ? { createdAt: { $gte: range.start, $lt: range.end } } : {}),
+    };
+
+    const txns = await WalletTransaction.find(query)
+      .select('category booking emi sqftPortion pointsType createdAt')
+      .populate({ path: 'booking', select: 'bookingNumber project plot', populate: [{ path: 'project', select: 'name' }, { path: 'plot', select: 'plotNumber' }] })
+      .populate('emi')
+      .sort({ createdAt: -1 });
+
+    let companyRows = await buildCompanyRows(txns);
+
+    if (project_id) {
+      companyRows = companyRows.filter((r) => String(r.booking?.project?._id || r.booking?.project) === String(project_id));
+    }
+
+    const ownerTdsRate = await settingService.get('owner_tds_percentage', 10);
+
+    const rows = companyRows.map((r) => {
+      const gross = Number(r.amount) || 0;
+      const isCash = r.pointsType === 'PV';
+      const tds = isCash ? 0 : Math.round(gross * (ownerTdsRate / 100) * 100) / 100;
+      return {
+        date: r.createdAt,
+        reference: r.booking?.bookingNumber || '-',
+        project: r.booking?.project?.name || '-',
+        plot: r.booking?.plot?.plotNumber || '-',
+        pointsType: r.pointsType,
+        grossAmount: gross,
+        tdsAmount: tds,
+        netAmount: gross - tds,
+      };
+    });
+
+    const headers = ['Date', 'Reference', 'Project', 'Plot', 'Points', 'Gross Amount', 'TDS Amount', 'Net Amount'];
+    const csvRows = rows.map((r) => [
+      r.date ? new Date(r.date).toLocaleDateString('en-IN') : '',
+      r.reference,
+      r.project,
+      r.plot,
+      r.pointsType === 'BV' ? 'Online' : r.pointsType === 'PV' ? 'Cash' : r.pointsType,
+      r.grossAmount,
+      r.tdsAmount,
+      r.netAmount,
+    ]);
+
+    return sendCsv(res, `owner_tds_${timestamp()}.csv`, toCsv(headers, csvRows));
+  } catch (err) {
+    return res.status(500).json({ message: 'Failed to export owner TDS report.', error: err.message });
+  }
+}
+
+module.exports = { overview, ownerOverview, ownerOverviewExport };
