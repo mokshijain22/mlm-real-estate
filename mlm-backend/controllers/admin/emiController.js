@@ -324,4 +324,20 @@ async function dues(req, res) {
   });
 }
 
-module.exports = { index, bookingEmis, markPaid, overdue, dues };
+async function update(req, res) {
+  const Emi = require('../../models/Emi');
+  const emi = await Emi.findById(req.params.id);
+  if (!emi) return res.status(404).json({ message: 'EMI not found.' });
+  if (emi.status === 'paid') {
+    return res.status(422).json({ message: 'Cannot edit an already-paid installment. Reverse the payment first.' });
+  }
+
+  if (req.body.dueDate !== undefined) emi.dueDate = req.body.dueDate;
+  if (req.body.amount !== undefined) emi.amount = req.body.amount;
+  if (req.body.remarks !== undefined) emi.remarks = req.body.remarks;
+
+  await emi.save();
+  return res.json({ message: 'Installment updated.', data: emi });
+}
+
+module.exports = { index, bookingEmis, markPaid, overdue, dues, update };

@@ -113,6 +113,8 @@ router.post('/bookings/commission-preview', bookingController.commissionPreview)
 router.post('/bookings/upload-document', bookingDocsUpload.single('file'), bookingController.uploadDocument);
 router.post('/bookings', bookingController.store);
 router.get('/bookings/:id', bookingController.show);
+router.put('/bookings/:id', bookingController.update);
+router.put('/emis/:id', emiController.update);
 router.patch('/bookings/:id/approve', bookingController.approve);
 router.patch('/bookings/:id/reject', bookingController.reject);
 router.patch('/bookings/:id/cancel', bookingController.cancel);

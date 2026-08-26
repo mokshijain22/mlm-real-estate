@@ -252,6 +252,27 @@ async function show(req, res) {
   });
 }
 
+async function update(req, res) {
+  const booking = await Booking.findById(req.params.id);
+  if (!booking) return res.status(404).json({ message: 'Booking not found.' });
+
+  const editable = [
+    'paymentMode', 'transactionId', 'chequeNumber', 'chequeBankName',
+    'paymentDate', 'paymentTime', 'collectedBy', 'proposerName',
+  ];
+  for (const field of editable) {
+    if (req.body[field] !== undefined) booking[field] = req.body[field];
+  }
+  if (req.body.purchaseDetails) {
+    booking.purchaseDetails = { ...booking.purchaseDetails.toObject(), ...req.body.purchaseDetails };
+  }
+
+  await booking.save();
+  await auditService.log(req, 'booking.updated', `Booking ${booking.bookingNumber} details edited by ${req.user.name}`, booking);
+
+  return res.json({ message: 'Booking updated successfully.', data: booking });
+}
+
 async function cancel(req, res) {
   const booking = await Booking.findById(req.params.id);
   if (!booking) return res.status(404).json({ message: 'Booking not found.' });
@@ -332,4 +353,4 @@ async function reject(req, res) {
   return res.json({ message: 'Booking rejected and plot released.', data: booking });
 }
 
-module.exports = { index, pending, create, store, show, cancel, approve, reject, commissionPreview, uploadDocument };
+module.exports = { index, pending, create, store, show, update, cancel, approve, reject, commissionPreview, uploadDocument };

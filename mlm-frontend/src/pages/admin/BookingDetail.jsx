@@ -72,6 +72,12 @@ function BookingDetail() {
   const [payError, setPayError] = useState("");
 
   const [siteSettings, setSiteSettings] = useState({});
+  const [editMode, setEditMode] = useState(false);
+  const [editForm, setEditForm] = useState({});
+  const [editError, setEditError] = useState("");
+  const [editingEmiId, setEditingEmiId] = useState(null);
+  const [emiEditForm, setEmiEditForm] = useState({ dueDate: "", amount: "" });
+  const [emiEditError, setEmiEditError] = useState("");
   const [printModalOpen, setPrintModalOpen] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState(null);
   const [printMode, setPrintMode] = useState("receipt"); // "receipt" | "statement"
@@ -86,6 +92,53 @@ function BookingDetail() {
         setCommissionProgress(res.data.commissionProgress || { paidEmisCount: 0, totalEmisCount: 0, actualCreditedByAgent: {} });
       })
       .catch((err) => setError(err.response?.data?.message || err.message));
+  };
+
+  const startEdit = () => {
+    setEditForm({
+      paymentMode: booking.paymentMode || "cash",
+      transactionId: booking.transactionId || "",
+      chequeNumber: booking.chequeNumber || "",
+      chequeBankName: booking.chequeBankName || "",
+      collectedBy: booking.collectedBy || "",
+      proposerName: booking.proposerName || "",
+    });
+    setEditError("");
+    setEditMode(true);
+  };
+
+  const saveEdit = async () => {
+    setActionLoading(true);
+    setEditError("");
+    try {
+      await api.put(`/admin/bookings/${id}`, editForm);
+      setEditMode(false);
+      load();
+    } catch (err) {
+      setEditError(err.response?.data?.message || err.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const startEmiEdit = (emi) => {
+    setEditingEmiId(emi._id);
+    setEmiEditForm({ dueDate: new Date(emi.dueDate).toISOString().slice(0, 10), amount: emi.amount });
+    setEmiEditError("");
+  };
+
+  const saveEmiEdit = async (emiId) => {
+    setActionLoading(true);
+    setEmiEditError("");
+    try {
+      await api.put(`/admin/emis/${emiId}`, emiEditForm);
+      setEditingEmiId(null);
+      load();
+    } catch (err) {
+      setEmiEditError(err.response?.data?.message || err.message);
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -440,6 +493,12 @@ function BookingDetail() {
               <Link to="/admin/bookings" className="btn btn-light btn-sm">
                 Back to List
               </Link>
+              {!editMode && (
+                <button className="btn btn-outline-secondary btn-sm" onClick={startEdit}>
+                  <iconify-icon icon="solar:pen-bold" className="align-middle me-1"></iconify-icon>
+                  Edit
+                </button>
+              )}
               <button className="btn btn-outline-primary btn-sm" onClick={printFullStatement}>
                 <iconify-icon icon="solar:document-text-bold" className="align-middle me-1"></iconify-icon>
                 Print Full Statement
@@ -814,6 +873,56 @@ function BookingDetail() {
               </div>
             </div>
 
+            {editMode && (
+              <div className="card border-0 shadow-sm mb-4 border-primary d-print-none">
+                <div className="card-body">
+                  <h6 className="mb-3">Edit Booking Details</h6>
+                  <div className="row g-3">
+                    <div className="col-md-4">
+                      <label className="form-label">Payment Mode</label>
+                      <select className="form-select" value={editForm.paymentMode} onChange={(e) => setEditForm({ ...editForm, paymentMode: e.target.value })}>
+                        <option value="cash">Cash</option>
+                        <option value="upi">UPI</option>
+                        <option value="net_banking">Net Banking</option>
+                        <option value="bank_transfer">Bank Transfer</option>
+                        <option value="cheque">Cheque</option>
+                        <option value="card">Card</option>
+                      </select>
+                    </div>
+                    <div className="col-md-4">
+                      <label className="form-label">Transaction ID</label>
+                      <input className="form-control" value={editForm.transactionId} onChange={(e) => setEditForm({ ...editForm, transactionId: e.target.value })} />
+                    </div>
+                    <div className="col-md-4">
+                      <label className="form-label">Collected By</label>
+                      <input className="form-control" value={editForm.collectedBy} onChange={(e) => setEditForm({ ...editForm, collectedBy: e.target.value })} />
+                    </div>
+                    <div className="col-md-4">
+                      <label className="form-label">Cheque Number</label>
+                      <input className="form-control" value={editForm.chequeNumber} onChange={(e) => setEditForm({ ...editForm, chequeNumber: e.target.value })} />
+                    </div>
+                    <div className="col-md-4">
+                      <label className="form-label">Cheque Bank Name</label>
+                      <input className="form-control" value={editForm.chequeBankName} onChange={(e) => setEditForm({ ...editForm, chequeBankName: e.target.value })} />
+                    </div>
+                    <div className="col-md-4">
+                      <label className="form-label">Proposer Name</label>
+                      <input className="form-control" value={editForm.proposerName} onChange={(e) => setEditForm({ ...editForm, proposerName: e.target.value })} />
+                    </div>
+                  </div>
+                  {editError && <div className="text-danger small mt-2">{editError}</div>}
+                  <div className="mt-3 d-flex gap-2">
+                    <button className="btn btn-primary" disabled={actionLoading} onClick={saveEdit}>
+                      {actionLoading ? "Saving..." : "Save Changes"}
+                    </button>
+                    <button className="btn btn-outline-secondary" onClick={() => setEditMode(false)}>
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* EMI schedule */}
             <h5 className="text-primary mb-3">Installment Schedule (EMIs)</h5>
             <div className="table-responsive">
@@ -846,8 +955,20 @@ function BookingDetail() {
                           ? "Registry"
                           : `EMI ${emi.emiNumber}`}
                       </td>
-                      <td>{fmtDate(emi.dueDate)}</td>
-                      <td>₹ {fmtMoney(emi.amount)}</td>
+                      <td>
+                        {editingEmiId === emi._id ? (
+                          <input type="date" className="form-control form-control-sm" value={emiEditForm.dueDate} onChange={(e) => setEmiEditForm({ ...emiEditForm, dueDate: e.target.value })} />
+                        ) : (
+                          fmtDate(emi.dueDate)
+                        )}
+                      </td>
+                      <td>
+                        {editingEmiId === emi._id ? (
+                          <input type="number" className="form-control form-control-sm" value={emiEditForm.amount} onChange={(e) => setEmiEditForm({ ...emiEditForm, amount: e.target.value })} />
+                        ) : (
+                          <>₹ {fmtMoney(emi.amount)}</>
+                        )}
+                      </td>
                       <td>{fmtMoney(emi.sqftPortion)}</td>
                       <td>
                         {emi.status === "paid" ? (
@@ -864,19 +985,36 @@ function BookingDetail() {
                       <td>{emi.paymentReference || "-"}</td>
                       <td className="d-print-none">
                         {emi.status !== "paid" && emi.status !== "cancelled" && booking.status === "active" && (
-                          <button
-                            className="btn btn-primary btn-sm"
-                            onClick={() => {
-                              setPayingEmiId(emi._id);
-                              setPaymentMode("cash");
-                              setPaymentReference("");
-                              setPayError("");
-                              setPaidDate(new Date().toISOString().slice(0, 10));
-                            }}
-                          >
-                            Pay
-                          </button>
+                          <div className="d-flex gap-1">
+                            <button
+                              className="btn btn-primary btn-sm"
+                              onClick={() => {
+                                setPayingEmiId(emi._id);
+                                setPaymentMode("cash");
+                                setPaymentReference("");
+                                setPayError("");
+                                setPaidDate(new Date().toISOString().slice(0, 10));
+                              }}
+                            >
+                              Pay
+                            </button>
+                            {editingEmiId === emi._id ? (
+                              <>
+                                <button className="btn btn-success btn-sm" disabled={actionLoading} onClick={() => saveEmiEdit(emi._id)}>
+                                  Save
+                                </button>
+                                <button className="btn btn-outline-secondary btn-sm" onClick={() => setEditingEmiId(null)}>
+                                  X
+                                </button>
+                              </>
+                            ) : (
+                              <button className="btn btn-outline-secondary btn-sm" onClick={() => startEmiEdit(emi)}>
+                                Edit
+                              </button>
+                            )}
+                          </div>
                         )}
+                        {emiEditError && editingEmiId === emi._id && <div className="text-danger small mt-1">{emiEditError}</div>}
                       </td>
                     </tr>
                   ))}
