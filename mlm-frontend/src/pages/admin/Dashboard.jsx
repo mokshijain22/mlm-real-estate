@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import api from "../../api/axios.js";
 import CountUp from "../../components/admin/charts/CountUp.jsx";
 import DonutChart from "../../components/admin/charts/DonutChart.jsx";
-import OverviewAreaChart from "../../components/admin/charts/OverviewAreaChart.jsx";
+import OverviewBarChart from "../../components/admin/charts/OverviewBarChart.jsx";
 import { getStoredUser } from "../../utils/userHelpers.js";
 
 function Dashboard() {
@@ -145,6 +145,7 @@ function Dashboard() {
             </div>
           </Link>
         </div>
+        {isSuperAdmin && (
         <div className="col-6 col-lg-3 mb-3">
           <Link to="/admin/reports/commissions" className="dash-stat-card dash-animate d-block">
             <div className="dash-stat-body">
@@ -160,6 +161,7 @@ function Dashboard() {
             </div>
           </Link>
         </div>
+        )}
         
         
         <div className="col-6 col-lg-3 mb-3">
@@ -534,19 +536,21 @@ function Dashboard() {
                   <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#34d399", display: "inline-block" }}></span>
                   Amount Collected
                 </span>
+                {isSuperAdmin && (
                 <span className="d-flex align-items-center gap-1">
                   <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#2563eb", display: "inline-block" }}></span>
                   Commission Paid
                 </span>
+                )}
               </div>
             </div>
             <div className="card-body">
               {monthlyOverview ? (
-                <OverviewAreaChart
+                <OverviewBarChart
                   labels={monthlyOverview.labels}
                   series={[
                     { name: "Amount Collected", color: "#34d399", data: monthlyOverview.emiCollected },
-                    { name: "Commission Paid", color: "#2563eb", data: monthlyOverview.commissionPaid },
+                    ...(isSuperAdmin ? [{ name: "Commission Paid", color: "#2563eb", data: monthlyOverview.commissionPaid }] : []),
                   ]}
                 />
               ) : (

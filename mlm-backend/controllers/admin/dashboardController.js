@@ -124,9 +124,9 @@ async function index(req, res) {
         { $match: { status: 'paid', paidDate: { $gte: monthWindowStart, $lt: startOfNextMonth } } },
         { $group: { _id: { y: { $year: '$paidDate' }, m: { $month: '$paidDate' } }, total: { $sum: '$amount' } } },
       ]),
-      WalletTransaction.aggregate([
-        { $match: { type: 'credit', category: { $in: ['emi_commission', 'deposit_commission'] }, createdAt: { $gte: monthWindowStart, $lt: startOfNextMonth } } },
-        { $group: { _id: { y: { $year: '$createdAt' }, m: { $month: '$createdAt' } }, total: { $sum: '$amount' } } },
+      WithdrawalRequest.aggregate([
+        { $match: { status: 'approved', reviewedAt: { $gte: monthWindowStart, $lt: startOfNextMonth } } },
+        { $group: { _id: { y: { $year: '$reviewedAt' }, m: { $month: '$reviewedAt' } }, total: { $sum: '$netAmount' } } },
       ]),
       Emi.aggregate([
         { $match: { status: 'overdue', dueDate: { $lt: startOfToday } } },

@@ -17,7 +17,7 @@ function Rank() {
 
   const { agent, rankHistory, nextRank, progressPercent, sqftNeeded, allRanks } = data;
   const currentRankIndex = allRanks.findIndex((r) => r._id === agent.rank?._id);
-  const visibleRanks = currentRankIndex >= 0 ? allRanks.slice(currentRankIndex) : allRanks;
+  const visibleRanks = currentRankIndex >= 0 ? allRanks.slice(0, currentRankIndex + 1) : allRanks;
 
   return (
     <>
