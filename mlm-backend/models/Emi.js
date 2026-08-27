@@ -17,6 +17,22 @@ const emiSchema = new mongoose.Schema(
     remarks: { type: String, default: null },
     commissionProcessed: { type: Boolean, default: false },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+
+    // When a Sub Admin edits an installment on a booking that's already
+    // confirmed (active), the edit is held here for Super Admin review
+    // instead of applying immediately. Super Admin's own edits skip this
+    // and apply directly.
+    editRequest: {
+      status: { type: String, enum: ['none', 'pending', 'approved', 'rejected'], default: 'none' },
+      proposedAmount: { type: Number, default: null },
+      proposedDueDate: { type: Date, default: null },
+      proposedRemarks: { type: String, default: null },
+      requestedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+      requestedAt: { type: Date, default: null },
+      reviewedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+      reviewedAt: { type: Date, default: null },
+      rejectionReason: { type: String, default: null },
+    },
   },
   { timestamps: true }
 );

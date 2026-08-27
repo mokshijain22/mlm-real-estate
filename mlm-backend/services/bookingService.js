@@ -68,6 +68,9 @@ async function createBooking(data, actingUser) {
       const emiDueDates = Array.isArray(data.emi_due_dates)
         ? data.emi_due_dates.map((d) => (d ? new Date(d) : null))
         : [];
+      const emiAmounts = Array.isArray(data.emi_amounts)
+        ? data.emi_amounts.map((a) => (a !== null && a !== undefined && a !== '' ? Number(a) : null))
+        : [];
       const remainingAmount =
         totalAmount - bookingAmount - downPaymentAmount - downPayment2Amount - additionalDownPaymentsTotal - registryAmount;
       const emiMonths = parseInt(data.emi_months, 10);
@@ -97,7 +100,11 @@ async function createBooking(data, actingUser) {
         companyRatePerSqft = companyRow ? Number(companyRow.points_per_sf) || 0 : 0;
       }
 
-      const actingIsAdmin = actingUser && (isSuperAdmin(actingUser) || isSubAdmin(actingUser));
+      // Only Super Admin's own bookings are auto-approved. Sub Admin
+      // bookings must go through the approval flow like an agent's booking
+      // would — previously Sub Admin was bundled in with Super Admin here,
+      // which silently skipped approval for every Sub Admin booking.
+      const actingIsAdmin = actingUser && isSuperAdmin(actingUser);
 
       const totalBookings = await Booking.countDocuments({}).session(session);
       const bookingNumber = 'BK-' + String(totalBookings + 1).padStart(4, '0');
@@ -123,6 +130,7 @@ async function createBooking(data, actingUser) {
             registryAmount,
             registryDueDate,
             emiDueDates,
+            emiAmounts,
             paymentPlanKey: data.payment_plan_key || 'standard',
             remainingAmount,
             emiMonths,
@@ -319,12 +327,19 @@ async function generateEmis(booking, session = null, additionalDownPayments = []
     let dueDate = override ? new Date(override) : new Date(booking.bookingDate);
     if (!override) dueDate.setMonth(dueDate.getMonth() + i);
 
+    // Use this EMI's individually-edited amount if the creator set one for
+    // this slot, otherwise fall back to the uniform emiAmount. Previously
+    // every EMI silently used the same emiAmount, ignoring per-row edits
+    // made to EMI 2, 3, 4... on the booking creation screen.
+    const amountOverride = Array.isArray(booking.emiAmounts) ? booking.emiAmounts[i - 1] : null;
+    const thisAmount = amountOverride !== null && amountOverride !== undefined ? Number(amountOverride) : booking.emiAmount;
+
     emis.push({
       booking: booking._id,
       agent: booking.agent,
       emiNumber: i,
-      amount: booking.emiAmount,
-      sqftPortion: sqftFor(booking.emiAmount),
+      amount: thisAmount,
+      sqftPortion: sqftFor(thisAmount),
       dueDate,
       status: 'pending',
       commissionProcessed: false,

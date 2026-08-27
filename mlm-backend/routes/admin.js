@@ -102,6 +102,7 @@ router.get('/emis', emiController.index);
 router.get('/emis/overdue', emiController.overdue);
 router.get('/bookings/:id/emis', emiController.bookingEmis);
 router.post('/emis/:id/mark-paid', emiController.markPaid);
+router.post('/bookings/:id/dp-installments', emiController.addDpInstallment);
 router.get('/emi-dues', emiController.dues);
 
 // Bookings
@@ -115,8 +116,10 @@ router.post('/bookings', bookingController.store);
 router.get('/bookings/:id', bookingController.show);
 router.put('/bookings/:id', bookingController.update);
 router.put('/emis/:id', emiController.update);
-router.patch('/bookings/:id/approve', bookingController.approve);
-router.patch('/bookings/:id/reject', bookingController.reject);
+router.patch('/bookings/:id/approve', restrictTo('super_admin'), bookingController.approve);
+router.patch('/bookings/:id/reject', restrictTo('super_admin'), bookingController.reject);
+router.post('/emis/:id/approve-edit', restrictTo('super_admin'), emiController.approveEdit);
+router.post('/emis/:id/reject-edit', restrictTo('super_admin'), emiController.rejectEdit);
 router.patch('/bookings/:id/cancel', bookingController.cancel);
 
 router.get('/site-visits', siteVisitController.index);

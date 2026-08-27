@@ -20,6 +20,11 @@ const bookingSchema = new mongoose.Schema(
     registryAmount: { type: Number, default: 0 },
     registryDueDate: { type: Date, default: null },
     emiDueDates: [{ type: Date }],
+    // Optional per-installment amount overrides, index-aligned with the EMI
+    // number (emiAmounts[0] = EMI 1, emiAmounts[1] = EMI 2, ...). When an
+    // index is missing/null, that EMI falls back to the uniform `emiAmount`.
+    // Mirrors the existing emiDueDates override pattern.
+    emiAmounts: [{ type: Number }],
     paymentPlanKey: { type: String, default: 'standard' },
     remainingAmount: { type: Number, required: true },
     emiMonths: { type: Number, required: true },

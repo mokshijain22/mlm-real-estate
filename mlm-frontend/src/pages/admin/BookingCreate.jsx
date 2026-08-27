@@ -605,7 +605,11 @@ function BookingCreate() {
         plot_area: Number(plotArea) || 0,
         plc_percent: Number(plotPlcPercent) || 0,
         booking_amount: Number(bookingAmount) || 0,
-        down_payment_amount: Number(downPaymentAmount) || 0,
+        // Use the schedule row's value, not the separate downPaymentAmount
+        // state — editing the DP row in the table only updated the table,
+        // never synced back to downPaymentAmount, so a manual DP edit was
+        // silently discarded on submit and the original amount got saved.
+        down_payment_amount: Number(scheduleDates.find((r) => r.key === "dp1")?.amount) || Number(downPaymentAmount) || 0,
         down_payment_due_date: scheduleDates.find((r) => r.key === "dp1")?.date,
         additional_down_payments: additionalDownPayments
           .filter((dp) => Number(dp.amount) > 0)
@@ -613,6 +617,7 @@ function BookingCreate() {
         registry_amount: registryAmount,
         registry_due_date: scheduleDates.find((r) => r.key === "registry")?.date,
         emi_due_dates: scheduleDates.filter((r) => r.key.startsWith("emi")).map((r) => r.date),
+        emi_amounts: scheduleDates.filter((r) => r.key.startsWith("emi")).map((r) => r.amount),
         emi_months: emiCount,
         payment_plan_key: plans.find((p) => p._id === selectedPlanId)?.name || "custom",
         payment_mode: paymentMode,

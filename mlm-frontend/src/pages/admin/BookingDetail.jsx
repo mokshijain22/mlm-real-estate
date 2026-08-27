@@ -141,6 +141,30 @@ function BookingDetail() {
     }
   };
 
+  const [showAddDp, setShowAddDp] = useState(false);
+  const [addDpForm, setAddDpForm] = useState({ amount: "", due_date: new Date().toISOString().slice(0, 10), remarks: "" });
+  const [addDpError, setAddDpError] = useState("");
+
+  const openAddDp = () => {
+    setAddDpForm({ amount: "", due_date: new Date().toISOString().slice(0, 10), remarks: "" });
+    setAddDpError("");
+    setShowAddDp(true);
+  };
+
+  const saveAddDp = async () => {
+    setActionLoading(true);
+    setAddDpError("");
+    try {
+      await api.post(`/admin/bookings/${id}/dp-installments`, addDpForm);
+      setShowAddDp(false);
+      load();
+    } catch (err) {
+      setAddDpError(err.response?.data?.message || err.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   useEffect(() => {
     load();
     api
@@ -924,7 +948,71 @@ function BookingDetail() {
             )}
 
             {/* EMI schedule */}
-            <h5 className="text-primary mb-3">Installment Schedule (EMIs)</h5>
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h5 className="text-primary mb-0">Installment Schedule (EMIs)</h5>
+              {booking.status === "active" && (
+                <button className="btn btn-sm btn-outline-primary d-print-none" onClick={openAddDp}>
+                  + Add DP Installment
+                </button>
+              )}
+            </div>
+
+            {showAddDp && (
+              <div className="card border mb-3 d-print-none">
+                <div className="card-body">
+                  <h6 className="mb-3">Add New Down Payment Installment</h6>
+                  <p className="text-muted small mb-3">
+                    Use this when the customer pays a new part of the 30% DP that wasn't already on the schedule — it will appear in the EMI list immediately and count toward commission and the grand total. The amount you enter here will automatically be subtracted from the remaining DP balance shown below.
+                  </p>
+                  <p className="text-muted small mb-3">
+                    Remaining DP balance: ₹{" "}
+                    {fmtMoney(
+                      emis
+                        .filter((e) => e.emiNumber < 0 && e.status === "pending")
+                        .reduce((sum, e) => sum + (e.amount || 0), 0)
+                    )}
+                  </p>
+                  <div className="row g-3">
+                    <div className="col-md-4">
+                      <label className="form-label">Amount</label>
+                      <input
+                        type="number"
+                        className="form-control"
+                        value={addDpForm.amount}
+                        onChange={(e) => setAddDpForm({ ...addDpForm, amount: e.target.value })}
+                      />
+                    </div>
+                    <div className="col-md-4">
+                      <label className="form-label">Date Received</label>
+                      <input
+                        type="date"
+                        className="form-control"
+                        value={addDpForm.due_date}
+                        onChange={(e) => setAddDpForm({ ...addDpForm, due_date: e.target.value })}
+                      />
+                    </div>
+                    <div className="col-md-4">
+                      <label className="form-label">Remarks (optional)</label>
+                      <input
+                        className="form-control"
+                        value={addDpForm.remarks}
+                        onChange={(e) => setAddDpForm({ ...addDpForm, remarks: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  {addDpError && <div className="text-danger small mt-2">{addDpError}</div>}
+                  <div className="mt-3 d-flex gap-2">
+                    <button className="btn btn-primary" disabled={actionLoading} onClick={saveAddDp}>
+                      {actionLoading ? "Saving..." : "Add Installment"}
+                    </button>
+                    <button className="btn btn-outline-secondary" onClick={() => setShowAddDp(false)}>
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="table-responsive">
               <table className="table table-sm table-centered">
                 <thead className="table-light">

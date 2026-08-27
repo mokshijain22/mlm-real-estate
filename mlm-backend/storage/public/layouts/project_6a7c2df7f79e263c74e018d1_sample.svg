@@ -14,12 +14,12 @@
   <rect width="100%" height="100%" fill="#f8fafc" rx="12" />
   <text x="170" y="35" text-anchor="middle" style="font-family: sans-serif; font-weight: bold; font-size: 18px; fill: #334155;">E2E Test Township Site Layout</text>
   <g class="plot-group" id="plot-group-6a7c2df7f79e263c74e018d3" data-plot-id="6a7c2df7f79e263c74e018d3" data-plot-number="E2E-PLOT-01">
-    <rect id="plot-E2E-PLOT-01" class="plot sold" x="40" y="100" width="120" height="100" rx="8" />
+    <rect id="plot-E2E-PLOT-01" class="plot available" x="40" y="100" width="120" height="100" rx="8" />
     <text x="100" y="145" class="plot-text">E2E-PLOT-01</text>
     <text x="100" y="165" class="plot-area">1,000 sqft</text>
   </g>
   <g class="plot-group" id="plot-group-6a7c3fc4a6645da0e27eabea" data-plot-id="6a7c3fc4a6645da0e27eabea" data-plot-number="p2">
-    <rect id="plot-p2" class="plot available" x="180" y="100" width="120" height="100" rx="8" />
+    <rect id="plot-p2" class="plot sold" x="180" y="100" width="120" height="100" rx="8" />
     <text x="240" y="145" class="plot-text">p2</text>
     <text x="240" y="165" class="plot-area">1,000 sqft</text>
   </g>

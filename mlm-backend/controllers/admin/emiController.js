@@ -326,18 +326,271 @@ async function dues(req, res) {
 
 async function update(req, res) {
   const Emi = require('../../models/Emi');
+  const { isSuperAdmin } = require('../../utils/userHelpers');
   const emi = await Emi.findById(req.params.id);
   if (!emi) return res.status(404).json({ message: 'EMI not found.' });
   if (emi.status === 'paid') {
     return res.status(422).json({ message: 'Cannot edit an already-paid installment. Reverse the payment first.' });
   }
+  if (emi.editRequest && emi.editRequest.status === 'pending') {
+    return res.status(422).json({ message: 'This installment already has an edit pending Super Admin approval.' });
+  }
+
+  const booking = await Booking.findById(emi.booking);
+
+  // Installments only exist once a booking is approved (generateEmis runs
+  // on approval), so this should rarely trigger — but block it explicitly
+  // in case a booking's approval gets reversed or an edit slips through
+  // some other path. No one, not even Super Admin, edits an unapproved
+  // booking's schedule — it isn't final yet.
+  if (booking && booking.approvalStatus !== 'approved') {
+    return res.status(422).json({ message: 'This booking is still pending approval — installments cannot be edited until it is approved.' });
+  }
+
+  // Sub Admin editing DP/EMI on a booking that's already confirmed (active)
+  // → hold the edit for Super Admin review instead of applying it directly.
+  // Super Admin's own edits still apply immediately.
+  if (!isSuperAdmin(req.user) && booking && booking.status === 'active') {
+    emi.editRequest = {
+      status: 'pending',
+      proposedAmount: req.body.amount !== undefined ? Number(req.body.amount) : emi.amount,
+      proposedDueDate: req.body.dueDate !== undefined ? req.body.dueDate : emi.dueDate,
+      proposedRemarks: req.body.remarks !== undefined ? req.body.remarks : emi.remarks,
+      requestedBy: req.user._id,
+      requestedAt: new Date(),
+      reviewedBy: null,
+      reviewedAt: null,
+      rejectionReason: null,
+    };
+    await emi.save();
+
+    await auditService.log(
+      req,
+      'emi.edit_requested',
+      `Sub Admin ${req.user.name} requested an edit to installment #${emi.emiNumber} for booking ${booking.bookingNumber} — awaiting Super Admin approval`,
+      emi
+    );
+
+    return res.json({ message: 'Edit submitted for Super Admin approval.', data: emi, pendingApproval: true });
+  }
+  if (emi.commissionProcessed) {
+    return res.status(422).json({ message: 'Commission for this installment has already been processed — it cannot be edited.' });
+  }
 
   if (req.body.dueDate !== undefined) emi.dueDate = req.body.dueDate;
-  if (req.body.amount !== undefined) emi.amount = req.body.amount;
   if (req.body.remarks !== undefined) emi.remarks = req.body.remarks;
 
+  // Amount changed → recalculate sqftPortion using the SAME formula used
+  // at booking creation (services/bookingService.js:generateEmis), so
+  // commission stays correct for the new amount. Without this, editing an
+  // amount silently left the old sqftPortion in place and broke the
+  // commission preview / grand-total review shown on the booking detail page.
+  if (req.body.amount !== undefined && Number(req.body.amount) !== emi.amount) {
+    const newAmount = Number(req.body.amount);
+    const oldAmount = emi.amount;
+    const booking = await Booking.findById(emi.booking);
+    const pricePerSqft = booking ? Number(booking.pricePerSqft) || 0 : 0;
+    const totalAmount = booking ? Number(booking.totalAmount) || 0 : 0;
+    const plcAmount = booking ? Number(booking.plcAmount) || 0 : 0;
+    const baseAmount = Math.max(totalAmount - plcAmount, 0);
+    const commissionRatio = totalAmount > 0 ? baseAmount / totalAmount : 1;
+    const sqftFor = (amt) =>
+      pricePerSqft > 0 ? Math.round(((Number(amt) * commissionRatio) / pricePerSqft) * 100) / 100 : 0;
+
+    emi.amount = newAmount;
+    emi.sqftPortion = sqftFor(newAmount);
+
+    // If this is a DP-type installment (created via "Add DP Installment" or
+    // the original booking DP), an amount edit should shift the difference
+    // to/from the DP remainder line too — same logic as addDpInstallment —
+    // so the total DP due stays accurate instead of drifting out of sync.
+    if (emi.emiNumber < 0) {
+      const delta = newAmount - oldAmount; // +ve = took more from remainder, -ve = give some back
+      const remainderEmi = await Emi.findOne({
+        booking: emi.booking,
+        emiNumber: { $lt: 0 },
+        status: 'pending',
+        _id: { $ne: emi._id },
+      }).sort({ amount: -1 });
+
+      if (remainderEmi) {
+        const newRemainder = Math.max(Number(remainderEmi.amount) - delta, 0);
+        remainderEmi.amount = newRemainder;
+        remainderEmi.sqftPortion = sqftFor(newRemainder);
+        await remainderEmi.save();
+      }
+    }
+  }
+
   await emi.save();
+
+  await auditService.log(
+    req,
+    'emi.edited',
+    `Admin ${req.user.name} edited installment #${emi.emiNumber} for booking ${emi.booking} (amount/date/remarks)`,
+    emi
+  );
+
   return res.json({ message: 'Installment updated.', data: emi });
 }
 
-module.exports = { index, bookingEmis, markPaid, overdue, dues, update };
+// POST /api/admin/emis/:id/approve-edit — Super Admin only (route-gated).
+// Applies the pending edit request the same way `update` would have,
+// including the sqftPortion recalculation and DP-remainder adjustment.
+async function approveEdit(req, res) {
+  const emi = await Emi.findById(req.params.id);
+  if (!emi) return res.status(404).json({ message: 'EMI not found.' });
+  if (!emi.editRequest || emi.editRequest.status !== 'pending') {
+    return res.status(422).json({ message: 'No pending edit request on this installment.' });
+  }
+
+  const { proposedAmount, proposedDueDate, proposedRemarks } = emi.editRequest;
+  const oldAmount = emi.amount;
+
+  if (proposedDueDate !== undefined && proposedDueDate !== null) emi.dueDate = proposedDueDate;
+  if (proposedRemarks !== undefined) emi.remarks = proposedRemarks;
+
+  if (proposedAmount !== undefined && proposedAmount !== null && Number(proposedAmount) !== oldAmount) {
+    const newAmount = Number(proposedAmount);
+    const booking = await Booking.findById(emi.booking);
+    const pricePerSqft = booking ? Number(booking.pricePerSqft) || 0 : 0;
+    const totalAmount = booking ? Number(booking.totalAmount) || 0 : 0;
+    const plcAmount = booking ? Number(booking.plcAmount) || 0 : 0;
+    const baseAmount = Math.max(totalAmount - plcAmount, 0);
+    const commissionRatio = totalAmount > 0 ? baseAmount / totalAmount : 1;
+    const sqftFor = (amt) =>
+      pricePerSqft > 0 ? Math.round(((Number(amt) * commissionRatio) / pricePerSqft) * 100) / 100 : 0;
+
+    emi.amount = newAmount;
+    emi.sqftPortion = sqftFor(newAmount);
+
+    if (emi.emiNumber < 0) {
+      const delta = newAmount - oldAmount;
+      const remainderEmi = await Emi.findOne({
+        booking: emi.booking,
+        emiNumber: { $lt: 0 },
+        status: 'pending',
+        _id: { $ne: emi._id },
+      }).sort({ amount: -1 });
+
+      if (remainderEmi) {
+        const newRemainder = Math.max(Number(remainderEmi.amount) - delta, 0);
+        remainderEmi.amount = newRemainder;
+        remainderEmi.sqftPortion = sqftFor(newRemainder);
+        await remainderEmi.save();
+      }
+    }
+  }
+
+  emi.editRequest.status = 'approved';
+  emi.editRequest.reviewedBy = req.user._id;
+  emi.editRequest.reviewedAt = new Date();
+  await emi.save();
+
+  await auditService.log(
+    req,
+    'emi.edit_approved',
+    `Super Admin ${req.user.name} approved the pending edit on installment #${emi.emiNumber} for booking ${emi.booking}`,
+    emi
+  );
+
+  return res.json({ message: 'Edit approved and applied.', data: emi });
+}
+
+// POST /api/admin/emis/:id/reject-edit — Super Admin only (route-gated).
+async function rejectEdit(req, res) {
+  const { rejection_reason } = req.body;
+  const emi = await Emi.findById(req.params.id);
+  if (!emi) return res.status(404).json({ message: 'EMI not found.' });
+  if (!emi.editRequest || emi.editRequest.status !== 'pending') {
+    return res.status(422).json({ message: 'No pending edit request on this installment.' });
+  }
+
+  emi.editRequest.status = 'rejected';
+  emi.editRequest.reviewedBy = req.user._id;
+  emi.editRequest.reviewedAt = new Date();
+  emi.editRequest.rejectionReason = rejection_reason || null;
+  await emi.save();
+
+  await auditService.log(
+    req,
+    'emi.edit_rejected',
+    `Super Admin ${req.user.name} rejected the pending edit on installment #${emi.emiNumber} for booking ${emi.booking}`,
+    emi
+  );
+
+  return res.json({ message: 'Edit request rejected.', data: emi });
+}
+
+// POST /api/admin/bookings/:id/dp-installments
+// Lets Admin record a new Down Payment part-payment AFTER the booking has
+// already been created — for the common real-world case where the 30% DP
+// isn't paid in one shot but arrives in several unplanned pieces over time.
+async function addDpInstallment(req, res) {
+  const { amount, due_date, remarks } = req.body;
+  if (!amount || Number(amount) <= 0) {
+    return res.status(422).json({ message: 'A valid amount is required.' });
+  }
+
+  const booking = await Booking.findById(req.params.id);
+  if (!booking) return res.status(404).json({ message: 'Booking not found.' });
+  if (booking.status !== 'active') {
+    return res.status(422).json({ message: 'Only active bookings can have new installments added.' });
+  }
+
+  // DP-type entries use negative emiNumbers (-1, -2, -3, ...). Find the next
+  // free slot so this stacks after any existing DP/DP2/extra-DP entries.
+  const existingDpEmis = await Emi.find({ booking: booking._id, emiNumber: { $lt: 0 } }).sort({ emiNumber: 1 });
+  const nextEmiNumber = existingDpEmis.length ? existingDpEmis[0].emiNumber - 1 : -1;
+
+  // Same sqftPortion formula used everywhere else (bookingService.generateEmis,
+  // emiController.update) so commission calculates correctly from day one.
+  const pricePerSqft = Number(booking.pricePerSqft) || 0;
+  const totalAmount = Number(booking.totalAmount) || 0;
+  const plcAmount = Number(booking.plcAmount) || 0;
+  const baseAmount = Math.max(totalAmount - plcAmount, 0);
+  const commissionRatio = totalAmount > 0 ? baseAmount / totalAmount : 1;
+  const sqftFor = (amt) =>
+    pricePerSqft > 0 ? Math.round(((Number(amt) * commissionRatio) / pricePerSqft) * 100) / 100 : 0;
+  const sqftPortion = sqftFor(Number(amount));
+
+  // This installment is a piece of the 30% DP target, not extra money on
+  // top of it — so subtract it from whichever DP-type line still holds the
+  // unpaid remainder, so the total DP due stays accurate instead of growing.
+  const remainderEmi = await Emi.findOne({
+    booking: booking._id,
+    emiNumber: { $lt: 0 },
+    status: 'pending',
+  }).sort({ amount: -1 });
+
+  if (remainderEmi) {
+    const newRemainder = Math.max(Number(remainderEmi.amount) - Number(amount), 0);
+    remainderEmi.amount = newRemainder;
+    remainderEmi.sqftPortion = sqftFor(newRemainder);
+    await remainderEmi.save();
+  }
+
+  const emi = await Emi.create({
+    booking: booking._id,
+    agent: booking.agent,
+    emiNumber: nextEmiNumber,
+    amount: Number(amount),
+    sqftPortion,
+    dueDate: due_date ? new Date(due_date) : new Date(),
+    status: 'pending',
+    commissionProcessed: false,
+    remarks: remarks || null,
+    createdBy: req.user._id,
+  });
+
+  await auditService.log(
+    req,
+    'emi.dp_installment_added',
+    `Admin ${req.user.name} added a new Down Payment installment of ₹${amount} to booking ${booking.bookingNumber}`,
+    emi
+  );
+
+  return res.status(201).json({ message: 'New Down Payment installment added.', data: emi });
+}
+
+module.exports = { index, bookingEmis, markPaid, overdue, dues, update, addDpInstallment };
