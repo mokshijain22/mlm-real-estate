@@ -213,6 +213,16 @@ function Sidebar() {
               </NavLink>
             </li>
           )}
+          {can("bookings") && (
+            <li className="nav-item">
+              <NavLink className="nav-link" to="/admin/emi-edit-requests">
+                <span className="nav-icon">
+                  <iconify-icon icon="solar:pen-new-square-bold-duotone"></iconify-icon>
+                </span>
+                <span className="nav-text"> Edit Requests </span>
+              </NavLink>
+            </li>
+          )}
           {can("emis") && (
             <li className="nav-item">
               <NavLink className="nav-link" to="/admin/emis">

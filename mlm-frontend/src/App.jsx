@@ -44,6 +44,7 @@ import AdminInstallmentSchedules from "./pages/admin/InstallmentSchedules.jsx";
 import AdminBookingDetail from "./pages/admin/BookingDetail.jsx";
 import AdminBookingCreate from "./pages/admin/BookingCreate.jsx";
 import AdminBookingsPending from "./pages/admin/BookingsPending.jsx";
+import AdminEmiEditRequests from "./pages/admin/EmiEditRequests.jsx";
 import EmiManagement from "./pages/admin/EmiManagement.jsx";
 import SubAdmins from "./pages/admin/SubAdmins.jsx";
 import SubAdminCreate from "./pages/admin/SubAdminCreate.jsx";
@@ -143,6 +144,7 @@ function App() {
         <Route path="/admin/installment-schedules" element={<PermissionRoute permission="installment_schedules"><AdminInstallmentSchedules /></PermissionRoute>} />
         <Route path="/admin/bookings/create" element={<PermissionRoute permission="bookings"><AdminBookingCreate /></PermissionRoute>} />
         <Route path="/admin/bookings/pending" element={<PermissionRoute permission="bookings"><AdminBookingsPending /></PermissionRoute>} />
+        <Route path="/admin/emi-edit-requests" element={<PermissionRoute permission="bookings"><AdminEmiEditRequests /></PermissionRoute>} />
         <Route path="/admin/bookings/:id" element={<PermissionRoute permission="bookings"><AdminBookingDetail /></PermissionRoute>} />
 
         <Route path="/admin/emis" element={<PermissionRoute permission="emis"><EmiManagement /></PermissionRoute>} />

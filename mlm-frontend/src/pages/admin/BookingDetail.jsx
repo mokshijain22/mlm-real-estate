@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams, Link } from "react-router-dom";
 import api from "../../api/axios.js";
+import { getStoredUser } from "../../utils/userHelpers.js";
 
 function fmtDate(d) {
   return new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
@@ -131,13 +132,48 @@ function BookingDetail() {
     setActionLoading(true);
     setEmiEditError("");
     try {
-      await api.put(`/admin/emis/${emiId}`, emiEditForm);
+      const res = await api.put(`/admin/emis/${emiId}`, emiEditForm);
       setEditingEmiId(null);
+      if (res.data?.pendingApproval) {
+        setEmiEditError(""); // not an error — just informational, shown via the pending badge after reload
+      }
       load();
     } catch (err) {
       setEmiEditError(err.response?.data?.message || err.message);
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  const currentRole = getStoredUser()?.role;
+  const isSuperAdminUser = currentRole === "super_admin";
+  const [editApprovalActionId, setEditApprovalActionId] = useState(null);
+  const [editApprovalError, setEditApprovalError] = useState("");
+
+  const approveEmiEdit = async (emiId) => {
+    setEditApprovalActionId(emiId);
+    setEditApprovalError("");
+    try {
+      await api.post(`/admin/emis/${emiId}/approve-edit`);
+      load();
+    } catch (err) {
+      setEditApprovalError(err.response?.data?.message || err.message);
+    } finally {
+      setEditApprovalActionId(null);
+    }
+  };
+
+  const rejectEmiEdit = async (emiId) => {
+    const reason = window.prompt("Reason for rejecting this edit (optional):") || "";
+    setEditApprovalActionId(emiId);
+    setEditApprovalError("");
+    try {
+      await api.post(`/admin/emis/${emiId}/reject-edit`, { rejection_reason: reason });
+      load();
+    } catch (err) {
+      setEditApprovalError(err.response?.data?.message || err.message);
+    } finally {
+      setEditApprovalActionId(null);
     }
   };
 
@@ -1068,10 +1104,40 @@ function BookingDetail() {
                         ) : (
                           <span className="badge bg-light text-muted">Cancelled</span>
                         )}
+                        {emi.editRequest?.status === "pending" && (
+                          <div className="mt-1">
+                            <span className="badge bg-info-subtle text-info d-block">
+                              Edit pending approval: ₹{fmtMoney(emi.editRequest.proposedAmount)} on{" "}
+                              {emi.editRequest.proposedDueDate ? fmtDate(emi.editRequest.proposedDueDate) : "-"}
+                            </span>
+                          </div>
+                        )}
                       </td>
                       <td>{emi.paidDate ? fmtDate(emi.paidDate) : "-"}</td>
                       <td>{emi.paymentReference || "-"}</td>
                       <td className="d-print-none">
+                        {emi.editRequest?.status === "pending" && isSuperAdminUser && (
+                          <div className="d-flex gap-1 mb-1">
+                            <button
+                              className="btn btn-success btn-sm"
+                              disabled={editApprovalActionId === emi._id}
+                              onClick={() => approveEmiEdit(emi._id)}
+                            >
+                              {editApprovalActionId === emi._id ? "..." : "Approve Edit"}
+                            </button>
+                            <button
+                              className="btn btn-outline-danger btn-sm"
+                              disabled={editApprovalActionId === emi._id}
+                              onClick={() => rejectEmiEdit(emi._id)}
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        )}
+                        {emi.editRequest?.status === "pending" && !isSuperAdminUser && (
+                          <div className="text-muted small mb-1">Awaiting Super Admin approval</div>
+                        )}
+                        {editApprovalError && <div className="text-danger small mb-1">{editApprovalError}</div>}
                         {emi.status !== "paid" && emi.status !== "cancelled" && booking.status === "active" && (
                           <div className="d-flex gap-1">
                             <button
@@ -1095,7 +1161,7 @@ function BookingDetail() {
                                   X
                                 </button>
                               </>
-                            ) : (
+                            ) : emi.editRequest?.status === "pending" ? null : (
                               <button className="btn btn-outline-secondary btn-sm" onClick={() => startEmiEdit(emi)}>
                                 Edit
                               </button>

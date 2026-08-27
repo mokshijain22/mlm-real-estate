@@ -118,6 +118,7 @@ router.put('/bookings/:id', bookingController.update);
 router.put('/emis/:id', emiController.update);
 router.patch('/bookings/:id/approve', restrictTo('super_admin'), bookingController.approve);
 router.patch('/bookings/:id/reject', restrictTo('super_admin'), bookingController.reject);
+router.get('/emis/edit-requests', emiController.editRequests);
 router.post('/emis/:id/approve-edit', restrictTo('super_admin'), emiController.approveEdit);
 router.post('/emis/:id/reject-edit', restrictTo('super_admin'), emiController.rejectEdit);
 router.patch('/bookings/:id/cancel', bookingController.cancel);

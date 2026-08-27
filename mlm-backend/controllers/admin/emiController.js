@@ -593,4 +593,36 @@ async function addDpInstallment(req, res) {
   return res.status(201).json({ message: 'New Down Payment installment added.', data: emi });
 }
 
-module.exports = { index, bookingEmis, markPaid, overdue, dues, update, addDpInstallment };
+// GET /api/admin/emis/edit-requests
+// Central list of every installment currently awaiting Super Admin review —
+// so Sub Admin can see what they've submitted, and Super Admin doesn't have
+// to open each booking individually to find pending edits.
+async function editRequests(req, res) {
+  const { isSuperAdmin } = require('../../utils/userHelpers');
+
+  // Super Admin's action queue defaults to just 'pending' (what they need to
+  // act on). Sub Admin's own history defaults to ALL of their requests
+  // (pending/approved/rejected) so they can see what happened after review,
+  // not just the ones still waiting. ?status=all|pending|approved|rejected
+  // overrides the default for either role.
+  const filter = { 'editRequest.status': { $ne: 'none' } };
+
+  if (!isSuperAdmin(req.user)) {
+    filter['editRequest.requestedBy'] = req.user._id;
+    if (req.query.status && req.query.status !== 'all') {
+      filter['editRequest.status'] = req.query.status;
+    }
+  } else {
+    filter['editRequest.status'] = req.query.status && req.query.status !== 'all' ? req.query.status : 'pending';
+  }
+
+  const emis = await Emi.find(filter)
+    .populate({ path: 'booking', populate: [{ path: 'customer' }, { path: 'plot' }, { path: 'project' }] })
+    .populate('editRequest.requestedBy')
+    .populate('editRequest.reviewedBy')
+    .sort({ 'editRequest.requestedAt': -1 });
+
+  res.json({ data: emis });
+}
+
+module.exports = { index, bookingEmis, markPaid, overdue, dues, update, addDpInstallment, approveEdit, rejectEdit, editRequests };
