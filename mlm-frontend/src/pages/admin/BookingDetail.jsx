@@ -914,8 +914,8 @@ function BookingDetail() {
                 <h4 className="mb-0 text-break">₹ {fmtMoney(booking.totalAmount)}</h4>
               </div>
               <div className="col-6 col-md-3">
-                <p className="text-muted mb-1 small">Booking Deposit</p>
-                <h4 className="mb-0 text-break">₹ {fmtMoney(booking.bookingAmount)}</h4>
+                <p className="text-muted mb-1 small">Booking Deposit (Token + DP)</p>
+                <h4 className="mb-0 text-break">₹ {fmtMoney((booking.bookingAmount || 0) + (booking.downPaymentAmount || 0))}</h4>
               </div>
               <div className="col-6 col-md-3">
                 <p className="text-muted mb-1 small">Remaining Balance</p>

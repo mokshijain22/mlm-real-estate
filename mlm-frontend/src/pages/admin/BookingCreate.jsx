@@ -382,28 +382,48 @@ function BookingCreate() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sellingPrice, bookingAmount, downPaymentAmount, emiAmountEach, emiCount, bookingDate, additionalDownPayments]);
 
+  const [scheduleRowError, setScheduleRowError] = useState("");
+
   function updateScheduleRow(key, field, value) {
-    setScheduleDates((rows) => {
-      if (field !== "amount") {
-        return rows.map((r) => (r.key === key ? { ...r, [field]: value } : r));
-      }
+    if (field !== "amount") {
+      setScheduleDates((rows) => rows.map((r) => (r.key === key ? { ...r, [field]: value } : r)));
+      return;
+    }
 
-      const newAmount = Number(value) || 0;
-      const oldRow = rows.find((r) => r.key === key);
-      const oldAmount = oldRow ? oldRow.amount : 0;
-      const delta = newAmount - oldAmount;
+    const newAmount = Number(value) || 0;
+    const oldRow = scheduleDates.find((r) => r.key === key);
+    const oldAmount = oldRow ? oldRow.amount : 0;
+    const delta = newAmount - oldAmount;
+    const registryRow = scheduleDates.find((r) => r.key === "registry");
+    const currentRegistry = registryRow ? registryRow.amount : 0;
 
-      // Any manual edit to token / down payment / an individual EMI shifts the
-      // difference to/from Registry, so the schedule always still totals to
-      // the selling price. Editing Registry itself just sets it directly.
-      return rows.map((r) => {
+    // Any manual edit to token / down payment / an individual EMI shifts the
+    // difference to/from Registry, so the schedule always still totals to
+    // the selling price. If Registry can't absorb the full delta, REFUSE the
+    // edit instead of silently flooring Registry at 0 — that used to make
+    // the excess amount vanish from the schedule entirely (money untracked,
+    // no Registry commission), with no warning to the admin.
+    if (key !== "registry" && currentRegistry - delta < 0) {
+      setScheduleRowError(
+        `Can't apply this — it would need ₹${Math.round(delta - currentRegistry).toLocaleString(
+          "en-IN"
+        )} more than Registry currently has (₹${Math.round(currentRegistry).toLocaleString(
+          "en-IN"
+        )}). Reduce another line first, or lower this amount.`
+      );
+      return;
+    }
+    setScheduleRowError("");
+
+    setScheduleDates((rows) =>
+      rows.map((r) => {
         if (r.key === key) return { ...r, amount: newAmount };
         if (key !== "registry" && r.key === "registry") {
-          return { ...r, amount: Math.max(r.amount - delta, 0) };
+          return { ...r, amount: currentRegistry - delta };
         }
         return r;
-      });
-    });
+      })
+    );
   }
 
   const registryAmount = scheduleDates.find((r) => r.key === "registry")?.amount || 0;
@@ -1190,6 +1210,9 @@ function BookingCreate() {
           <div className="card bg-light border-0 mb-4">
             <div className="card-body py-3">
               <h6 className="mb-3">Schedule dates ({scheduleRows.length})</h6>
+              {scheduleRowError && (
+                <div className="alert alert-danger py-2 px-3 mb-3 small">{scheduleRowError}</div>
+              )}
               {scheduleRows.map((row) => (
                 <div key={row.key} className="row align-items-center border-bottom py-2 g-2">
                   <div className="col-md-5 small">{row.label}</div>

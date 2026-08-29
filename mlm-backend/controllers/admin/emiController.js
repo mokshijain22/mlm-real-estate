@@ -5,6 +5,25 @@ const commissionService = require('../../services/commissionService');
 const auditService = require('../../services/auditService');
 const { PAYMENT_MODES } = require('../../utils/paymentModes');
 
+// Booking.remainingAmount and Booking.downPaymentAmount are snapshot fields
+// set once at creation. Any edit/add to actual Emi documents (DP or regular
+// EMI) must call this afterward, or the booking-level summary cards go
+// stale while the EMI table itself (which reads live Emi documents) stays
+// correct — that mismatch is exactly what caused "Remaining Balance" and
+// "Booking Deposit" at the top of the booking detail page to show old
+// numbers after a DP installment was added or edited.
+async function syncBookingTotals(bookingId) {
+  const activeEmis = await Emi.find({ booking: bookingId, status: { $ne: 'cancelled' } });
+  const downPaymentAmount = activeEmis
+    .filter((e) => e.emiNumber < 0)
+    .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+  const remainingAmount = activeEmis
+    .filter((e) => e.emiNumber > 0)
+    .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+
+  await Booking.findByIdAndUpdate(bookingId, { downPaymentAmount, remainingAmount });
+}
+
 /**
  * Release commission triggered by the Down Payment being paid. If this
  * booking also has a "Booking Deposit" milestone (emiNumber = 0) whose
@@ -423,6 +442,7 @@ async function update(req, res) {
   }
 
   await emi.save();
+  await syncBookingTotals(emi.booking);
 
   await auditService.log(
     req,
@@ -486,6 +506,7 @@ async function approveEdit(req, res) {
   emi.editRequest.reviewedBy = req.user._id;
   emi.editRequest.reviewedAt = new Date();
   await emi.save();
+  await syncBookingTotals(emi.booking);
 
   await auditService.log(
     req,
@@ -582,6 +603,7 @@ async function addDpInstallment(req, res) {
     remarks: remarks || null,
     createdBy: req.user._id,
   });
+  await syncBookingTotals(booking._id);
 
   await auditService.log(
     req,
