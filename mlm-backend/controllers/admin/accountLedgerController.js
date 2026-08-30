@@ -102,7 +102,7 @@ async function buildCollectionsRows(query) {
   for (const e of emiPayments) {
     rows.push({
       date: e.paidDate,
-      type: `EMI #${e.emiNumber}`,
+      type: e.emiNumber === -1 ? 'Down Payment' : e.emiNumber < -1 ? `Down Payment ${Math.abs(e.emiNumber)}` : e.emiNumber === 0 ? 'Booking Token' : e.emiNumber === 99 ? 'Registry' : `EMI #${e.emiNumber}`,
       reference: e.booking?.bookingNumber || '-',
       customer: e.booking?.customer?.name || '-',
       project: e.booking?.project?.name || '-',
@@ -302,7 +302,7 @@ async function buildDpEmiRows(query) {
 
   for (const e of emis) {
     rows.push({
-      type: `EMI #${e.emiNumber}`,
+      type: e.emiNumber === -1 ? 'Down Payment' : e.emiNumber < -1 ? `Down Payment ${Math.abs(e.emiNumber)}` : e.emiNumber === 0 ? 'Booking Token' : e.emiNumber === 99 ? 'Registry' : `EMI #${e.emiNumber}`,
       reference: e.booking?.bookingNumber || '-',
       customer: e.booking?.customer?.name || '-',
       project: e.booking?.project?.name || '-',

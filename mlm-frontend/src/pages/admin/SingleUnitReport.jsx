@@ -110,7 +110,7 @@ function SingleUnitReport() {
             <div className="table-responsive">
               <table className="table table-hover mb-0">
                 <thead className="table-light">
-                  <tr><th>EMI #</th><th>Amount</th><th>Due Date</th><th>Paid Date</th><th>Status</th></tr>
+                  <tr><th>Milestone</th><th>Amount</th><th>Due Date</th><th>Paid Date</th><th>Status</th></tr>
                 </thead>
                 <tbody>
                   {data.emis.length === 0 && (
@@ -118,7 +118,7 @@ function SingleUnitReport() {
                   )}
                   {data.emis.map((e) => (
                     <tr key={e._id}>
-                      <td>{e.emiNumber}</td>
+                      <td>{e.emiNumber === -1 ? "Down Payment" : e.emiNumber < -1 ? `Down Payment ${Math.abs(e.emiNumber)}` : e.emiNumber === 0 ? "Booking Token" : e.emiNumber === 99 ? "Registry" : `EMI ${e.emiNumber}`}</td>
                       <td>₹{fmt(e.amount)}</td>
                       <td>{fmtDate(e.dueDate)}</td>
                       <td>{fmtDate(e.paidDate)}</td>

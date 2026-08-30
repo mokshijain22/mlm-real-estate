@@ -116,7 +116,7 @@ function BookingDetail() {
                   <table className="table table-sm table-hover align-middle mb-0">
                     <thead className="table-light">
                       <tr>
-                        <th>#</th>
+                        <th>Milestone</th>
                         <th>Due Date</th>
                         <th>Amount</th>
                         <th>Status</th>
@@ -125,7 +125,17 @@ function BookingDetail() {
                     <tbody>
                       {emis.map((e) => (
                         <tr key={e._id}>
-                          <td>{e.emiNumber}</td>
+                          <td>
+                            {e.emiNumber === -1
+                              ? "Down Payment"
+                              : e.emiNumber < -1
+                              ? `Down Payment ${Math.abs(e.emiNumber)}`
+                              : e.emiNumber === 0
+                              ? "Booking Token"
+                              : e.emiNumber === 99
+                              ? "Registry"
+                              : `EMI ${e.emiNumber}`}
+                          </td>
                           <td>{new Date(e.dueDate).toLocaleDateString("en-IN")}</td>
                           <td>₹{e.amount?.toLocaleString("en-IN")}</td>
                           <td>
