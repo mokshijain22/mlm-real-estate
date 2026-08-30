@@ -147,7 +147,7 @@ async function createBooking(data, actingUser) {
             approvalStatus: actingIsAdmin ? 'approved' : 'pending',
             approvedBy: actingIsAdmin ? actingUser._id : null,
             approvedAt: actingIsAdmin ? new Date() : null,
-            bookingDate: new Date(),
+            bookingDate: data.booking_date ? new Date(data.booking_date) : new Date(),
             notes: data.notes || null,
             createdBy: actingUser ? actingUser._id : data.agent_id || null,
 

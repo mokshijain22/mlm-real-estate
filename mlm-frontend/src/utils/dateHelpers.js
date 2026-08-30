@@ -20,3 +20,11 @@ export function firstOfMonth(d = new Date()) {
 export function lastOfMonth(d = new Date()) {
   return toLocalDateStr(new Date(d.getFullYear(), d.getMonth() + 1, 0));
 }
+
+export function today() {
+  // `new Date().toISOString().slice(0, 10)` breaks for "today" specifically
+  // between local midnight and local-midnight-in-UTC (e.g. 00:00–05:29 IST)
+  // — it silently shows yesterday's date during that window. Always read
+  // the local calendar date instead.
+  return toLocalDateStr(new Date());
+}

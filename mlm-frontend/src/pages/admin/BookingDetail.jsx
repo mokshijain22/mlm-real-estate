@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useSearchParams, Link } from "react-router-dom";
 import api from "../../api/axios.js";
 import { getStoredUser } from "../../utils/userHelpers.js";
+import { today, toLocalDateStr } from "../../utils/dateHelpers.js";
 
 function fmtDate(d) {
   return new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
@@ -67,7 +68,7 @@ function BookingDetail() {
   const [rejectError, setRejectError] = useState("");
 
   const [payingEmiId, setPayingEmiId] = useState(null);
-  const [paidDate, setPaidDate] = useState(new Date().toISOString().slice(0, 10));
+  const [paidDate, setPaidDate] = useState(today());
   const [paymentMode, setPaymentMode] = useState("cash");
   const [paymentReference, setPaymentReference] = useState("");
   const [payError, setPayError] = useState("");
@@ -124,7 +125,7 @@ function BookingDetail() {
 
   const startEmiEdit = (emi) => {
     setEditingEmiId(emi._id);
-    setEmiEditForm({ dueDate: new Date(emi.dueDate).toISOString().slice(0, 10), amount: emi.amount });
+    setEmiEditForm({ dueDate: toLocalDateStr(new Date(emi.dueDate)), amount: emi.amount });
     setEmiEditError("");
   };
 
@@ -178,11 +179,11 @@ function BookingDetail() {
   };
 
   const [showAddDp, setShowAddDp] = useState(false);
-  const [addDpForm, setAddDpForm] = useState({ amount: "", due_date: new Date().toISOString().slice(0, 10), remarks: "" });
+  const [addDpForm, setAddDpForm] = useState({ amount: "", due_date: today(), remarks: "" });
   const [addDpError, setAddDpError] = useState("");
 
   const openAddDp = () => {
-    setAddDpForm({ amount: "", due_date: new Date().toISOString().slice(0, 10), remarks: "" });
+    setAddDpForm({ amount: "", due_date: today(), remarks: "" });
     setAddDpError("");
     setShowAddDp(true);
   };
@@ -1147,7 +1148,7 @@ function BookingDetail() {
                                 setPaymentMode("cash");
                                 setPaymentReference("");
                                 setPayError("");
-                                setPaidDate(new Date().toISOString().slice(0, 10));
+                                setPaidDate(today());
                               }}
                             >
                               Pay

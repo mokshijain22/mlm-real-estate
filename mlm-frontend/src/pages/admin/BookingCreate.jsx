@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import api from "../../api/axios.js";
 import BookingPlotMap from "./BookingPlotMap.jsx";
 import { getStoredUser } from "../../utils/userHelpers.js";
+import { today } from "../../utils/dateHelpers.js";
 
 const STEPS = [
   { key: 1, label: "Customer & property" },
@@ -38,7 +39,7 @@ function BookingCreate() {
   const [selectedLead, setSelectedLead] = useState(null);
 
   // Step 1 — walk-in customer fields
-  const [bookingDate, setBookingDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [bookingDate, setBookingDate] = useState(() => today());
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -588,9 +589,9 @@ function BookingCreate() {
   }
 
   function generatePaymentReference() {
-    const today = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+    const todayStr = today().replace(/-/g, "");
     const rand = Math.random().toString(36).slice(2, 8).toUpperCase();
-    return `TXN-${today}-${rand}`;
+    return `TXN-${todayStr}-${rand}`;
   }
 
   function handleContinue() {
@@ -621,6 +622,11 @@ function BookingCreate() {
         lead_id: leadId || undefined,
         plot_id: plotId,
         agent_id: agentId || undefined,
+        // The "Booking date" field above (step 1) was previously only used
+        // to build the on-screen preview schedule — never sent to the
+        // server, so every booking got silently stamped with "the instant
+        // Submit was clicked" instead of the date you actually typed.
+        booking_date: bookingDate,
         price_per_sqft: Number(plotRate) || 0,
         plot_area: Number(plotArea) || 0,
         plc_percent: Number(plotPlcPercent) || 0,
