@@ -5,12 +5,12 @@ import api from "../../api/axios.js";
 const EMI_LABELS = {
   0: "Booking Amount",
   "-1": "Down Payment",
-  "-2": "Down Payment 2",
   99: "Registry",
 };
 function emiLabel(emiNumber) {
   if (EMI_LABELS[emiNumber] !== undefined) return EMI_LABELS[emiNumber];
   if (emiNumber > 0) return `EMI Month ${emiNumber}`;
+  if (emiNumber < 0) return `Down Payment ${Math.abs(emiNumber)}`;
   return `Step ${emiNumber}`;
 }
 

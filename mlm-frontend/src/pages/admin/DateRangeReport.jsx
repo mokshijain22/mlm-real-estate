@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import api from "../../api/axios.js";
 import ExportButton from "../../components/shared/ExportButton.jsx";
+import { firstOfMonth, lastOfMonth } from "../../utils/dateHelpers.js";
 
 const PURPOSE_OPTIONS = [
   { value: "all", label: "All" },
@@ -27,13 +28,15 @@ const ALL_COLUMNS = [
   { key: "note", label: "Note" },
 ];
 
-function firstOfMonth() {
-  const d = new Date();
-  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10);
-}
-function lastOfMonth() {
-  const d = new Date();
-  return new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().slice(0, 10);
+function toLocalDateStr(d) {
+  // Avoid toISOString() here — it converts to UTC first, which silently
+  // shifts the date back a day for any timezone ahead of UTC (e.g. IST),
+  // making "this month" default to 31st-of-last-month → 30th instead of
+  // the true 1st → last day of the calendar month.
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function DateRangeReport() {

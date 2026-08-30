@@ -54,8 +54,13 @@ async function store(req, res) {
       const dup = await Customer.findOne({ email });
       if (dup) return res.status(422).json({ errors: { email: 'Email already exists.' } });
     }
-    const dupPhone = await Customer.findOne({ phone });
-    if (dupPhone) return res.status(422).json({ errors: { phone: 'Phone already exists.' } });
+    const dupPhone = req.body.confirmDuplicatePhone ? null : await Customer.findOne({ phone });
+    if (dupPhone) {
+      return res.status(422).json({
+        errors: { phone: `Phone already used by ${dupPhone.name} (${dupPhone.customerCode}).` },
+        duplicatePhone: { name: dupPhone.name, customerCode: dupPhone.customerCode, customerId: dupPhone._id },
+      });
+    }
     if (aadhaar_number) {
       const dupAadhaar = await Customer.findOne({ aadhaarNumber: aadhaar_number });
       if (dupAadhaar) return res.status(422).json({ errors: { aadhaar_number: 'Aadhaar already exists.' } });
@@ -125,8 +130,13 @@ async function update(req, res) {
       const dup = await Customer.findOne({ email, _id: { $ne: customer._id } });
       if (dup) return res.status(422).json({ errors: { email: 'Email already exists.' } });
     }
-    const dupPhone = await Customer.findOne({ phone, _id: { $ne: customer._id } });
-    if (dupPhone) return res.status(422).json({ errors: { phone: 'Phone already exists.' } });
+    const dupPhone = req.body.confirmDuplicatePhone ? null : await Customer.findOne({ phone, _id: { $ne: customer._id } });
+    if (dupPhone) {
+      return res.status(422).json({
+        errors: { phone: `Phone already used by ${dupPhone.name} (${dupPhone.customerCode}).` },
+        duplicatePhone: { name: dupPhone.name, customerCode: dupPhone.customerCode, customerId: dupPhone._id },
+      });
+    }
     if (aadhaar_number) {
       const dupAadhaar = await Customer.findOne({ aadhaarNumber: aadhaar_number, _id: { $ne: customer._id } });
       if (dupAadhaar) return res.status(422).json({ errors: { aadhaar_number: 'Aadhaar already exists.' } });

@@ -11,10 +11,9 @@ function fmtMoney(n) {
 }
 function emiLabel(emiNumber) {
   if (emiNumber === -1) return "Down Payment";
-  if (emiNumber === -2) return "Down Payment 2";
   if (emiNumber === 0) return "Booking Token";
   if (emiNumber === 99) return "Registry";
-  if (emiNumber < 0) return `Down Payment ${Math.abs(emiNumber) - 1}`;
+  if (emiNumber < 0) return `Down Payment ${Math.abs(emiNumber)}`;
   return `EMI ${emiNumber}`;
 }
 

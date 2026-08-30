@@ -1,21 +1,23 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import api from "../../api/axios.js";
 import ExportButton from "../../components/shared/ExportButton.jsx";
 
 const EMI_LABELS = {
   0: "Booking Amount",
   "-1": "Down Payment",
-  "-2": "Down Payment 2",
   99: "Registry",
 };
 function emiLabel(emiNumber) {
   if (EMI_LABELS[emiNumber] !== undefined) return EMI_LABELS[emiNumber];
   if (emiNumber > 0) return `EMI Month ${emiNumber}`;
+  if (emiNumber < 0) return `Down Payment ${Math.abs(emiNumber)}`;
   return `Step ${emiNumber}`;
 }
 
 function EmiCollectionsReport() {
+  const [searchParams] = useSearchParams();
+
   const [emis, setEmis] = useState(null);
   const [meta, setMeta] = useState(null);
   const [summary, setSummary] = useState(null);
@@ -25,8 +27,12 @@ function EmiCollectionsReport() {
   const [existingCustomerId, setExistingCustomerId] = useState("");
   const [error, setError] = useState(null);
 
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  // Read an incoming date_from/date_to from the URL (e.g. the Dashboard's
+  // "EMI Collected" card links here with the current month's range) so the
+  // report actually reflects what the card showed, instead of always
+  // falling back to an unfiltered all-time total.
+  const [dateFrom, setDateFrom] = useState(searchParams.get("date_from") || "");
+  const [dateTo, setDateTo] = useState(searchParams.get("date_to") || "");
   const [projectId, setProjectId] = useState("");
   const [agentId, setAgentId] = useState("");
   const [status, setStatus] = useState("all");

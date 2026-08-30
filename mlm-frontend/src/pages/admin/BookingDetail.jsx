@@ -14,8 +14,8 @@ function fmtMoney(n) {
 }
 
 function emiStepLabel(emiNumber) {
-  if (emiNumber === -2) return "Down Payment 2";
   if (emiNumber === -1) return "Down Payment";
+  if (emiNumber < -1) return `Down Payment ${Math.abs(emiNumber)}`;
   if (emiNumber === 0) return "Booking amount (token)";
   if (emiNumber === 99) return "Registry";
   return `EMI ${emiNumber}`;
@@ -1071,8 +1071,8 @@ function BookingDetail() {
                       <td>
                         {emi.emiNumber === -1
                           ? "Down Payment"
-                          : emi.emiNumber === -2
-                          ? "Down Payment 2"
+                          : emi.emiNumber < -1
+                          ? `Down Payment ${Math.abs(emi.emiNumber)}`
                           : emi.emiNumber === 0
                           ? "Booking Token"
                           : emi.emiNumber === 99
@@ -1186,8 +1186,8 @@ function BookingDetail() {
                         const n = emis.find((e) => e._id === payingEmiId)?.emiNumber;
                         return n === -1
                           ? "Down Payment"
-                          : n === -2
-                          ? "Down Payment 2"
+                          : n < -1
+                          ? `Down Payment ${Math.abs(n)}`
                           : n === 0
                           ? "Booking Token"
                           : n === 99

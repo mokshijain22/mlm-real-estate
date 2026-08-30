@@ -1096,20 +1096,35 @@ async function projectSalesExport(req, res) {
 
     const bookings = await Booking.find(bookingsQuery).populate('customer').populate('plot').populate('project').populate('agent', 'name').sort({ bookingDate: -1 });
 
+    const Emi = require('../../models/Emi');
+    const bookingIds = bookings.map((b) => b._id);
+    const regularEmis = await Emi.find({ booking: { $in: bookingIds }, emiNumber: { $gt: 0 } });
+    const avgEmiByBooking = {};
+    for (const e of regularEmis) {
+      const key = String(e.booking);
+      if (!avgEmiByBooking[key]) avgEmiByBooking[key] = { sum: 0, count: 0 };
+      avgEmiByBooking[key].sum += Number(e.amount) || 0;
+      avgEmiByBooking[key].count += 1;
+    }
+
     const headers = ['Booking #', 'Customer', 'Project', 'Plot', 'Agent', 'Total Amount', 'Booking Amount', 'EMI Amount', 'Months', 'Status', 'Date'];
-    const rows = bookings.map((b) => [
-      b.bookingNumber,
-      b.customer?.name || 'N/A',
-      b.project?.name || 'N/A',
-      b.plot?.plotNumber || 'N/A',
-      b.agent?.name || 'N/A',
-      b.totalAmount,
-      b.bookingAmount,
-      b.emiAmount || 0,
-      b.emiMonths || 0,
-      b.approvalStatus,
-      b.bookingDate.toISOString().slice(0, 10),
-    ]);
+    const rows = bookings.map((b) => {
+      const agg = avgEmiByBooking[String(b._id)];
+      const actualEmiAmount = agg && agg.count > 0 ? agg.sum / agg.count : b.emiAmount || 0;
+      return [
+        b.bookingNumber,
+        b.customer?.name || 'N/A',
+        b.project?.name || 'N/A',
+        b.plot?.plotNumber || 'N/A',
+        b.agent?.name || 'N/A',
+        b.totalAmount,
+        b.bookingAmount,
+        actualEmiAmount,
+        b.emiMonths || 0,
+        b.approvalStatus,
+        b.bookingDate.toISOString().slice(0, 10),
+      ];
+    });
 
     return sendCsv(res, `project_sales_${timestamp()}.csv`, toCsv(headers, rows));
   } catch (err) {

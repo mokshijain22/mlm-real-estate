@@ -337,7 +337,7 @@ async function previewCommissionForData({
     agent_name: sellingAgent.name,
     rank: bookingRank?.name || 'B.EX',
     role: 'Selling Agent',
-    points_per_sf: sellerPoints,
+    points_per_sf: sellerRatePerSqft,
     commission_per_emi: sellerCommissionPerEmi,
     total_commission: sellerCommissionPerEmi * emiMonths,
     default_cap_per_sqft: sellingAgent.slabPerSqft ?? 0,
@@ -370,7 +370,7 @@ async function previewCommissionForData({
         agent_name: uplineAgent.name,
         rank: uplineAgent.rank?.name || 'B.EX',
         role: `Upline (${level})`,
-        points_per_sf: difference,
+        points_per_sf: uplineRatePerSqft,
         commission_per_emi: commissionPerEmi,
         total_commission: commissionPerEmi * emiMonths,
         default_cap_per_sqft: uplineAgent.slabPerSqft ?? 0,
@@ -500,11 +500,17 @@ async function previewCommission(booking) {
   const sellerCapPerSqft = Number(booking.commissionCapPerSqft) || 0;
   const uplineCapsPerSqft = booking.uplineCommissionCapsPerSqft || [];
 
+  const Emi = require('../models/Emi');
+  const scheduledEmis = await Emi.find({ booking: booking._id, emiNumber: { $gte: 1, $lte: booking.emiMonths } });
+  const actualEmiAmount = scheduledEmis.length > 0
+    ? scheduledEmis.reduce((s, e) => s + Number(e.amount || 0), 0) / scheduledEmis.length
+    : Number(booking.emiAmount) || 0;
+
   const emiRows = await previewCommissionForData({
     agentId: booking.agent._id,
     agentRankId: booking.agentRank?._id || null,
     pricePerSqft,
-    emiAmount: booking.emiAmount,
+    emiAmount: actualEmiAmount,
     emiMonths: booking.emiMonths,
     paymentMode: booking.paymentMode,
     companyRateOverride: companyRateSnapshot,

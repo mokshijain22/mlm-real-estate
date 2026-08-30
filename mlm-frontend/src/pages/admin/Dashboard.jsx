@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { firstOfMonth, lastOfMonth } from "../../utils/dateHelpers.js";
 import api from "../../api/axios.js";
 import CountUp from "../../components/admin/charts/CountUp.jsx";
 import DonutChart from "../../components/admin/charts/DonutChart.jsx";
@@ -194,7 +195,10 @@ function Dashboard() {
       <div className="row row-cols-2 row-cols-lg-5 g-3 mb-2">
         {can("reports") && (
         <div className="mb-3">
-          <Link to="/admin/reports/emi-collections" className="dash-stat-card dash-animate d-block">
+          <Link
+            to={`/admin/reports/emi-collections?date_from=${firstOfMonth()}&date_to=${lastOfMonth()}`}
+            className="dash-stat-card dash-animate d-block"
+          >
             <div className="dash-stat-body">
               <div className="dash-stat-icon dash-grad-green">
                 <iconify-icon icon="solar:wallet-money-bold-duotone"></iconify-icon>

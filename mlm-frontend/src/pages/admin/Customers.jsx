@@ -81,16 +81,12 @@ function Customers() {
     setShowForm(true);
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setSubmitting(true);
-    setFieldErrors({});
-
+  const submitCustomer = (payload) => {
     const req = editingId
-      ? api.put(`/admin/customers/${editingId}`, form)
-      : api.post("/admin/customers", form);
+      ? api.put(`/admin/customers/${editingId}`, payload)
+      : api.post("/admin/customers", payload);
 
-    req
+    return req
       .then(() => {
         setForm(emptyForm);
         setShowForm(false);
@@ -98,13 +94,30 @@ function Customers() {
         load();
       })
       .catch((err) => {
-        if (err.response?.status === 422 && err.response.data.errors) {
-          setFieldErrors(err.response.data.errors);
-        } else {
-          setError(err.response?.data?.message || err.message);
+        const data = err.response?.data;
+        if (err.response?.status === 422 && data?.duplicatePhone) {
+          const ok = window.confirm(
+            `This phone number is already used by ${data.duplicatePhone.name} (${data.duplicatePhone.customerCode}). Create anyway?`
+          );
+          if (ok) {
+            return submitCustomer({ ...payload, confirmDuplicatePhone: true });
+          }
+          setFieldErrors(data.errors || {});
+          return;
         }
-      })
-      .finally(() => setSubmitting(false));
+        if (err.response?.status === 422 && data?.errors) {
+          setFieldErrors(data.errors);
+        } else {
+          setError(data?.message || err.message);
+        }
+      });
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setFieldErrors({});
+    submitCustomer(form).finally(() => setSubmitting(false));
   };
 
   const handleDelete = (id) => {
