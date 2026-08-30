@@ -607,14 +607,38 @@ function BookingCreate() {
     try {
       let customerId = existingCustomerId;
       if (customerMode !== "existing" || !customerId) {
-        const customerRes = await api.post("/admin/customers", {
-          name,
-          email: email || undefined,
-          phone: phone || undefined,
-          address: address || undefined,
-          status: "active",
-        });
-        customerId = customerRes.data.data?._id || customerRes.data._id;
+        let confirmDuplicatePhone = false;
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+          try {
+            const customerRes = await api.post("/admin/customers", {
+              name,
+              email: email || undefined,
+              phone: phone || undefined,
+              address: address || undefined,
+              status: "active",
+              confirmDuplicatePhone: confirmDuplicatePhone || undefined,
+            });
+            customerId = customerRes.data.data?._id || customerRes.data._id;
+            break;
+          } catch (dupErr) {
+            const body = dupErr.response?.data;
+            if (body?.duplicatePhone && !confirmDuplicatePhone) {
+              const dp = body.duplicatePhone;
+              const proceed = window.confirm(
+                `This phone number is already used by ${dp.name} (${dp.customerCode}).\n\nThis can happen legitimately (e.g. a family booking several plots under different names with one shared number). Create this customer anyway?`
+              );
+              if (!proceed) {
+                setCreating(false);
+                setCreateError("Booking cancelled — phone number already in use by another customer.");
+                return;
+              }
+              confirmDuplicatePhone = true;
+              continue;
+            }
+            throw dupErr;
+          }
+        }
       }
 
       const payload = {
