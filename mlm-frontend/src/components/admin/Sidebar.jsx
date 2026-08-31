@@ -265,6 +265,7 @@ function Sidebar() {
           {can("reports_single_unit") && <li className="nav-item"><NavLink className="nav-link" to="/admin/reports/single-unit"><span className="nav-text">Single Unit Report</span></NavLink></li>}
 
           {can("reports_emi") && <li className="nav-item"><NavLink className="nav-link" to="/admin/reports/emi-collections"><span className="nav-text">EMI Collections</span></NavLink></li>}
+          {can("reports_emi") && <li className="nav-item"><NavLink className="nav-link" to="/admin/reports/commission-pending"><span className="nav-text">Commission Pending</span></NavLink></li>}
 
           {can("reports_commissions") && <li className="nav-item"><NavLink className="nav-link" to="/admin/reports/commissions"><span className="nav-text">Commissions</span></NavLink></li>}
 

@@ -5,6 +5,24 @@ const commissionService = require('../../services/commissionService');
 const auditService = require('../../services/auditService');
 const { PAYMENT_MODES } = require('../../utils/paymentModes');
 
+// Retries a flaky operation (e.g. a transient DB blip talking to Atlas) a
+// few times with a short backoff before giving up. This is what was
+// missing when a booking's Token+DP commission silently never got credited
+// — the payment itself saved fine, but the one-shot commission call failed
+// once and nothing ever tried again.
+async function withRetry(fn, attempts = 3, delayMs = 700) {
+  let lastErr;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      if (i < attempts - 1) await new Promise((r) => setTimeout(r, delayMs * (i + 1)));
+    }
+  }
+  throw lastErr;
+}
+
 // Booking.remainingAmount and Booking.downPaymentAmount are snapshot fields
 // set once at creation. Any edit/add to actual Emi documents (DP or regular
 // EMI) must call this afterward, or the booking-level summary cards go
@@ -134,32 +152,52 @@ async function markPaid(req, res) {
   const isLateDownPayment = emi.emiNumber === -1 && new Date(paid_date) > new Date(emi.dueDate);
   const skipCommission = isLateDownPayment && !release_late_commission;
 
+  // The payment itself (status/paidDate/paymentMode) is the source of truth
+  // that money was actually received — save it FIRST and unconditionally.
+  // Commission crediting is a separate concern attempted afterward; if it
+  // fails even after retries, the payment stays recorded (as it should —
+  // the money really was collected) and we surface that clearly instead of
+  // returning a scary 500 that makes the admin think the payment itself
+  // failed, when actually it saved fine and only commission is pending.
   try {
     emi.status = 'paid';
     emi.paidDate = paid_date;
     emi.paymentMode = payment_mode;
     emi.paymentReference = payment_reference || null;
     await emi.save();
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
 
-    if (emi.emiNumber === 0) {
-      // "Booking Deposit" — its commission is held and released ONLY together
-      // with the Down Payment (see below), UNLESS this booking has no Down
-      // Payment component at all, in which case there's nothing to wait for.
-      const hasDownPayment = await Emi.exists({ booking: emi.booking, emiNumber: -1 });
-      if (!hasDownPayment) {
-        await commissionService.processEmiCommission(emi);
+  let commissionError = null;
+  if (!skipCommission) {
+    try {
+      if (emi.emiNumber === 0) {
+        // "Booking Deposit" — its commission is held and released ONLY
+        // together with the Down Payment, UNLESS this booking has no Down
+        // Payment component at all, in which case there's nothing to wait for.
+        const hasDownPayment = await Emi.exists({ booking: emi.booking, emiNumber: -1 });
+        if (!hasDownPayment) {
+          await withRetry(() => commissionService.processEmiCommission(emi));
+        }
+      } else if (emi.emiNumber === -1) {
+        // "Down Payment" — this TRIGGERS the combined release
+        // (Deposit + Down Payment together).
+        await withRetry(() => releaseDownPaymentCommission(emi));
+      } else {
+        // Regular monthly EMI — unchanged, normal behavior.
+        await withRetry(() => commissionService.processEmiCommission(emi));
       }
-    } else if (emi.emiNumber === -1) {
-      // "Down Payment" — this is what TRIGGERS the combined release
-      // (Deposit + Down Payment together), subject to the 30-day rule.
-      if (!skipCommission) {
-        await releaseDownPaymentCommission(emi);
-      }
-    } else {
-      // Regular monthly EMI — unchanged, normal behavior.
-      await commissionService.processEmiCommission(emi);
+    } catch (err) {
+      // Every retry failed. Don't fail the request — the payment already
+      // saved successfully. Log it clearly so it's findable via the
+      // Commission Pending report instead of silently vanishing.
+      commissionError = err.message;
+      console.error(`Commission crediting failed for EMI ${emi._id} after retries:`, err);
     }
+  }
 
+  try {
     // Check if all EMIs for this booking are paid
     const booking = await Booking.findById(emi.booking);
     const unpaidCount = await Emi.countDocuments({ booking: booking._id, status: { $ne: 'paid' } });
@@ -174,17 +212,67 @@ async function markPaid(req, res) {
       req,
       'emi.paid',
       `EMI #${emi._id} for booking ${booking.bookingNumber} marked as paid by ${req.user.name}` +
-        (skipCommission ? ' (down payment received after 30 days — commission withheld pending Admin release)' : ''),
+        (skipCommission ? ' (down payment received after 30 days — commission withheld pending Admin release)' : '') +
+        (commissionError ? ` (commission crediting FAILED after retries: ${commissionError} — visible in Commission Pending report)` : ''),
       emi
     );
 
-    const message = skipCommission
-      ? 'Down payment recorded, but it arrived after the 30-day window — commission (Deposit + Down Payment) withheld. Admin can release it later from this same screen.'
-      : 'Payment recorded and commission processed';
+    let message = 'Payment recorded and commission processed';
+    if (skipCommission) {
+      message = 'Down payment recorded, but it arrived after the 30-day window — commission (Deposit + Down Payment) withheld. Admin can release it later from this same screen.';
+    } else if (commissionError) {
+      message = 'Payment recorded successfully, but commission crediting failed after retrying. It has been flagged on the Commission Pending report for retry.';
+    }
 
-    return res.json({ success: true, message });
+    return res.json({ success: true, message, commission_failed: !!commissionError });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
+  }
+}
+
+// GET /api/admin/emis/commission-pending
+// Every paid EMI/DP/Token where commission crediting never succeeded —
+// the exact state we found by hand in the DB for Arvind's booking.
+async function commissionPending(req, res) {
+  const emis = await Emi.find({ status: 'paid', commissionProcessed: false })
+    .populate({ path: 'booking', populate: [{ path: 'customer', select: 'name' }, { path: 'agent', select: 'name' }, { path: 'project', select: 'name' }, { path: 'plot', select: 'plotNumber' }] })
+    .sort({ paidDate: -1 });
+
+  res.json({ data: emis, count: emis.length });
+}
+
+// POST /api/admin/emis/:id/retry-commission
+// Re-attempts crediting for one stuck record — the same recovery we did
+// manually via a one-off script, now available as a real admin action.
+async function retryCommission(req, res) {
+  const emi = await Emi.findById(req.params.id);
+  if (!emi) return res.status(404).json({ success: false, message: 'EMI not found.' });
+  if (emi.status !== 'paid') return res.status(422).json({ success: false, message: 'EMI is not marked paid.' });
+  if (emi.commissionProcessed) return res.status(422).json({ success: false, message: 'Commission already processed for this EMI.' });
+
+  try {
+    if (emi.emiNumber === -1) {
+      await withRetry(() => releaseDownPaymentCommission(emi));
+    } else {
+      await withRetry(() => commissionService.processEmiCommission(emi));
+    }
+
+    await auditService.log(
+      req,
+      'emi.commission_retry_success',
+      `Admin ${req.user.name} manually retried and successfully credited commission for EMI ${emi._id}`,
+      emi
+    );
+
+    return res.json({ success: true, message: 'Commission credited successfully.' });
+  } catch (err) {
+    await auditService.log(
+      req,
+      'emi.commission_retry_failed',
+      `Admin ${req.user.name} retried commission for EMI ${emi._id} — still failed: ${err.message}`,
+      emi
+    );
+    return res.status(500).json({ success: false, message: `Retry failed: ${err.message}` });
   }
 }
 
@@ -647,4 +735,4 @@ async function editRequests(req, res) {
   res.json({ data: emis });
 }
 
-module.exports = { index, bookingEmis, markPaid, overdue, dues, update, addDpInstallment, approveEdit, rejectEdit, editRequests };
+module.exports = { index, bookingEmis, markPaid, overdue, dues, update, addDpInstallment, approveEdit, rejectEdit, editRequests, commissionPending, retryCommission };

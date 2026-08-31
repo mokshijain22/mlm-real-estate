@@ -102,6 +102,8 @@ router.get('/emis', emiController.index);
 router.get('/emis/overdue', emiController.overdue);
 router.get('/bookings/:id/emis', emiController.bookingEmis);
 router.post('/emis/:id/mark-paid', emiController.markPaid);
+router.get('/emis/commission-pending', emiController.commissionPending);
+router.post('/emis/:id/retry-commission', emiController.retryCommission);
 router.post('/bookings/:id/dp-installments', emiController.addDpInstallment);
 router.get('/emi-dues', emiController.dues);
 

@@ -60,6 +60,7 @@ import NoAccess from "./pages/admin/NoAccess.jsx";
 import Leads from "./pages/admin/Leads.jsx";
 import ReportsOverview from "./pages/admin/ReportsOverview.jsx";
 import EmiCollectionsReport from "./pages/admin/EmiCollectionsReport.jsx";
+import CommissionPending from "./pages/admin/CommissionPending.jsx";
 import CommissionsReport from "./pages/admin/CommissionsReport.jsx";
 import AgentEarningsReport from "./pages/admin/AgentEarningsReport.jsx";
 import ProjectSalesReport from "./pages/admin/ProjectSalesReport.jsx";
@@ -162,6 +163,7 @@ function App() {
 
         <Route path="/admin/reports" element={<PermissionRoute permission="reports"><ReportsOverview /></PermissionRoute>} />
         <Route path="/admin/reports/emi-collections" element={<PermissionRoute permission="reports_emi"><EmiCollectionsReport /></PermissionRoute>} />
+        <Route path="/admin/reports/commission-pending" element={<PermissionRoute permission="reports_emi"><CommissionPending /></PermissionRoute>} />
         <Route path="/admin/reports/commissions" element={<PermissionRoute permission="reports_commissions"><CommissionsReport /></PermissionRoute>} />
         <Route path="/admin/reports/agent-earnings" element={<PermissionRoute permission="reports_agent_earnings"><AgentEarningsReport /></PermissionRoute>} />
         <Route path="/admin/reports/project-sales" element={<PermissionRoute permission="reports_project_sales"><ProjectSalesReport /></PermissionRoute>} />
