@@ -15,17 +15,70 @@ async function sumAmount(filter) {
   return result.length ? result[0].total : 0;
 }
 
+// PV lumps 'cash' and 'cheque' payment modes together (see utils/paymentModes.js).
+// WalletTransaction itself doesn't store which one — it's derived from the
+// linked EMI's paymentMode, falling back to the booking's paymentMode for
+// deposit_commission credits (which have no linked EMI).
+async function getPvBreakdownByMode(agent) {
+  const rows = await WalletTransaction.aggregate([
+    { $match: { agent: agent._id, type: 'credit', pointsType: 'PV' } },
+    {
+      $lookup: {
+        from: 'emis',
+        localField: 'emi',
+        foreignField: '_id',
+        as: 'emiDoc',
+      },
+    },
+    {
+      $lookup: {
+        from: 'bookings',
+        localField: 'booking',
+        foreignField: '_id',
+        as: 'bookingDoc',
+      },
+    },
+    {
+      $addFields: {
+        mode: {
+          $ifNull: [
+            { $arrayElemAt: ['$emiDoc.paymentMode', 0] },
+            { $arrayElemAt: ['$bookingDoc.paymentMode', 0] },
+          ],
+        },
+      },
+    },
+    { $group: { _id: '$mode', total: { $sum: '$amount' } } },
+  ]);
+
+  const breakdown = { cash: 0, cheque: 0, other: 0 };
+  for (const row of rows) {
+    if (row._id === 'cash') breakdown.cash += row.total;
+    else if (row._id === 'cheque') breakdown.cheque += row.total;
+    else breakdown.other += row.total;
+  }
+  return breakdown;
+}
+
 async function getWalletData(agent) {
   const wallet = await AgentWallet.findOne({ agent: agent._id });
 
   const totalBvEarned = await sumAmount({ agent: agent._id, type: 'credit', pointsType: 'BV' });
   const totalPvEarned = await sumAmount({ agent: agent._id, type: 'credit', pointsType: 'PV' });
+  const pvByMode = await getPvBreakdownByMode(agent);
 
   return {
     bvBalance: wallet ? wallet.bvBalance : 0,
     pvBalance: wallet ? wallet.pvBalance : 0,
     totalBvEarned,
     totalPvEarned,
+    // Informational split of PV earnings by how the money actually came in.
+    // Note: this reflects gross PV *earned* by mode, not a live per-mode
+    // balance — once earnings are combined into one wallet and withdrawals
+    // are made, individual rupees can no longer be tagged as cash vs cheque.
+    cashEarned: pvByMode.cash,
+    chequeEarned: pvByMode.cheque,
+    otherPvEarned: pvByMode.other,
   };
 }
 

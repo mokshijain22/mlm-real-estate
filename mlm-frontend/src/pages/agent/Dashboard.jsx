@@ -131,12 +131,12 @@ function Dashboard() {
                     <iconify-icon icon="solar:wallet-bold-duotone"></iconify-icon>
                   </div>
                   <div className="flex-grow-1">
-                    <p className="dash-stat-value">{Number(wallet.bvBalance).toFixed(2)}</p>
+                    <p className="dash-stat-value">₹{Math.round(wallet.bvBalance).toLocaleString("en-IN")}</p>
                     <p className="dash-stat-label">Online Balance</p>
                   </div>
                 </div>
                 <div className="px-3 pb-3 d-flex align-items-center justify-content-between">
-                  <span className="text-muted small">Total: {Math.round(wallet.totalBvEarned)}</span>
+                  <span className="text-muted small">Total: ₹{Math.round(wallet.totalBvEarned).toLocaleString("en-IN")}</span>
                   <Link to="/agent/wallet" className="fw-semibold fs-12" style={{ color: "#ff7a45" }}>
                     Details
                   </Link>
@@ -151,15 +151,27 @@ function Dashboard() {
                     <iconify-icon icon="solar:safe-2-bold-duotone"></iconify-icon>
                   </div>
                   <div className="flex-grow-1">
-                    <p className="dash-stat-value">{Number(wallet.pvBalance).toFixed(2)}</p>
+                    <p className="dash-stat-value">₹{Math.round(wallet.pvBalance).toLocaleString("en-IN")}</p>
                     <p className="dash-stat-label">Cash Balance</p>
                   </div>
                 </div>
-                <div className="px-3 pb-3 d-flex align-items-center justify-content-between">
-                  <span className="text-muted small">Total: {Math.round(wallet.totalPvEarned)}</span>
-                  <Link to="/agent/wallet" className="fw-semibold fs-12" style={{ color: "#ff7a45" }}>
-                    Details
-                  </Link>
+                <div className="px-3 pb-3">
+                  <div className="d-flex align-items-center justify-content-between mb-1">
+                    <span className="text-muted small">Total: ₹{Math.round(wallet.totalPvEarned).toLocaleString("en-IN")}</span>
+                    <Link to="/agent/wallet" className="fw-semibold fs-12" style={{ color: "#ff7a45" }}>
+                      Details
+                    </Link>
+                  </div>
+                  <div className="d-flex align-items-center gap-3">
+                    <span className="text-muted small">
+                      <iconify-icon icon="solar:banknote-bold-duotone" className="fs-12 me-1"></iconify-icon>
+                      Cash: ₹{Math.round(wallet.cashEarned || 0).toLocaleString("en-IN")}
+                    </span>
+                    <span className="text-muted small">
+                      <iconify-icon icon="solar:bill-check-bold-duotone" className="fs-12 me-1"></iconify-icon>
+                      Cheque: ₹{Math.round(wallet.chequeEarned || 0).toLocaleString("en-IN")}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -172,13 +184,13 @@ function Dashboard() {
                   </div>
                   <div className="flex-grow-1">
                     <p className="dash-stat-value">
-                      {Math.round(commissions.thisMonthBv)} <small className="fs-12">Online</small>
+                      ₹{Math.round(commissions.thisMonthBv).toLocaleString("en-IN")} <small className="fs-12">Online</small>
                     </p>
                     <p className="dash-stat-label">This Month</p>
                   </div>
                 </div>
                 <div className="px-3 pb-3 d-flex align-items-center justify-content-between">
-                  <span className="text-muted small">Cash: {Math.round(commissions.thisMonthPv)}</span>
+                  <span className="text-muted small">Cash: ₹{Math.round(commissions.thisMonthPv).toLocaleString("en-IN")}</span>
                   <span className="small fw-semibold" style={{ color: "#059669" }}>
                     <iconify-icon icon="solar:arrow-up-bold" className="fs-12"></iconify-icon> Active
                   </span>

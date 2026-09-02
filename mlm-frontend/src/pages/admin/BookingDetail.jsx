@@ -71,6 +71,7 @@ function BookingDetail() {
   const [paidDate, setPaidDate] = useState(today());
   const [paymentMode, setPaymentMode] = useState("cash");
   const [paymentReference, setPaymentReference] = useState("");
+  const [amountReceived, setAmountReceived] = useState("");
   const [payError, setPayError] = useState("");
 
   const [siteSettings, setSiteSettings] = useState({});
@@ -307,6 +308,7 @@ function BookingDetail() {
         paid_date: paidDate,
         payment_mode: paymentMode,
         payment_reference: paymentReference || undefined,
+        amount_received: amountReceived,
       })
       .then(() => {
         setPayingEmiId(null);
@@ -1149,6 +1151,7 @@ function BookingDetail() {
                                 setPaymentReference("");
                                 setPayError("");
                                 setPaidDate(today());
+                                setAmountReceived(String(emi.amount));
                               }}
                             >
                               Pay
@@ -1199,7 +1202,7 @@ function BookingDetail() {
                       {fmtMoney(emis.find((e) => e._id === payingEmiId)?.amount || 0)}
                     </h6>
                     <div className="row g-3">
-                      <div className="col-md-4">
+                      <div className="col-md-3">
                         <label className="form-label">Payment Date</label>
                         <input
                           type="date"
@@ -1209,7 +1212,7 @@ function BookingDetail() {
                           required
                         />
                       </div>
-                      <div className="col-md-4">
+                      <div className="col-md-3">
                         <label className="form-label">Payment Mode</label>
                         <select className="form-select" value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)} required>
                           <option value="cash">Cash</option>
@@ -1220,7 +1223,30 @@ function BookingDetail() {
                           <option value="card">Card</option>
                         </select>
                       </div>
-                      <div className="col-md-4">
+                      <div className="col-md-3">
+                        <label className="form-label">Amount Received</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          className="form-control"
+                          value={amountReceived}
+                          onChange={(e) => setAmountReceived(e.target.value)}
+                          required
+                        />
+                        {(() => {
+                          const scheduled = Number(emis.find((e) => e._id === payingEmiId)?.amount || 0);
+                          const diff = Number(amountReceived || 0) - scheduled;
+                          if (!amountReceived || diff === 0) return null;
+                          return (
+                            <div className={`small mt-1 ${diff > 0 ? "text-success" : "text-danger"}`}>
+                              {diff > 0
+                                ? `Overpaid by ₹${fmtMoney(diff)} — will be added to Registry Balance`
+                                : `Short by ₹${fmtMoney(Math.abs(diff))} — will be deducted from Registry Balance`}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                      <div className="col-md-3">
                         <label className="form-label">Reference (Optional)</label>
                         <input
                           type="text"
