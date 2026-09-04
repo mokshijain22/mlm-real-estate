@@ -64,8 +64,15 @@ async function processEmiCommission(emi) {
       const plcAmount = Number(booking.plcAmount) || 0;
       const baseAmount = Math.max(totalAmount - plcAmount, 0);
       const commissionRatio = totalAmount > 0 ? baseAmount / totalAmount : 1;
+      // Credit commission off what was ACTUALLY received, not the scheduled
+      // amount — a shortfall gets pushed into the Registry line's own
+      // amount (see emiController.markPaid) and will generate its own
+      // commission when Registry itself is eventually paid. Using the
+      // scheduled amount here would credit that shortfall twice: once now,
+      // once again at Registry settlement.
+      const creditableAmount = emi.amountReceived != null ? Number(emi.amountReceived) : Number(emi.amount);
       const recomputedSqft =
-        pricePerSqft > 0 ? Math.round(((Number(emi.amount) * commissionRatio) / pricePerSqft) * 100) / 100 : 0;
+        pricePerSqft > 0 ? Math.round(((creditableAmount * commissionRatio) / pricePerSqft) * 100) / 100 : 0;
       const sqftPortion = recomputedSqft;
       if (Math.abs(recomputedSqft - Number(emi.sqftPortion)) > 0.01) {
         // Keep the stored field in sync too, so reports/exports (which read
@@ -540,7 +547,11 @@ async function previewCommission(booking) {
   // processEmiCommission() runs for every paid Emi regardless of emiNumber,
   // including emiNumber 99 (Registry). This preview was previously missing
   // it entirely, so "Grand Total" always undercounted once Registry got paid.
-  const registryAmount = Number(booking.registryAmount || 0);
+  // Commission always uses the CLEAN baseline, never the live registryAmount
+  // — that field absorbs underpayment/overpayment diffs on purpose, and
+  // those diffs must never fluctuate commission. Older bookings created
+  // before this field existed fall back to the live amount.
+  const registryAmount = Number(booking.registryBaseAmount || booking.registryAmount || 0);
   const registrySqft = pricePerSqft > 0 ? registryAmount / pricePerSqft : 0;
   const registryRows = await previewDepositCommissionForData({
     agentId: booking.agent._id,

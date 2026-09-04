@@ -15,6 +15,7 @@ const emiSchema = new mongoose.Schema(
     bank: { type: mongoose.Schema.Types.ObjectId, ref: 'Bank', default: null },
     receiptId: { type: String, default: null },
     remarks: { type: String, default: null },
+    amountReceived: { type: Number, default: null }, // actual amount paid; null until marked paid
     commissionProcessed: { type: Boolean, default: false },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
 

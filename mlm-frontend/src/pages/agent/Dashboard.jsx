@@ -349,13 +349,14 @@ function Dashboard() {
                         <th className="text-muted small">Customer</th>
                         <th className="text-muted small">Plot</th>
                         <th className="text-muted small">Amount</th>
+                        <th className="text-muted small">Registry</th>
                         <th className="text-muted small">Status</th>
                       </tr>
                     </thead>
                     <tbody>
                       {bookings.recentBookings.length === 0 ? (
                         <tr>
-                          <td colSpan="5" className="text-center py-4">
+                          <td colSpan="6" className="text-center py-4">
                             <div className="text-muted mb-3">No bookings found.</div>
                             <Link to="/agent/bookings/new" className="btn btn-sm btn-primary">
                               Create First Booking
@@ -379,6 +380,9 @@ function Dashboard() {
                                 {booking.plot?.plotNumber} ({booking.project?.name})
                               </td>
                               <td className="fw-bold">₹{Math.round(booking.totalAmount).toLocaleString("en-IN")}</td>
+                              <td className={booking.registryBalance > 0 ? "text-danger" : booking.registryBalance < 0 ? "text-success" : "text-muted"}>
+                                {booking.registryBalance ? `₹${Math.round(Math.abs(booking.registryBalance)).toLocaleString("en-IN")}${booking.registryBalance > 0 ? " ▲" : " ▼"}` : "—"}
+                              </td>
                               <td>
                                 <span className={`badge bg-${badge.color}-subtle text-${badge.color} border border-${badge.color} border-opacity-25`}>
                                   {badge.label}

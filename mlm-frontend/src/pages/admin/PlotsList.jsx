@@ -157,6 +157,7 @@ function PlotsList() {
                   <tr>
                     <th>Plot Number</th>
                     <th>Total Area (sqft)</th>
+                    <th>PLC</th>
                     <th>Status</th>
                     <th>Actions</th>
                   </tr>
@@ -164,7 +165,7 @@ function PlotsList() {
                 <tbody>
                   {plots.length === 0 && (
                     <tr>
-                      <td colSpan="4" className="text-center">
+                      <td colSpan="5" className="text-center">
                         No plots found for this project.
                       </td>
                     </tr>
@@ -183,6 +184,15 @@ function PlotsList() {
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2,
                         })}
+                      </td>
+                      <td>
+                        {Number(plot.plcPercent) > 0 ? (
+                          <span className="badge bg-warning-subtle text-warning border border-warning border-opacity-25">
+                            {plot.plcPercent}%
+                          </span>
+                        ) : (
+                          <span className="text-muted">—</span>
+                        )}
                       </td>
                       <td>
                         <span className={`badge ${statusBadge(plot.status)}`}>{statusLabel(plot.status)}</span>

@@ -72,6 +72,8 @@ function BookingDetail() {
   const [paymentMode, setPaymentMode] = useState("cash");
   const [paymentReference, setPaymentReference] = useState("");
   const [amountReceived, setAmountReceived] = useState("");
+  const [payBankId, setPayBankId] = useState("");
+  const [payBanks, setPayBanks] = useState([]);
   const [payError, setPayError] = useState("");
 
   const [siteSettings, setSiteSettings] = useState({});
@@ -212,6 +214,14 @@ function BookingDetail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
+  useEffect(() => {
+    if (!booking?.project?._id) return;
+    api
+      .get(`/admin/projects/${booking.project._id}/banks`)
+      .then((res) => setPayBanks((res.data.data || []).filter((b) => b.isActive !== false)))
+      .catch(() => setPayBanks([]));
+  }, [booking?.project?._id]);
+
   // Every payment already received — booking token/deposit + each paid EMI —
   // shown as its own printable receipt, newest first.
   const buildReceipts = () => {
@@ -309,6 +319,7 @@ function BookingDetail() {
         payment_mode: paymentMode,
         payment_reference: paymentReference || undefined,
         amount_received: amountReceived,
+        bank_id: paymentMode !== "cash" ? payBankId : undefined,
       })
       .then(() => {
         setPayingEmiId(null);
@@ -917,6 +928,18 @@ function BookingDetail() {
                 <h4 className="mb-0 text-break">₹ {fmtMoney(booking.totalAmount)}</h4>
               </div>
               <div className="col-6 col-md-3">
+                <p className="text-muted mb-1 small">PLC</p>
+                <h4 className="mb-0 text-break">
+                  {Number(booking.plcAmount) > 0 ? (
+                    <>
+                      {booking.plcPercent}% <span className="text-muted fs-6">(₹{fmtMoney(booking.plcAmount)})</span>
+                    </>
+                  ) : (
+                    <span className="text-muted fs-6">None</span>
+                  )}
+                </h4>
+              </div>
+              <div className="col-6 col-md-3">
                 <p className="text-muted mb-1 small">Booking Deposit (Token + DP)</p>
                 <h4 className="mb-0 text-break">₹ {fmtMoney((booking.bookingAmount || 0) + (booking.downPaymentAmount || 0))}</h4>
               </div>
@@ -1089,9 +1112,16 @@ function BookingDetail() {
                           fmtDate(emi.dueDate)
                         )}
                       </td>
-                      <td>
+                                    <td>
                         {editingEmiId === emi._id ? (
                           <input type="number" className="form-control form-control-sm" value={emiEditForm.amount} onChange={(e) => setEmiEditForm({ ...emiEditForm, amount: e.target.value })} />
+                        ) : emi.status === "paid" && emi.amountReceived != null ? (
+                          <>
+                            ₹ {fmtMoney(emi.amountReceived)}
+                            {emi.amountReceived !== emi.amount && (
+                              <div className="small text-muted text-decoration-line-through">₹ {fmtMoney(emi.amount)}</div>
+                            )}
+                          </>
                         ) : (
                           <>₹ {fmtMoney(emi.amount)}</>
                         )}
@@ -1152,6 +1182,7 @@ function BookingDetail() {
                                 setPayError("");
                                 setPaidDate(today());
                                 setAmountReceived(String(emi.amount));
+                                setPayBankId("");
                               }}
                             >
                               Pay
@@ -1214,7 +1245,15 @@ function BookingDetail() {
                       </div>
                       <div className="col-md-3">
                         <label className="form-label">Payment Mode</label>
-                        <select className="form-select" value={paymentMode} onChange={(e) => setPaymentMode(e.target.value)} required>
+                        <select
+                          className="form-select"
+                          value={paymentMode}
+                          onChange={(e) => {
+                            setPaymentMode(e.target.value);
+                            if (e.target.value === "cash") setPayBankId("");
+                          }}
+                          required
+                        >
                           <option value="cash">Cash</option>
                           <option value="upi">UPI</option>
                           <option value="net_banking">Net Banking</option>
@@ -1223,6 +1262,21 @@ function BookingDetail() {
                           <option value="card">Card</option>
                         </select>
                       </div>
+                      {paymentMode !== "cash" && (
+                        <div className="col-md-3">
+                          <label className="form-label">
+                            Receiving Bank <span className="text-danger">*</span>
+                          </label>
+                          <select className="form-select" value={payBankId} onChange={(e) => setPayBankId(e.target.value)} required>
+                            <option value="">Select bank</option>
+                            {payBanks.map((b) => (
+                              <option key={b._id} value={b._id}>
+                                {b.name}{b.accountHolderName ? ` — ${b.accountHolderName}` : ""}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
                       <div className="col-md-3">
                         <label className="form-label">Amount Received</label>
                         <input
@@ -1240,8 +1294,8 @@ function BookingDetail() {
                           return (
                             <div className={`small mt-1 ${diff > 0 ? "text-success" : "text-danger"}`}>
                               {diff > 0
-                                ? `Overpaid by ₹${fmtMoney(diff)} — will be added to Registry Balance`
-                                : `Short by ₹${fmtMoney(Math.abs(diff))} — will be deducted from Registry Balance`}
+                                ? `Overpaid by ₹${fmtMoney(diff)} — Registry amount will reduce by ₹${fmtMoney(diff)}`
+                                : `Short by ₹${fmtMoney(Math.abs(diff))} — Registry amount will increase by ₹${fmtMoney(Math.abs(diff))}`}
                             </div>
                           );
                         })()}

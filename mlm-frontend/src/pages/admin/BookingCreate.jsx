@@ -1296,7 +1296,7 @@ function BookingCreate() {
                   <option value="">Select bank</option>
                   {banks.map((b) => (
                     <option key={b._id} value={b._id}>
-                      {b.name}
+                      {b.name}{b.accountHolderName ? ` — ${b.accountHolderName}` : ""}
                     </option>
                   ))}
                 </select>

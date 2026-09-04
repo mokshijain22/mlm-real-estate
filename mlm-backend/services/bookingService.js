@@ -128,6 +128,7 @@ async function createBooking(data, actingUser) {
             downPayment2Amount,
             downPayment2DueDate,
             registryAmount,
+            registryBaseAmount: registryAmount,
             registryDueDate,
             emiDueDates,
             emiAmounts,
@@ -362,6 +363,28 @@ async function generateEmis(booking, session = null, additionalDownPayments = []
       commissionProcessed: false,
       createdBy: booking.createdBy,
     });
+  }
+
+  // Each line's sqftPortion above was rounded to 2 decimals independently,
+  // so across 20-30 installment lines the rounding drops small fractions
+  // that add up — the booking's total sqft ends up understated, and since
+  // commission = sqftPortion × rate, every agent's projected total quietly
+  // comes out short too. Reconcile: put the leftover fraction onto the
+  // final line (Registry if present, else the last EMI) so the sum of
+  // every sqftPortion always equals the booking's actual commissionable
+  // sqft exactly.
+  if (emis.length > 0 && pricePerSqft > 0) {
+    // totalArea IS the correct commissionable sqft target already — PLC is
+    // a price premium on top, it never adds extra area. commissionRatio is
+    // only for converting a rupee amount to sqft (sqftFor above); applying
+    // it to totalArea again would double-count it.
+    const expectedTotalSqft = Math.round((Number(booking.totalArea) || 0) * 100) / 100;
+    const assignedTotalSqft = emis.reduce((sum, e) => sum + Number(e.sqftPortion || 0), 0);
+    const diff = Math.round((expectedTotalSqft - assignedTotalSqft) * 100) / 100;
+    if (diff !== 0) {
+      const lastEmi = emis[emis.length - 1];
+      lastEmi.sqftPortion = Math.round((Number(lastEmi.sqftPortion || 0) + diff) * 100) / 100;
+    }
   }
 
   const opts = session ? { session } : {};

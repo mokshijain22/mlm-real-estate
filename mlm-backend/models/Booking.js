@@ -18,7 +18,12 @@ const bookingSchema = new mongoose.Schema(
     downPayment2Amount: { type: Number, default: 0 },
     downPayment2DueDate: { type: Date, default: null },
     registryAmount: { type: Number, default: 0 },
+    // Snapshotted once at booking creation, never touched by underpayment/
+    // overpayment adjustments — commission always calculates off this
+    // clean baseline, never off the live registryAmount that absorbs diffs.
+    registryBaseAmount: { type: Number, default: 0 },
     registryDueDate: { type: Date, default: null },
+    registryBalance: { type: Number, default: 0 }, // running over/under-payment total; +ve = client credit, -ve = client owes extra
     emiDueDates: [{ type: Date }],
     // Optional per-installment amount overrides, index-aligned with the EMI
     // number (emiAmounts[0] = EMI 1, emiAmounts[1] = EMI 2, ...). When an

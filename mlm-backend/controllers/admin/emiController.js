@@ -102,11 +102,13 @@ async function bookingEmis(req, res) {
 
 // POST /api/admin/emis/:id/mark-paid
 async function markPaid(req, res) {
-  const { paid_date, payment_mode, payment_reference, release_late_commission } = req.body;
+  const { paid_date, payment_mode, payment_reference, release_late_commission, amount_received, bank_id } = req.body;
 
   const errors = {};
   if (!paid_date) errors.paid_date = 'Paid date is required.';
-  if (!payment_mode || !PAYMENT_MODES.includes(payment_mode)) errors.payment_mode = 'Invalid payment mode.';  if (Object.keys(errors).length) return res.status(422).json({ success: false, errors });
+  if (!payment_mode || !PAYMENT_MODES.includes(payment_mode)) errors.payment_mode = 'Invalid payment mode.';
+  if (payment_mode && payment_mode !== 'cash' && !bank_id) errors.bank_id = 'Select which bank received this payment.';
+  if (Object.keys(errors).length) return res.status(422).json({ success: false, errors });
 
   const emi = await Emi.findById(req.params.id);
   if (!emi) return res.status(404).json({ success: false, message: 'EMI not found.' });
@@ -160,11 +162,42 @@ async function markPaid(req, res) {
   // returning a scary 500 that makes the admin think the payment itself
   // failed, when actually it saved fine and only commission is pending.
   try {
+    const receivedAmount = amount_received !== undefined && amount_received !== '' ? Number(amount_received) : emi.amount;
+
     emi.status = 'paid';
     emi.paidDate = paid_date;
     emi.paymentMode = payment_mode;
     emi.paymentReference = payment_reference || null;
+    emi.amountReceived = receivedAmount;
+    emi.bank = payment_mode === 'cash' ? null : bank_id;
     await emi.save();
+
+    // Difference goes to the booking's registry balance. Commission below
+    // still calculates off emi.amount (scheduled), never receivedAmount —
+    // this is intentional, agreed with the client.
+    // Underpay/overpay differences get absorbed directly into the Registry
+    // line's own amount (not a separate running balance) — underpaying an
+    // EMI makes the Registry amount go UP by the shortfall; overpaying
+    // makes it go DOWN, since the client's already covered that much.
+    // We skip this when marking the Registry line itself paid — at that
+    // point there's nothing further to push the difference onto.
+    const diff = emi.amount - receivedAmount;
+    if (diff !== 0 && emi.emiNumber !== 99) {
+      const registryEmi = await Emi.findOne({ booking: emi.booking, emiNumber: 99, status: 'pending' });
+      if (registryEmi) {
+        const newRegistryAmount = Math.max(Number(registryEmi.amount) + diff, 0);
+        const booking = await Booking.findById(emi.booking);
+        const pricePerSqft = Number(booking?.pricePerSqft) || 0;
+        registryEmi.amount = newRegistryAmount;
+        if (pricePerSqft > 0) {
+          const baseAmount = Math.max(Number(booking.totalAmount) - Number(booking.plcAmount || 0), 0);
+          const commissionRatio = booking.totalAmount > 0 ? baseAmount / booking.totalAmount : 1;
+          registryEmi.sqftPortion = Math.round(((newRegistryAmount * commissionRatio) / pricePerSqft) * 100) / 100;
+        }
+        await registryEmi.save();
+        await Booking.findByIdAndUpdate(emi.booking, { registryAmount: newRegistryAmount });
+      }
+    }
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
   }
@@ -506,6 +539,14 @@ async function update(req, res) {
 
     emi.amount = newAmount;
     emi.sqftPortion = sqftFor(newAmount);
+
+    // A direct edit to the Registry line itself is a deliberate correction,
+    // not an underpayment/overpayment push — it must update the commission
+    // baseline too, or this genuine change would silently vanish from Grand
+    // Total Commission (which reads registryBaseAmount, not the live amount).
+    if (emi.emiNumber === 99 && booking) {
+      await Booking.findByIdAndUpdate(emi.booking, { registryAmount: newAmount, registryBaseAmount: newAmount });
+    }
 
     // If this is a DP-type installment (created via "Add DP Installment" or
     // the original booking DP), an amount edit should shift the difference
